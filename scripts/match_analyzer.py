@@ -4,6 +4,8 @@ import re
 
 r_spawns = re.compile(r'SpawnSignal robotID="(\d+)" .* type="(\w+)" team="(\w)"')
 r_deaths = re.compile(r'DeathSignal objectID="(\d+)"')
+r_winner = re.compile(r'ser.MatchFooter winner="(\w)"')
+r_round = re.compile(r'<ser.RoundDelta>')
 
 TEAMS = ['A', 'B']
 
@@ -11,6 +13,7 @@ TEAMS = ['A', 'B']
 def analyze(matchfile):
     spawns = collections.defaultdict(set)  # map of team to robotIDs
     counts = collections.defaultdict(collections.Counter)  # map of team to counts dict
+    rounds = 0
     with open(matchfile) as f:
         for line in f:
             line = line.strip()
@@ -28,7 +31,13 @@ def analyze(matchfile):
                 for team in TEAMS:
                     if id in spawns[team]:
                         counts[team]['deaths'] += 1
-    print counts
+            m = r_winner.search(line)
+            if m:
+                winner = m.group(1)
+            m = r_round.search(line)
+            if m:
+                rounds += 1
+    print counts, winner, rounds
 
 def main():
     parser = argparse.ArgumentParser()

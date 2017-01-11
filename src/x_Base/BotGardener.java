@@ -1,4 +1,4 @@
-package kkplayer;
+package x_Base;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
@@ -14,7 +14,7 @@ public strictfp class BotGardener extends BotBase {
         super(rc);
     }
 
-    public final void run() throws GameActionException {
+    public void run() throws GameActionException {
         while (true) {
             try {
                 Messaging.broadcastGardener(this);

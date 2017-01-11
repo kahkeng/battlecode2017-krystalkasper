@@ -1,4 +1,4 @@
-package kkplayer;
+package x_Base;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
@@ -20,7 +20,7 @@ public strictfp class BotArchon extends BotBase {
         }
     }
 
-    public final void run() throws GameActionException {
+    public void run() throws GameActionException {
         while (true) {
             try {
                 Messaging.broadcastArchonLocation(this);

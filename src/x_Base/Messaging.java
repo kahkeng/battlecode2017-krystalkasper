@@ -1,4 +1,4 @@
-package kkplayer;
+package x_Base;
 
 import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;

@@ -1,4 +1,4 @@
-package kkplayer;
+package x_Base;
 
 import battlecode.common.BulletInfo;
 import battlecode.common.Direction;
@@ -36,7 +36,7 @@ public class BotBase {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    final boolean tryMove(Direction dir) throws GameActionException {
+    public final boolean tryMove(Direction dir) throws GameActionException {
         return tryMove(dir, 20, 3);
     }
 
@@ -52,7 +52,7 @@ public class BotBase {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    final boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+    public final boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
         if (rc.canMove(dir)) {
@@ -90,7 +90,7 @@ public class BotBase {
      *            The bullet in question
      * @return True if the line of the bullet's path intersects with this robot's current position.
      */
-    final boolean willCollideWithMe(BulletInfo bullet) {
+    public final boolean willCollideWithMe(BulletInfo bullet) {
         MapLocation myLocation = rc.getLocation();
 
         // Get relevant bullet information

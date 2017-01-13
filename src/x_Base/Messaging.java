@@ -74,6 +74,15 @@ public strictfp class Messaging {
         bot.rc.broadcast(channel, getHeartbeat(bot));
     }
 
+    public static final void broadcastPotentialGardener(final BotBase bot) throws GameActionException {
+        final int threshold = bot.rc.getRoundNum();
+        int channel = OFFSET_GARDENER;
+        while (getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {
+            channel += FIELDS_GARDENER;
+        }
+        bot.rc.broadcast(channel, getPotentialHeartbeat(bot, 1));
+    }
+
     public static final int numGardener(final BotBase bot) throws GameActionException {
         final int threshold = bot.rc.getRoundNum() - 1;
         int count = 0;

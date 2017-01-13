@@ -9,6 +9,9 @@ import battlecode.common.RobotInfo;
 
 public strictfp class BotScout extends BotBase {
 
+    public static final float SCOUT_DISTANCE_ATTACK_RANGE = 10.0f;
+    public static final float SCOUT_DISTANCE_EXPLORE_RANGE = 20.0f;
+
     static MapLocation homeArchon = null;
     static MapLocation myLoc = null;
 
@@ -25,7 +28,11 @@ public strictfp class BotScout extends BotBase {
                     findHomeArchon();
                     if (homeArchon != null) {
                         final Direction d = homeArchon.directionTo(myLoc);
-                        tryMove(d);
+                        if (homeArchon.distanceTo(myLoc) <= SCOUT_DISTANCE_EXPLORE_RANGE) {
+                            tryMove(d.rotateLeftDegrees(30));
+                        } else {
+                            tryMove(d.opposite().rotateRightDegrees(30));
+                        }
                     }
                 }
 
@@ -56,23 +63,45 @@ public strictfp class BotScout extends BotBase {
 
     public final boolean seekAndAttackEnemy() throws GameActionException {
         // See if enemy within sensor range
-        final RobotInfo[] robots = rc.senseNearbyRobots(-1, enemyTeam);
-        RobotInfo nearestRobot = null;
+        final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
+        RobotInfo nearestEnemy = null;
         float minDistance = 0;
-        for (final RobotInfo robot : robots) {
-            final float distance = robot.location.distanceTo(myLoc) - robot.getRadius() - myType.bodyRadius;
-            if (nearestRobot == null || distance < minDistance) {
-                nearestRobot = robot;
+        for (final RobotInfo enemy : enemies) {
+            final float distance = enemy.location.distanceTo(myLoc) - enemy.getRadius() - myType.bodyRadius;
+            if (nearestEnemy == null || distance < minDistance) {
+                nearestEnemy = enemy;
                 minDistance = distance;
             }
         }
-        if (nearestRobot != null) {
-            final Direction enemyDir = myLoc.directionTo(nearestRobot.location);
-            final float moveDist = Math.min(minDistance - 0.01f, myType.strideRadius);
-            if (moveDist > 0 && rc.canMove(enemyDir, moveDist)) {
-                rc.move(enemyDir, moveDist);
+        if (nearestEnemy != null) {
+            final Direction enemyDir = myLoc.directionTo(nearestEnemy.location);
+            float moveDist = Math.min(minDistance - 0.01f, myType.strideRadius);
+            boolean distanceAttack = false;
+            if (minDistance < SCOUT_DISTANCE_ATTACK_RANGE && StrategyFeature.SCOUT_DISTANCE_ATTACK.enabled()) {
+                // Check if any friendly robots lie in path
+                final RobotInfo[] friendlies = rc.senseNearbyRobots(SCOUT_DISTANCE_ATTACK_RANGE, myTeam);
+                boolean willCollide = false;
+                for (final RobotInfo friendly : friendlies) {
+                    final float friendlyDist = myLoc.distanceTo(friendly.location);
+                    final float diffRad = enemyDir.radiansBetween(myLoc.directionTo(friendly.location));
+                    if (Math.abs(diffRad) <= Math.PI / 4) {
+                        final double perpDist = Math.abs(Math.sin(diffRad) * friendlyDist);
+                        // TODO: make this have some buffer or account for trajectory
+                        if (perpDist <= friendly.getRadius() + 0.1f) { // will collide
+                            willCollide = true;
+                            break;
+                        }
+                    }
+                }
+                if (!willCollide) {
+                    moveDist = Math.min(moveDist, myType.bulletSpeed - 0.01f);
+                    distanceAttack = true;
+                }
             }
-            if (rc.canFireSingleShot() && minDistance <= 1.05 * myType.bodyRadius) {
+            if (moveDist > 0) {
+                tryMove(enemyDir, moveDist, 20, 3);
+            }
+            if (rc.canFireSingleShot() && (distanceAttack || minDistance <= 1.05 * myType.bodyRadius)) {
                 rc.fireSingleShot(enemyDir);
             }
             return true;

@@ -26,6 +26,7 @@ public class BotBase {
         numInitialArchons = myInitialArchonLocs.length;
         myType = rc.getType();
         myID = rc.getID();
+        StrategyFeature.initialize(rc);
     }
 
     /**
@@ -37,7 +38,7 @@ public class BotBase {
      * @throws GameActionException
      */
     public final boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir, 20, 3);
+        return tryMove(dir, myType.strideRadius, 20, 3);
     }
 
     /**
@@ -45,6 +46,8 @@ public class BotBase {
      *
      * @param dir
      *            The intended direction of movement
+     * @param moveDistance
+     *            The intended distance of movement
      * @param degreeOffset
      *            Spacing between checked directions (degrees)
      * @param checksPerSide
@@ -52,11 +55,12 @@ public class BotBase {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    public final boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+    public final boolean tryMove(Direction dir, float moveDistance, float degreeOffset, int checksPerSide)
+            throws GameActionException {
 
         // First, try intended direction
-        if (rc.canMove(dir)) {
-            rc.move(dir);
+        if (rc.canMove(dir, moveDistance)) {
+            rc.move(dir, moveDistance);
             return true;
         }
 
@@ -65,13 +69,16 @@ public class BotBase {
 
         while (currentCheck <= checksPerSide) {
             // Try the offset of the left side
-            if (rc.canMove(dir.rotateLeftDegrees(degreeOffset * currentCheck))) {
-                rc.move(dir.rotateLeftDegrees(degreeOffset * currentCheck));
+            final float offset = degreeOffset * currentCheck;
+            final Direction leftDir = dir.rotateLeftDegrees(offset);
+            if (rc.canMove(leftDir, moveDistance)) {
+                rc.move(leftDir, moveDistance);
                 return true;
             }
             // Try the offset on the right side
-            if (rc.canMove(dir.rotateRightDegrees(degreeOffset * currentCheck))) {
-                rc.move(dir.rotateRightDegrees(degreeOffset * currentCheck));
+            final Direction rightDir = dir.rotateRightDegrees(offset);
+            if (rc.canMove(rightDir, moveDistance)) {
+                rc.move(rightDir, moveDistance);
                 return true;
             }
             // No move performed, try slightly further

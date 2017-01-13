@@ -97,6 +97,12 @@ if (!project.hasProperty("teamB")) {
 if (!project.hasProperty("maps")) {
     ext.maps = "shrine"
 }
+if (!project.hasProperty("strategyFeaturesA")) {
+    ext.strategyFeaturesA = ""
+}
+if (!project.hasProperty("strategyFeaturesB")) {
+    ext.strategyFeaturesB = ""
+}
 
 // Here we define a task. Tasks like this one, 'unpackClient', can be
 // executed in the terminal with `./gradlew unpackClient` in Unix or
@@ -135,6 +141,7 @@ task run(type: JavaExec, dependsOn: 'build') {
     classpath = sourceSets.main.runtimeClasspath
     args = ['-c=-']
     jvmArgs = [
+        '-Dbc.testing.strategy-features-a='+project.property('strategyFeaturesA'),
         '-Dbc.server.mode=headless',
         '-Dbc.server.map-path=maps',
         '-Dbc.server.debug=true',

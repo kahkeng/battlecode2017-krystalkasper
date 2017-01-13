@@ -51,6 +51,7 @@ public strictfp class BotArchon extends BotBase {
             }
             if (i < 6) {
                 rc.hireGardener(dir);
+                Messaging.broadcastPotentialGardener(this);
             }
         }
     }

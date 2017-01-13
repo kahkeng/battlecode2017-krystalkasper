@@ -7,6 +7,8 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
 public strictfp class BotArchon extends BotBase {
+    public static final int MAX_GARDENERS = 2;
+
     public int myArchonID = -1;
 
     public BotArchon(final RobotController rc) {
@@ -40,8 +42,8 @@ public strictfp class BotArchon extends BotBase {
     }
 
     public final void hireGardeners() throws GameActionException {
-        final int num = Messaging.numGardener(this);
-        if (num < 2) {
+        final int num = Messaging.getNumGardeners(this);
+        if (num < MAX_GARDENERS) {
             // TODO: make this away from enemy
             Direction dir = Util.randomDirection();
             int i = 0;

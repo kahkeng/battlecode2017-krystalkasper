@@ -14,6 +14,7 @@ public strictfp class BotScout extends BotBase {
 
     static MapLocation homeArchon = null;
     static MapLocation myLoc = null;
+    static final MapLocation[] broadcastedEnemies = new MapLocation[BotBase.MAX_ENEMY_ROBOTS + 1];
 
     public BotScout(final RobotController rc) {
         super(rc);
@@ -67,6 +68,7 @@ public strictfp class BotScout extends BotBase {
         RobotInfo nearestEnemy = null;
         float minDistance = 0;
         for (final RobotInfo enemy : enemies) {
+            Messaging.broadcastEnemyRobot(this, enemy);
             final float distance = enemy.location.distanceTo(myLoc) - enemy.getRadius() - myType.bodyRadius;
             if (nearestEnemy == null || distance < minDistance) {
                 nearestEnemy = enemy;
@@ -106,7 +108,22 @@ public strictfp class BotScout extends BotBase {
             }
             return true;
         }
-        // Else head towards known broadcasted enemies
+        // Else head towards closest known broadcasted enemies
+        final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
+        MapLocation nearestLoc = null;
+        for (int i = 0; i < numEnemies; i++) {
+            final MapLocation enemyLoc = broadcastedEnemies[i];
+            final float distance = enemyLoc.distanceTo(myLoc);
+            if (nearestLoc == null || distance < minDistance) {
+                nearestLoc = enemyLoc;
+                minDistance = distance;
+            }
+        }
+        if (nearestLoc != null) {
+            final Direction enemyDir = myLoc.directionTo(nearestLoc);
+            tryMove(enemyDir);
+            return true;
+        }
         return false;
     }
 

@@ -10,6 +10,8 @@ import battlecode.common.Team;
 
 public class BotBase {
 
+    public static final int MAX_ENEMY_ROBOTS = 10; // in message broadcasts
+
     public final RobotController rc;
     public final Team myTeam;
     public final Team enemyTeam;

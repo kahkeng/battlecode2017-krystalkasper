@@ -3,6 +3,7 @@ package x_Base;
 import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
+import battlecode.common.RobotType;
 
 public strictfp class Messaging {
 
@@ -49,14 +50,18 @@ public strictfp class Messaging {
     public static final MapLocation[] readArchonLocation(final BotBase bot)
             throws GameActionException {
         final MapLocation[] ret = new MapLocation[bot.numInitialArchons];
-        // looks like spawned robots might execute before archons in a round, thus this can't be just round
-        // however, we could make this less frequent later.
-        final int threshold = bot.rc.getRoundNum() - 1;
+        final int threshold;
+        if (bot.myType == RobotType.ARCHON) {
+            threshold = bot.rc.getRoundNum() - 2; // additional -1 in case bytecode limit exceeded
+        } else { // robots execute in spawn order, so other robots definitely go after the archons have gone
+            threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        }
+        // we could make these broadcasts less frequent later.
         for (int i = bot.myInitialArchonLocs.length - 1; i >= 0; i--) {
             final int channel = OFFSET_ARCHON + i * FIELDS_ARCHON;
             final int heartbeat = bot.rc.readBroadcast(channel);
             if (getRoundFromHeartbeat(heartbeat) < threshold) {
-                ret[i] = null; // archon is dead
+                ret[i] = null; // archon is dead (or went over bytecode limit)
             } else {
                 ret[i] = new MapLocation(bot.rc.readBroadcast(channel + 1) * 0.01f,
                         bot.rc.readBroadcast(channel + 2) * 0.01f);
@@ -84,7 +89,7 @@ public strictfp class Messaging {
     }
 
     public static final int numGardener(final BotBase bot) throws GameActionException {
-        final int threshold = bot.rc.getRoundNum() - 1;
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
         int count = 0;
         int channel = OFFSET_GARDENER;
         while (getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {

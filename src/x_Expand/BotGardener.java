@@ -14,12 +14,13 @@ public strictfp class BotGardener extends x_Base.BotGardener {
     public void run() throws GameActionException {
         while (true) {
             try {
+                startLoop();
                 Messaging.broadcastGardener(this);
                 // final MapLocation[] myArchons = Messaging.readArchonLocation(this);
 
                 waterTrees();
                 plantTrees();
-                buildTank();
+                buildUnits();
 
                 Clock.yield();
 

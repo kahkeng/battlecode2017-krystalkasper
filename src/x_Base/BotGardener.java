@@ -10,6 +10,10 @@ import battlecode.common.TreeInfo;
 
 public strictfp class BotGardener extends BotBase {
 
+    public static final RobotType[] BUILD_ORDER = { RobotType.LUMBERJACK, RobotType.SCOUT, /* RobotType.SOLDIER */ };
+    public static final float BUILD_BULLET_BUFFER = 1.0f;
+    int buildIndex = 0;
+
     public BotGardener(final RobotController rc) {
         super(rc);
     }
@@ -17,12 +21,13 @@ public strictfp class BotGardener extends BotBase {
     public void run() throws GameActionException {
         while (true) {
             try {
+                startLoop();
                 Messaging.broadcastGardener(this);
                 // final MapLocation[] myArchons = Messaging.readArchonLocation(this);
 
                 waterTrees();
                 plantTrees();
-                buildTank();
+                buildUnits();
 
                 Clock.yield();
 
@@ -55,15 +60,20 @@ public strictfp class BotGardener extends BotBase {
         }
     }
 
-    public final void buildTank() throws GameActionException {
+    public final void buildUnits() throws GameActionException {
+        final RobotType buildType = BUILD_ORDER[buildIndex % BUILD_ORDER.length];
+        if (rc.getTeamBullets() < buildType.bulletCost + buildIndex * BUILD_BULLET_BUFFER) {
+            return;
+        }
         Direction dir = Direction.getNorth();
         int i = 0;
-        while (i < 6 && !rc.canBuildRobot(RobotType.SCOUT, dir)) {
+        while (i < 6 && !rc.canBuildRobot(buildType, dir)) {
             dir = dir.rotateRightDegrees(60.0f);
             i += 1;
         }
         if (i < 6) {
-            rc.buildRobot(RobotType.SCOUT, dir);
+            rc.buildRobot(buildType, dir);
+            buildIndex = (buildIndex + 1) % (2 * BUILD_ORDER.length);
         }
     }
 

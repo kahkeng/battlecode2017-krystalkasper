@@ -18,8 +18,7 @@ public strictfp class BotScout extends x_Base.BotScout {
     public void run() throws GameActionException {
         while (true) {
             try {
-                myLoc = rc.getLocation();
-
+                startLoop();
                 if (!seekAndAttackEnemy()) {
                     findHomeArchon();
                     if (homeArchon != null) {

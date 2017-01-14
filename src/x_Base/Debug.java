@@ -5,7 +5,7 @@ import java.util.List;
 
 import battlecode.common.MapLocation;
 
-public class Debug {
+public strictfp class Debug {
     public static final void debug_print(MapLocation[] locs) {
         List<MapLocation> locs1 = new ArrayList<MapLocation>();
         for (final MapLocation loc : locs) {

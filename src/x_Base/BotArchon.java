@@ -25,11 +25,12 @@ public strictfp class BotArchon extends BotBase {
     public void run() throws GameActionException {
         while (true) {
             try {
+                startLoop();
                 Messaging.broadcastArchonLocation(this);
                 hireGardeners();
 
                 // Move randomly
-                tryMove(Util.randomDirection());
+                // tryMove(Util.randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();

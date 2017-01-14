@@ -12,10 +12,6 @@ public strictfp class BotScout extends BotBase {
     public static final float SCOUT_DISTANCE_ATTACK_RANGE = 10.0f;
     public static final float SCOUT_DISTANCE_EXPLORE_RANGE = 20.0f;
 
-    static MapLocation homeArchon = null;
-    static MapLocation myLoc = null;
-    static final MapLocation[] broadcastedEnemies = new MapLocation[BotBase.MAX_ENEMY_ROBOTS + 1];
-
     public BotScout(final RobotController rc) {
         super(rc);
     }
@@ -23,7 +19,7 @@ public strictfp class BotScout extends BotBase {
     public void run() throws GameActionException {
         while (true) {
             try {
-                myLoc = rc.getLocation();
+                startLoop();
 
                 if (!seekAndAttackEnemy()) {
                     findHomeArchon();
@@ -42,22 +38,6 @@ public strictfp class BotScout extends BotBase {
             } catch (Exception e) {
                 System.out.println("Scout Exception");
                 e.printStackTrace();
-            }
-        }
-    }
-
-    public final void findHomeArchon() throws GameActionException {
-        final MapLocation[] myArchons = Messaging.readArchonLocation(this);
-        homeArchon = null;
-        float minDistance = 0;
-        for (final MapLocation archon : myArchons) {
-            if (archon == null) {
-                continue;
-            }
-            final float distance = archon.distanceTo(myLoc);
-            if (homeArchon == null || distance < minDistance) {
-                homeArchon = archon;
-                minDistance = distance;
             }
         }
     }

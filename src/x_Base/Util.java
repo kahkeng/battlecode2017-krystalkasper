@@ -2,7 +2,7 @@ package x_Base;
 
 import battlecode.common.Direction;
 
-public class Util {
+public strictfp class Util {
     /**
      * Returns a random Direction
      * 

@@ -8,7 +8,7 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 
-public class BotBase {
+public strictfp class BotBase {
 
     public static final int MAX_ENEMY_ROBOTS = 10; // in message broadcasts
 
@@ -16,19 +16,55 @@ public class BotBase {
     public final Team myTeam;
     public final Team enemyTeam;
     public final MapLocation[] myInitialArchonLocs;
+    public final MapLocation[] enemyInitialArchonLocs;
     public final int numInitialArchons;
     public final RobotType myType;
     public final int myID;
+
+    public static MapLocation homeArchon = null;
+    public static MapLocation myLoc = null;
+    public static final MapLocation[] broadcastedEnemies = new MapLocation[BotBase.MAX_ENEMY_ROBOTS + 1];
 
     public BotBase(final RobotController rc) {
         this.rc = rc;
         myTeam = rc.getTeam();
         enemyTeam = myTeam.opponent();
         myInitialArchonLocs = rc.getInitialArchonLocations(myTeam);
+        enemyInitialArchonLocs = rc.getInitialArchonLocations(myTeam.opponent());
         numInitialArchons = myInitialArchonLocs.length;
         myType = rc.getType();
         myID = rc.getID();
         StrategyFeature.initialize(rc);
+    }
+
+    public final void startLoop() {
+        myLoc = rc.getLocation();
+    }
+
+    public final void findHomeArchon() throws GameActionException {
+        final MapLocation[] myArchons = Messaging.readArchonLocation(this);
+        homeArchon = null;
+        float minDistance = 0;
+        for (final MapLocation archon : myArchons) {
+            if (archon == null) {
+                continue;
+            }
+            final float distance = archon.distanceTo(myLoc);
+            if (homeArchon == null || distance < minDistance) {
+                homeArchon = archon;
+                minDistance = distance;
+            }
+        }
+    }
+
+    public final boolean tryMove(final MapLocation loc) throws GameActionException {
+        // First, try intended direction
+        if (rc.canMove(loc)) {
+            rc.move(loc);
+            return true;
+        }
+        final Direction dir = myLoc.directionTo(loc);
+        return tryMove(dir, myType.strideRadius, 15, 6);
     }
 
     /**
@@ -39,7 +75,7 @@ public class BotBase {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    public final boolean tryMove(Direction dir) throws GameActionException {
+    public final boolean tryMove(final Direction dir) throws GameActionException {
         return tryMove(dir, myType.strideRadius, 20, 3);
     }
 
@@ -57,7 +93,8 @@ public class BotBase {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    public final boolean tryMove(Direction dir, float moveDistance, float degreeOffset, int checksPerSide)
+    public final boolean tryMove(final Direction dir, final float moveDistance, final float degreeOffset,
+            final int checksPerSide)
             throws GameActionException {
 
         // First, try intended direction
@@ -99,7 +136,7 @@ public class BotBase {
      *            The bullet in question
      * @return True if the line of the bullet's path intersects with this robot's current position.
      */
-    public final boolean willCollideWithMe(BulletInfo bullet) {
+    public final boolean willCollideWithMe(final BulletInfo bullet) {
         MapLocation myLocation = rc.getLocation();
 
         // Get relevant bullet information

@@ -10,10 +10,8 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
-import x_Base.BotLumberjack;
 import x_Base.Debug;
 import x_Base.Formations;
-import x_Base.Messaging;
 import x_Base.Util;
 
 public strictfp class BotGardener extends x_Base.BotGardener {
@@ -21,10 +19,13 @@ public strictfp class BotGardener extends x_Base.BotGardener {
     /** Plant tree within this radius of arc loc. */
     public static final float PLANT_RADIUS = GameConstants.BULLET_TREE_RADIUS + 0.01f;
     /** If neutral tree within this range, build lumberjack. */
-    public static final float LUMBERJACK_RADIUS = 4.0f;
+    public static final float TREE_SPAWN_LUMBERJACK_RADIUS = 4.0f;
+    public static final int MAX_BUILD_PENALTY = 5;
+    public static final float BUILD_PENALTY = 1.0f;
     public final Formations formation;
     public static Direction arcDirection;
     public static float radianStep; // positive is rotating right relative to enemy base
+    public static int buildCount = 0; // used to ensure other gardeners have their chance at building
 
     public BotGardener(final RobotController rc) {
         super(rc);
@@ -39,7 +40,7 @@ public strictfp class BotGardener extends x_Base.BotGardener {
         while (true) {
             try {
                 startLoop();
-                Messaging.broadcastGardener(this);
+                // Messaging.broadcastGardener(this);
                 // final MapLocation[] myArchons = Messaging.readArchonLocation(this);
 
                 waterTrees();
@@ -88,9 +89,11 @@ public strictfp class BotGardener extends x_Base.BotGardener {
         if (!rc.canSenseAllOfCircle(arcLoc, PLANT_RADIUS)) {
             // move towards arcLoc if possible
             if (!tryMove(arcLoc)) {
+                Debug.debug_print(this, "can't get close enough to sense arcLoc");
+                reverseArcDirection();
                 // Move away to give space to others who might try to clear out
-                randomlyJitter();
-                Debug.debug_print(this, "jitter1");
+                // randomlyJitter();
+                // Debug.debug_print(this, "jitter1");
             }
             return;
         }
@@ -120,7 +123,9 @@ public strictfp class BotGardener extends x_Base.BotGardener {
             return;
         }
         // Check if there is a neutral tree too close by. If so, we should wait till they are cleared
-        final TreeInfo[] neutralTrees = rc.senseNearbyTrees(arcLoc, BotLumberjack.CLEAR_RADIUS, Team.NEUTRAL);
+        // We don't use lumberjack's CLEAR_RADIUS because that would be too sensitive. Plus we would
+        // automatically build more lumberjacks if there are trees within TREE_SPAWN_LUMBERJACK_RADIUS.
+        final TreeInfo[] neutralTrees = rc.senseNearbyTrees(arcLoc, PLANT_RADIUS * 2, Team.NEUTRAL);
         if (neutralTrees.length > 0) {
             Debug.debug_print(this, "neutral tree too close by " + neutralTrees[0] + " " + arcLoc);
             // reverse in the meantime
@@ -134,9 +139,11 @@ public strictfp class BotGardener extends x_Base.BotGardener {
         if (dist >= 0.01f) {
             // move towards arcLoc if possible
             if (!tryMove(plantLoc)) {
+                Debug.debug_print(this, "can't get closer to plant");
+                reverseArcDirection();
                 // Move away to give space to others who might try to clear out
-                randomlyJitter();
-                Debug.debug_print(this, "jitter2");
+                // randomlyJitter();
+                // Debug.debug_print(this, "jitter2");
             }
             return;
         }
@@ -155,26 +162,17 @@ public strictfp class BotGardener extends x_Base.BotGardener {
 
     public final void buildLumberjacksIfNeeded() throws GameActionException {
         final RobotType buildType = RobotType.LUMBERJACK;
-        if (rc.getTeamBullets() < buildType.bulletCost) {
+        if (rc.getTeamBullets() < buildType.bulletCost + buildCount * BUILD_PENALTY) {
             return;
         }
         // Build this if we have neutral trees within some radius
-        final TreeInfo[] trees = rc.senseNearbyTrees(LUMBERJACK_RADIUS, Team.NEUTRAL);
+        final TreeInfo[] trees = rc.senseNearbyTrees(TREE_SPAWN_LUMBERJACK_RADIUS, Team.NEUTRAL);
         if (trees.length == 0) {
             return;
         }
         final MapLocation centerLoc = formation.getArcCenter();
-        Direction dir = centerLoc.directionTo(myLoc);
-        final int numTries = 12;
-        final float degreeDelta = 360.0f / numTries;
-        int i = 0;
-        while (i < numTries && !rc.canBuildRobot(buildType, dir)) {
-            i += 1;
-            final int sign = (i % 2) * 2 - 1;
-            dir = dir.rotateRightDegrees(degreeDelta * i * sign);
-        }
-        if (i < numTries) {
-            rc.buildRobot(buildType, dir);
+        if (tryBuildRobot(buildType, centerLoc.directionTo(myLoc))) {
+            buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
         }
     }
 }

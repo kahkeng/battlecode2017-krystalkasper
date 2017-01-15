@@ -42,7 +42,7 @@ public strictfp class Formations {
         final MapLocation furthestArchon = bot.myInitialArchonLocs[furthestIndex];
         this.baseDir = furthestArchon.directionTo(getArcCenter());
         this.myInitialHomeBase = furthestArchon.add(baseDir,
-                RobotType.ARCHON.bodyRadius + GameConstants.BULLET_TREE_RADIUS * 2 + 0.01f);
+                RobotType.ARCHON.bodyRadius + GameConstants.BULLET_TREE_RADIUS * 4 + 0.01f);
         this.separation = myInitialHomeBase.distanceTo(getArcCenter());
     }
 

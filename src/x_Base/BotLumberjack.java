@@ -55,13 +55,20 @@ public strictfp class BotLumberjack extends BotBase {
                 continue;
             }
             final TreeInfo[] trees = rc.senseNearbyTrees(robot.location, CLEAR_RADIUS, Team.NEUTRAL);
-            for (final TreeInfo tree : trees) {
-                final float distance = myLoc.distanceTo(tree.location);
-                if (nearestTree == null || distance < minDistance) {
-                    nearestTree = tree;
-                    minDistance = distance;
-                }
+            // only check the closest neutral tree per gardener?
+            if (trees.length == 0) {
+                continue;
             }
+            final TreeInfo tree = trees[0];
+            final float distance = myLoc.distanceTo(tree.location);
+            if (nearestTree == null || distance < minDistance) {
+                nearestTree = tree;
+                minDistance = distance;
+            }
+            /*
+             * for (final TreeInfo tree : trees) { final float distance = myLoc.distanceTo(tree.location); if
+             * (nearestTree == null || distance < minDistance) { nearestTree = tree; minDistance = distance; } }
+             */
         }
         if (nearestTree != null) {
             clearSpecificNeutralTree(nearestTree);

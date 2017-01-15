@@ -13,7 +13,7 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         switch (rc.getType()) {
         case ARCHON:
-            new x_Base.BotArchon(rc).run();
+            new BotArchon(rc).run();
             break;
         case GARDENER:
             new BotGardener(rc).run();

@@ -58,6 +58,38 @@ public strictfp class BotBase {
         }
     }
 
+    public final boolean tryBuildRobot(final RobotType buildType, Direction dir) throws GameActionException {
+        final int numTries = 12;
+        final float degreeDelta = 360.0f / numTries;
+        int i = 0;
+        while (i < numTries && !rc.canBuildRobot(buildType, dir)) {
+            i += 1;
+            final int sign = (i % 2) * 2 - 1;
+            dir = dir.rotateRightDegrees(degreeDelta * i * sign);
+        }
+        if (i < numTries) {
+            rc.buildRobot(buildType, dir);
+            return true;
+        }
+        return false;
+    }
+
+    public final boolean tryHireGardener(Direction dir) throws GameActionException {
+        final int numTries = 12;
+        final float degreeDelta = 360.0f / numTries;
+        int i = 0;
+        while (i < numTries && !rc.canHireGardener(dir)) {
+            i += 1;
+            final int sign = (i % 2) * 2 - 1;
+            dir = dir.rotateRightDegrees(degreeDelta * i * sign);
+        }
+        if (i < numTries) {
+            rc.hireGardener(dir);
+            return true;
+        }
+        return false;
+    }
+
     public final boolean tryMove(final MapLocation loc) throws GameActionException {
         // First, try intended direction
         if (rc.canMove(loc)) {

@@ -13,4 +13,10 @@ public strictfp class Debug {
         }
         System.out.println(locs1.toString());
     }
+
+    public static final void debug_print(final BotBase bot, final String s) {
+        if (bot.DEBUG) {
+            System.out.println(s);
+        }
+    }
 }

@@ -11,6 +11,7 @@ import battlecode.common.Team;
 public strictfp class BotBase {
 
     public static final int MAX_ENEMY_ROBOTS = 10; // in message broadcasts
+    public static boolean DEBUG = false;
 
     public final RobotController rc;
     public final Team myTeam;

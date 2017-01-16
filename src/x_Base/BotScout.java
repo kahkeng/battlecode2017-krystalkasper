@@ -45,6 +45,9 @@ public strictfp class BotScout extends BotBase {
     public final boolean seekAndAttackEnemy() throws GameActionException {
         // See if enemy within sensor range
         final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
+        for (final RobotInfo enemy : enemies) {
+            Messaging.broadcastEnemyRobot(this, enemy);
+        }
         RobotInfo nearestEnemy = enemies.length == 0 ? null : enemies[0];
         if (nearestEnemy != null) {
             final float minDistance = nearestEnemy.location.distanceTo(myLoc) - nearestEnemy.getRadius()

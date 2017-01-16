@@ -9,20 +9,15 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
+import x_Arc.BotArcBase;
 
-public strictfp class BotLumberjack extends BotBase {
+public strictfp class BotLumberjack extends BotArcBase {
 
     public static final float CLEAR_RADIUS = 4.0f;
-    public static final float ENEMY_REACTION_RADIUS = 10.0f;
-    public final Formations formation;
-    public static Direction arcDirection;
-    public static float radianStep; // positive is rotating right relative to enemy base
+    public static final float ENEMY_REACTION_RANGE = 10.0f;
 
     public BotLumberjack(final RobotController rc) {
         super(rc);
-        formation = new Formations(this);
-        myLoc = rc.getLocation();
-        arcDirection = formation.getArcDir(myLoc);
         radianStep = formation.getRadianStep(myLoc, CLEAR_RADIUS);
     }
 
@@ -126,24 +121,12 @@ public strictfp class BotLumberjack extends BotBase {
                 minDistance = distance;
             }
         }
-        if (nearestLoc != null && minDistance <= ENEMY_REACTION_RADIUS) {
+        if (nearestLoc != null && minDistance <= ENEMY_REACTION_RANGE) {
             final Direction enemyDir = myLoc.directionTo(nearestLoc);
             tryMove(enemyDir);
             return true;
         }
         return false;
-    }
-
-    public final void advanceArcDirection() {
-        arcDirection = arcDirection.rotateRightRads(radianStep * 2);
-    }
-
-    public final MapLocation getArcLoc() {
-        return formation.getArcLoc(arcDirection);
-    }
-
-    public final MapLocation getNextArcLoc() {
-        return formation.getArcLoc(arcDirection.rotateRightRads(radianStep * 2));
     }
 
     public final boolean clearObstructedGardeners() throws GameActionException {

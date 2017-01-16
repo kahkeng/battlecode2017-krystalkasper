@@ -2,12 +2,18 @@ package x_Base;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import x_Arc.BotArcBase;
 
-public strictfp class BotTank extends BotBase {
+public strictfp class BotTank extends BotArcBase {
+
+    /** Patrol at this distance from arc and at this step. */
+    public static final float PATROL_RADIUS = 5.0f;
 
     public BotTank(final RobotController rc) {
         super(rc);
+        radianStep = formation.getRadianStep(myLoc, PATROL_RADIUS);
     }
 
     public void run() throws GameActionException {
@@ -15,12 +21,33 @@ public strictfp class BotTank extends BotBase {
             try {
                 startLoop();
 
+                if (!attackEnemies()) {
+                    patrolAlongArc();
+                }
+
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Tank Exception");
                 e.printStackTrace();
             }
         }
+    }
+
+    public final boolean attackEnemies() throws GameActionException {
+        return Combat.seekAndAttackEnemy(this);
+    }
+
+    public final void patrolAlongArc() throws GameActionException {
+        final MapLocation arcLoc = getArcLoc();
+        final MapLocation patrolLoc = arcLoc.add(arcDirection.opposite(), PATROL_RADIUS);
+        if (myLoc.distanceTo(patrolLoc) > PATROL_RADIUS) {
+            // move towards arcLoc if possible
+            if (!tryMove(patrolLoc)) {
+                reverseArcDirection();
+            }
+            return;
+        }
+        advanceArcDirection();
     }
 
 }

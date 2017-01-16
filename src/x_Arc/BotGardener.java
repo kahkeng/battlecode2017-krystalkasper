@@ -11,10 +11,9 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
 import x_Base.Debug;
-import x_Base.Formations;
 import x_Base.Util;
 
-public strictfp class BotGardener extends x_Base.BotGardener {
+public strictfp class BotGardener extends BotArcBase {
 
     /** Plant tree within this radius of arc loc. */
     public static final float PLANT_RADIUS = GameConstants.BULLET_TREE_RADIUS + 0.01f;
@@ -24,17 +23,12 @@ public strictfp class BotGardener extends x_Base.BotGardener {
     public static final float TREE_SPAWN_LUMBERJACK_RADIUS = 4.0f;
     public static final int MAX_BUILD_PENALTY = 5;
     public static final float BUILD_PENALTY = 1.0f;
-    public final Formations formation;
-    public static Direction arcDirection;
-    public static float radianStep; // positive is rotating right relative to enemy base
+
     public static int buildCount = 0; // used to ensure other gardeners have their chance at building
 
     public BotGardener(final RobotController rc) {
         super(rc);
         DEBUG = true;
-        formation = new Formations(this);
-        myLoc = rc.getLocation();
-        arcDirection = formation.getArcDir(myLoc);
         radianStep = formation.getRadianStep(myLoc, PLANT_RADIUS);
     }
 
@@ -58,13 +52,22 @@ public strictfp class BotGardener extends x_Base.BotGardener {
         }
     }
 
-    public final void reverseArcDirection() {
-        radianStep = -radianStep;
-        advanceArcDirection();
-    }
-
-    public final void advanceArcDirection() {
-        arcDirection = arcDirection.rotateRightRads(radianStep * 2);
+    public final void waterTrees() throws GameActionException {
+        // water lowest health tree
+        final TreeInfo[] trees = rc.senseNearbyTrees(myType.bodyRadius + myType.strideRadius, myTeam);
+        TreeInfo lowestTree = null;
+        float lowestHealth = 0;
+        for (final TreeInfo tree : trees) {
+            if (rc.canWater(tree.ID) && tree.health < tree.maxHealth) {
+                if (lowestTree == null || tree.health < lowestHealth) {
+                    lowestTree = tree;
+                    lowestHealth = tree.health;
+                }
+            }
+        }
+        if (lowestTree != null) {
+            rc.water(lowestTree.ID);
+        }
     }
 
     public final void randomlyJitter() throws GameActionException {

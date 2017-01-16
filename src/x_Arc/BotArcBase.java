@@ -8,6 +8,10 @@ import x_Base.Formations;
 
 public strictfp class BotArcBase extends x_Base.BotBase {
 
+    /** Patrol at this distance from arc and at this step. */
+    public static final float PATROL_RADIUS = 5.0f;
+
+    /** Flee at this distance from arc and at this step. */
     public static final float FLEE_RADIUS = 4.0f;
 
     public final Formations formation;
@@ -37,6 +41,20 @@ public strictfp class BotArcBase extends x_Base.BotBase {
 
     public final MapLocation getNextArcLoc() {
         return formation.getArcLoc(arcDirection.rotateRightRads(radianStep * 2));
+    }
+
+    public final void patrolAlongArc() throws GameActionException {
+        final MapLocation arcLoc = getArcLoc();
+        final boolean isOutside = myLoc.distanceTo(formation.getArcCenter()) > formation.separation;
+        final MapLocation patrolLoc = arcLoc.add(isOutside ? arcDirection : arcDirection.opposite(), PATROL_RADIUS);
+        if (myLoc.distanceTo(patrolLoc) > PATROL_RADIUS) {
+            // move towards arcLoc if possible
+            if (!tryMove(patrolLoc)) {
+                reverseArcDirection();
+            }
+            return;
+        }
+        advanceArcDirection();
     }
 
     public final void fleeFromEnemyAlongArc(final MapLocation enemyLoc) throws GameActionException {

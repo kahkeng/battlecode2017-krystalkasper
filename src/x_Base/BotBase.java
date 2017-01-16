@@ -3,6 +3,7 @@ package x_Base;
 import battlecode.common.BulletInfo;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotType;
@@ -10,6 +11,7 @@ import battlecode.common.Team;
 
 public strictfp class BotBase {
 
+    public static final float MAX_BULLET_STASH = 1000.0f;
     public static final int MAX_ENEMY_ROBOTS = 10; // in message broadcasts
     public static boolean DEBUG = false;
 
@@ -35,11 +37,13 @@ public strictfp class BotBase {
         numInitialArchons = myInitialArchonLocs.length;
         myType = rc.getType();
         myID = rc.getID();
-        StrategyFeature.initialize(rc);
     }
 
-    public final void startLoop() {
+    public final void startLoop() throws GameActionException {
         myLoc = rc.getLocation();
+        if (rc.getTeamBullets() > MAX_BULLET_STASH) {
+            rc.donate(GameConstants.BULLET_EXCHANGE_RATE);
+        }
     }
 
     public final void findHomeArchon() throws GameActionException {

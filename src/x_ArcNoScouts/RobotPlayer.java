@@ -1,4 +1,4 @@
-package x_Arc;
+package x_ArcNoScouts;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
@@ -13,13 +13,13 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         switch (rc.getType()) {
         case ARCHON:
-            new BotArchon(rc).run();
+            new x_Arc.BotArchon(rc).run();
             break;
         case GARDENER:
             new BotGardener(rc).run();
             break;
         case SCOUT:
-            new BotScout(rc).run();
+            new x_Arc.BotScout(rc).run();
             break;
         case TANK:
             new x_Base.BotTank(rc).run();

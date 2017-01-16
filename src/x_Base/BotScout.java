@@ -14,6 +14,7 @@ public strictfp class BotScout extends BotBase {
 
     public BotScout(final RobotController rc) {
         super(rc);
+        StrategyFeature.initialize(rc);
     }
 
     public void run() throws GameActionException {

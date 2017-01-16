@@ -21,10 +21,12 @@ public strictfp class BotGardener extends BotArcBase {
     public static final float PLANT_TREE_MIN_BULLETS = 101.0f;
     /** If neutral tree within this range, build lumberjack. */
     public static final float TREE_SPAWN_LUMBERJACK_RADIUS = 4.0f;
+    public static final float TREE_SPAWN_SCOUT_RADIUS = 4.0f;
     public static final int MAX_BUILD_PENALTY = 5;
     public static final float BUILD_PENALTY = 1.0f;
 
     public static int buildCount = 0; // used to ensure other gardeners have their chance at building
+    public static int roundBlockedByNeutralTree = 0; // used to determine if we should spawn lumberjack
 
     public BotGardener(final RobotController rc) {
         super(rc);
@@ -46,6 +48,7 @@ public strictfp class BotGardener extends BotArcBase {
                 } else {
                     plantTreesInArc(0);
                     buildLumberjacksIfNeeded();
+                    buildScoutsIfNeeded();
                 }
 
                 Clock.yield();
@@ -82,9 +85,9 @@ public strictfp class BotGardener extends BotArcBase {
             return;
         }
         final MapLocation arcLoc = formation.getArcLoc(arcDirection);
-        rc.setIndicatorLine(formation.myInitialHomeBase, formation.enemyInitialCentroid, 0, 255, 0);
-        rc.setIndicatorLine(arcLoc, formation.enemyInitialCentroid, 0, 0, 255);
-        rc.setIndicatorDot(arcLoc, 0, 255, 0);
+        // rc.setIndicatorLine(formation.myInitialHomeBase, formation.enemyInitialCentroid, 0, 255, 0);
+        // rc.setIndicatorLine(arcLoc, formation.enemyInitialCentroid, 0, 0, 255);
+        // rc.setIndicatorDot(arcLoc, 0, 255, 0);
         // Goal is to make sure radius of X around the home base arc is filled with our trees
 
         // To sense up to X around the arc, you need to be something like at most sense_radius - X away
@@ -133,6 +136,7 @@ public strictfp class BotGardener extends BotArcBase {
         if (neutralTrees.length > 0) {
             Debug.debug_print(this, "neutral tree too close by " + neutralTrees[0] + " " + arcLoc);
             // reverse in the meantime
+            roundBlockedByNeutralTree = rc.getRoundNum();
             reverseArcDirection();
             plantTreesInArc(attempt + 1);
             return;
@@ -198,9 +202,10 @@ public strictfp class BotGardener extends BotArcBase {
         if (rc.getTeamBullets() < buildType.bulletCost + buildCount * BUILD_PENALTY) {
             return;
         }
-        // Build this if we have neutral trees within some radius
+
+        // Build this if we have neutral trees within some radius, or were blocked recently
         final TreeInfo[] trees = rc.senseNearbyTrees(TREE_SPAWN_LUMBERJACK_RADIUS, Team.NEUTRAL);
-        if (trees.length == 0) {
+        if (roundBlockedByNeutralTree < rc.getRoundNum() - 15 && trees.length == 0) {
             return;
         }
 
@@ -213,6 +218,38 @@ public strictfp class BotGardener extends BotArcBase {
             }
         }
         if (trees.length + 1 > numLumberjacks) {
+            // final MapLocation centerLoc = formation.getArcCenter();
+            // final Direction spawnDir = centerLoc.directionTo(myLoc);
+            final Direction spawnDir = trees.length > 0 ? myLoc.directionTo(trees[0].location) : arcDirection;
+            if (tryBuildRobot(buildType, spawnDir)) {
+                buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+            }
+        }
+    }
+
+    public final void buildScoutsIfNeeded() throws GameActionException {
+        if (!rc.isBuildReady()) {
+            return;
+        }
+        final RobotType buildType = RobotType.SCOUT;
+        if (rc.getTeamBullets() < buildType.bulletCost + buildCount * BUILD_PENALTY) {
+            return;
+        }
+        // Build this if we have more bullet trees than scouts
+        final TreeInfo[] trees = rc.senseNearbyTrees(TREE_SPAWN_SCOUT_RADIUS, myTeam);
+        if (trees.length == 0) {
+            return;
+        }
+
+        // But only if we don't have enough lumberjacks
+        final RobotInfo[] robots = rc.senseNearbyRobots(TREE_SPAWN_SCOUT_RADIUS, myTeam);
+        int numScouts = 0;
+        for (final RobotInfo robot : robots) {
+            if (robot.type == RobotType.SCOUT) {
+                numScouts++;
+            }
+        }
+        if (trees.length > numScouts && trees.length >= 5) {
             // final MapLocation centerLoc = formation.getArcCenter();
             // final Direction spawnDir = centerLoc.directionTo(myLoc);
             final Direction spawnDir = myLoc.directionTo(trees[0].location);

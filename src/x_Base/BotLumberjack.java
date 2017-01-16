@@ -28,7 +28,7 @@ public strictfp class BotLumberjack extends BotArcBase {
 
                 if (strikeEnemiesFromBehind()) {
                     // Make space for movement
-                    chopAnyNearbyNeutralTrees();
+                    chopAnyNearbyUnownedTrees();
                 } else {
                     if (!clearObstructedGardeners()) {
                         clearNeutralTreesAlongArc();
@@ -190,7 +190,7 @@ public strictfp class BotLumberjack extends BotArcBase {
             if (!tryMove(arcLoc)) {
                 // do something?
             }
-            chopAnyNearbyNeutralTrees();
+            chopAnyNearbyUnownedTrees();
             return;
         }
         // Check for neutral trees within X radius of arcLoc
@@ -223,20 +223,29 @@ public strictfp class BotLumberjack extends BotArcBase {
             } else {
                 // TODO: do something if blocked by other robots
                 // Make sure we clear our way there if we are blocked
-                chopAnyNearbyNeutralTrees();
+                chopAnyNearbyUnownedTrees();
             }
         } else {
             // Make sure we clear our way there if we are blocked
-            chopAnyNearbyNeutralTrees();
+            chopAnyNearbyUnownedTrees();
         }
     }
 
-    public final void chopAnyNearbyNeutralTrees() throws GameActionException {
+    public final void chopAnyNearbyUnownedTrees() throws GameActionException {
         if (rc.hasAttacked()) {
             return;
         }
-        final TreeInfo[] trees = rc.senseNearbyTrees(myLoc, myType.bodyRadius + myType.strideRadius, Team.NEUTRAL);
-        for (final TreeInfo tree : trees) {
+        // Prioritize enemy trees first
+        final TreeInfo[] enemyTrees = rc.senseNearbyTrees(myLoc, myType.bodyRadius + myType.strideRadius, enemyTeam);
+        for (final TreeInfo tree : enemyTrees) {
+            if (rc.canChop(tree.ID)) {
+                rc.chop(tree.ID);
+                return;
+            }
+        }
+        final TreeInfo[] neutralTrees = rc.senseNearbyTrees(myLoc, myType.bodyRadius + myType.strideRadius,
+                Team.NEUTRAL);
+        for (final TreeInfo tree : neutralTrees) {
             if (rc.canChop(tree.ID)) {
                 rc.chop(tree.ID);
                 return;

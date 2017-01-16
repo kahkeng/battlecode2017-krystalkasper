@@ -56,6 +56,7 @@ public strictfp class Formations {
     }
 
     public final Direction getArcDir(final MapLocation myLoc) {
+        // TODO: snap to grid?
         return getArcCenter().directionTo(myLoc);
     }
 
@@ -69,4 +70,5 @@ public strictfp class Formations {
             return radianStep;
         }
     }
+
 }

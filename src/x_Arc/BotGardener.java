@@ -11,7 +11,7 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
 import x_Base.Debug;
-import x_Base.Util;
+import x_Base.Messaging;
 
 public strictfp class BotGardener extends BotArcBase {
 
@@ -40,8 +40,13 @@ public strictfp class BotGardener extends BotArcBase {
                 // final MapLocation[] myArchons = Messaging.readArchonLocation(this);
 
                 waterTrees();
-                plantTreesInArc(0);
-                buildLumberjacksIfNeeded();
+                final MapLocation enemyLoc = buildCombatUnitsIfNeeded();
+                if (enemyLoc != null) {
+                    fleeFromEnemyAlongArc(enemyLoc);
+                } else {
+                    plantTreesInArc(0);
+                    buildLumberjacksIfNeeded();
+                }
 
                 Clock.yield();
 
@@ -67,13 +72,6 @@ public strictfp class BotGardener extends BotArcBase {
         }
         if (lowestTree != null) {
             rc.water(lowestTree.ID);
-        }
-    }
-
-    public final void randomlyJitter() throws GameActionException {
-        float radius = myType.strideRadius;
-        while (!rc.hasMoved() && !tryMove(Util.randomDirection(), radius, 20, 18)) {
-            radius /= 2;
         }
     }
 
@@ -171,7 +169,31 @@ public strictfp class BotGardener extends BotArcBase {
         }
     }
 
+    public final MapLocation buildCombatUnitsIfNeeded() throws GameActionException {
+        // Build this if we have enemies within sight
+        final RobotInfo[] enemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
+        if (enemyRobots.length == 0) {
+            return null;
+        }
+        for (final RobotInfo enemy : enemyRobots) {
+            Messaging.broadcastEnemyRobot(this, enemy);
+        }
+        final MapLocation enemyLoc = enemyRobots[0].location;
+        final RobotType buildType = RobotType.SOLDIER;
+        if (!rc.isBuildReady() || rc.getTeamBullets() < buildType.bulletCost + buildCount * BUILD_PENALTY) {
+            return enemyLoc;
+        }
+        final Direction spawnDir = myLoc.directionTo(enemyLoc);
+        if (tryBuildRobot(buildType, spawnDir)) {
+            buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+        }
+        return enemyLoc;
+    }
+
     public final void buildLumberjacksIfNeeded() throws GameActionException {
+        if (!rc.isBuildReady()) {
+            return;
+        }
         final RobotType buildType = RobotType.LUMBERJACK;
         if (rc.getTeamBullets() < buildType.bulletCost + buildCount * BUILD_PENALTY) {
             return;

@@ -30,8 +30,10 @@ public strictfp class BotLumberjack extends BotArcBase {
                     // Make space for movement
                     chopAnyNearbyUnownedTrees();
                 } else {
-                    if (!clearObstructedGardeners()) {
-                        clearNeutralTreesAlongArc();
+                    if (!clearObstructedArchonsAndGardeners()) {
+                        if (!clearEnemyTrees()) {
+                            clearNeutralTreesAlongArc();
+                        }
                     }
                 }
 
@@ -129,17 +131,42 @@ public strictfp class BotLumberjack extends BotArcBase {
         return false;
     }
 
-    public final boolean clearObstructedGardeners() throws GameActionException {
-        // First priority, ensure no neutral trees near any gardeners
+    public final boolean clearEnemyTrees() throws GameActionException {
+        // Prioritize enemy trees first
+        final TreeInfo[] enemyTrees = rc.senseNearbyTrees(-1, enemyTeam);
+        if (enemyTrees.length == 0) {
+            return false;
+        }
+        final TreeInfo nearestTree = enemyTrees[0];
+        if (rc.canChop(nearestTree.ID)) {
+            rc.chop(nearestTree.ID);
+            return true;
+        }
+        // Get closer to nearest tree
+        final Direction touchDir = nearestTree.location.directionTo(myLoc);
+        final MapLocation touchLoc = nearestTree.location.add(touchDir,
+                nearestTree.radius + myType.bodyRadius + myType.strideRadius - 0.01f);
+        if (tryMove(touchLoc)) {
+            if (rc.canChop(nearestTree.ID)) {
+                rc.chop(nearestTree.ID);
+            }
+        } else {
+            chopAnyNearbyUnownedTrees();
+        }
+        return true;
+    }
+
+    public final boolean clearObstructedArchonsAndGardeners() throws GameActionException {
+        // First priority, ensure no neutral trees near any gardeners/archons
         final RobotInfo[] robots = rc.senseNearbyRobots(-1, myTeam);
         TreeInfo nearestTree = null;
         float minDistance = 0;
         for (final RobotInfo robot : robots) {
-            if (robot.type != RobotType.GARDENER) {
+            if (robot.type != RobotType.GARDENER && robot.type != RobotType.ARCHON) {
                 continue;
             }
             final TreeInfo[] trees = rc.senseNearbyTrees(robot.location, CLEAR_RADIUS, Team.NEUTRAL);
-            // only check the closest neutral tree per gardener?
+            // only check the closest neutral tree per gardener/archon?
             if (trees.length == 0) {
                 continue;
             }
@@ -149,10 +176,6 @@ public strictfp class BotLumberjack extends BotArcBase {
                 nearestTree = tree;
                 minDistance = distance;
             }
-            /*
-             * for (final TreeInfo tree : trees) { final float distance = myLoc.distanceTo(tree.location); if
-             * (nearestTree == null || distance < minDistance) { nearestTree = tree; minDistance = distance; } }
-             */
         }
         if (nearestTree != null) {
             clearSpecificNeutralTree(nearestTree);

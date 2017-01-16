@@ -173,6 +173,13 @@ public strictfp class BotBase {
         return false;
     }
 
+    public final void randomlyJitter() throws GameActionException {
+        float radius = myType.strideRadius;
+        while (!rc.hasMoved() && !tryMove(Util.randomDirection(), radius, 20, 18)) {
+            radius /= 2;
+        }
+    }
+
     /**
      * A slightly more complicated example function, this returns true if the given bullet is on a collision course with
      * the current robot. Doesn't take into account objects between the bullet and this robot.

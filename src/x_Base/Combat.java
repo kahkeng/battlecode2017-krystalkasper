@@ -8,7 +8,8 @@ import battlecode.common.RobotType;
 
 public strictfp class Combat {
 
-    public static final float DISTANCE_ATTACK_RANGE = 7.0f;
+    public static final float DISTANCE_ATTACK_RANGE = 5.0f;
+    public static final float SURROUND_RANGE = 1.0f;
     public static final float ENEMY_REACTION_RANGE = 10.0f;
 
     public static final boolean seekAndAttackEnemy(final BotBase bot) throws GameActionException {
@@ -62,23 +63,63 @@ public strictfp class Combat {
             return true;
         }
         // Else head towards closest known broadcasted enemies
-        final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
-        MapLocation nearestLoc = null;
-        float minDistance = 0;
-        for (int i = 0; i < numEnemies; i++) {
-            final MapLocation enemyLoc = bot.broadcastedEnemies[i];
-            final float distance = enemyLoc.distanceTo(bot.myLoc);
-            if (nearestLoc == null || distance < minDistance) {
-                nearestLoc = enemyLoc;
-                minDistance = distance;
-            }
+        return headTowardsBroadcastedEnemy(bot);
+    }
+
+    public static final boolean seekAndAttackAndSurroundEnemy(final x_Arc.BotArcBase bot) throws GameActionException {
+        // See if enemy within sensor range
+        final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+        for (final RobotInfo enemy : enemies) {
+            Messaging.broadcastEnemyRobot(bot, enemy);
         }
-        if (nearestLoc != null && minDistance <= ENEMY_REACTION_RANGE) {
-            final Direction enemyDir = bot.myLoc.directionTo(nearestLoc);
-            bot.tryMove(enemyDir);
+        RobotInfo nearestEnemy = enemies.length == 0 ? null : enemies[0];
+        if (nearestEnemy != null) {
+            final float enemyRadius = nearestEnemy.getRadius();
+            final Direction enemyDir = bot.myLoc.directionTo(nearestEnemy.location);
+
+            final Direction backDir = bot.getArcLoc().directionTo(bot.getNextArcLoc());
+            final Direction sideDir; // side dir depends on which side of enemy we are on
+            if (backDir.radiansBetween(enemyDir) > 0) {
+                sideDir = bot.arcDirection.opposite();
+            } else {
+                sideDir = bot.arcDirection;
+            }
+            final MapLocation moveLoc = nearestEnemy.location.add(sideDir,
+                    enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - 0.01f);
+
+            // move first before attacking
+            bot.tryMove(moveLoc);
+
+            final float minDistance = nearestEnemy.location.distanceTo(bot.myLoc) - enemyRadius - bot.myType.bodyRadius;
+            boolean distanceAttack = false;
+            if (minDistance <= DISTANCE_ATTACK_RANGE) {
+                // Check if any friendly robots lie in path
+                final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(DISTANCE_ATTACK_RANGE, bot.myTeam);
+                boolean willCollide = false;
+                for (final RobotInfo friendly : friendlies) {
+                    final float friendlyDist = bot.myLoc.distanceTo(friendly.location);
+                    final float diffRad = enemyDir.radiansBetween(bot.myLoc.directionTo(friendly.location));
+                    if (Math.abs(diffRad) <= Math.PI / 3) {
+                        final double perpDist = Math.abs(Math.sin(diffRad) * friendlyDist);
+                        // TODO: make this have some buffer or account for trajectory
+                        if (perpDist <= friendly.getRadius() + 0.1f) { // will collide
+                            willCollide = true;
+                            break;
+                        }
+                    }
+                }
+                if (!willCollide) {
+                    distanceAttack = true;
+                }
+            }
+            if (bot.rc.canFireSingleShot() && (distanceAttack || minDistance < bot.myType.bodyRadius)) {
+                final Direction latestEnemyDir = bot.myLoc.directionTo(nearestEnemy.location);
+                bot.rc.fireSingleShot(latestEnemyDir);
+            }
             return true;
         }
-        return false;
+        // Else head towards closest known broadcasted enemies
+        return headTowardsBroadcastedEnemy(bot);
     }
 
     public static boolean strikeEnemiesFromBehind(final BotLumberjack bot) throws GameActionException {
@@ -149,6 +190,11 @@ public strictfp class Combat {
             return true;
         }
         // Else head towards closest known broadcasted enemies
+        return headTowardsBroadcastedEnemy(bot);
+    }
+
+    public static final boolean headTowardsBroadcastedEnemy(final BotBase bot) throws GameActionException {
+        // Head towards closest known broadcasted enemies
         final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
         MapLocation nearestLoc = null;
         float minDistance = 0;

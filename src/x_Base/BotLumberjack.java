@@ -18,6 +18,7 @@ public strictfp class BotLumberjack extends BotArcBase {
 
     public BotLumberjack(final RobotController rc) {
         super(rc);
+        DEBUG = true;
         radianStep = formation.getRadianStep(myLoc, CLEAR_RADIUS);
     }
 

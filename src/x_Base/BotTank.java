@@ -13,6 +13,7 @@ public strictfp class BotTank extends BotArcBase {
 
     public BotTank(final RobotController rc) {
         super(rc);
+        DEBUG = true;
         radianStep = formation.getRadianStep(myLoc, PATROL_RADIUS);
     }
 
@@ -34,7 +35,7 @@ public strictfp class BotTank extends BotArcBase {
     }
 
     public final boolean attackEnemies() throws GameActionException {
-        return Combat.seekAndAttackEnemy(this);
+        return Combat.seekAndAttackAndSurroundEnemy(this);
     }
 
     public final void patrolAlongArc() throws GameActionException {

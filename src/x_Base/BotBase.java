@@ -91,13 +91,18 @@ public strictfp class BotBase {
     }
 
     public final boolean tryMove(final MapLocation loc) throws GameActionException {
+        if (rc.hasMoved()) {
+            return false;
+        }
         // First, try intended direction
         if (rc.canMove(loc)) {
             rc.move(loc);
+            myLoc = rc.getLocation();
             return true;
         }
         final Direction dir = myLoc.directionTo(loc);
-        return tryMove(dir, myType.strideRadius, 15, 6);
+        final float strideDist = Math.min(myType.strideRadius, myLoc.distanceTo(loc));
+        return tryMove(dir, strideDist, 15, 6);
     }
 
     /**
@@ -130,9 +135,14 @@ public strictfp class BotBase {
             final int checksPerSide)
             throws GameActionException {
 
+        if (rc.hasMoved()) {
+            return false;
+        }
+
         // First, try intended direction
         if (rc.canMove(dir, moveDistance)) {
             rc.move(dir, moveDistance);
+            myLoc = rc.getLocation();
             return true;
         }
 
@@ -145,12 +155,14 @@ public strictfp class BotBase {
             final Direction leftDir = dir.rotateLeftDegrees(offset);
             if (rc.canMove(leftDir, moveDistance)) {
                 rc.move(leftDir, moveDistance);
+                myLoc = rc.getLocation();
                 return true;
             }
             // Try the offset on the right side
             final Direction rightDir = dir.rotateRightDegrees(offset);
             if (rc.canMove(rightDir, moveDistance)) {
                 rc.move(rightDir, moveDistance);
+                myLoc = rc.getLocation();
                 return true;
             }
             // No move performed, try slightly further

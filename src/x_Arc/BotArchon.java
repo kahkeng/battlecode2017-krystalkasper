@@ -10,7 +10,7 @@ import x_Base.Formations;
 public strictfp class BotArchon extends x_Base.BotArchon {
 
     /** Hire a gardener if none in this radius. */
-    public static final float GARDENER_RADIUS = 8.0f;
+    public static final float GARDENER_RADIUS = 7.0f;
 
     public final Formations formation;
 

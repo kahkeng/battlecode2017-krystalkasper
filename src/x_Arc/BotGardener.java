@@ -18,6 +18,8 @@ public strictfp class BotGardener extends x_Base.BotGardener {
 
     /** Plant tree within this radius of arc loc. */
     public static final float PLANT_RADIUS = GameConstants.BULLET_TREE_RADIUS + 0.01f;
+    /** Min amount of bullets to plant trees. */
+    public static final float PLANT_TREE_MIN_BULLETS = 101.0f;
     /** If neutral tree within this range, build lumberjack. */
     public static final float TREE_SPAWN_LUMBERJACK_RADIUS = 4.0f;
     public static final int MAX_BUILD_PENALTY = 5;
@@ -67,7 +69,7 @@ public strictfp class BotGardener extends x_Base.BotGardener {
 
     public final void randomlyJitter() throws GameActionException {
         float radius = myType.strideRadius;
-        while (!tryMove(Util.randomDirection(), radius, 20, 18)) {
+        while (!rc.hasMoved() && !tryMove(Util.randomDirection(), radius, 20, 18)) {
             radius /= 2;
         }
     }
@@ -87,6 +89,7 @@ public strictfp class BotGardener extends x_Base.BotGardener {
         // To sense up to X around the arc, you need to be something like at most sense_radius - X away
         final Direction plantDir = myLoc.directionTo(arcLoc);
         if (!rc.canSenseAllOfCircle(arcLoc, PLANT_RADIUS)) {
+            Debug.debug_print(this, "can't sense near arcLoc");
             // move towards arcLoc if possible
             if (!tryMove(arcLoc)) {
                 Debug.debug_print(this, "can't get close enough to sense arcLoc");
@@ -130,6 +133,7 @@ public strictfp class BotGardener extends x_Base.BotGardener {
             Debug.debug_print(this, "neutral tree too close by " + neutralTrees[0] + " " + arcLoc);
             // reverse in the meantime
             reverseArcDirection();
+            plantTreesInArc(attempt + 1);
             return;
         }
         // Move closer to planting position
@@ -137,6 +141,7 @@ public strictfp class BotGardener extends x_Base.BotGardener {
                 myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS + 0.01f);
         final float dist = myLoc.distanceTo(plantLoc);
         if (dist >= 0.01f) {
+            Debug.debug_print(this, "not close enough to desired plant location");
             // move towards arcLoc if possible
             if (!tryMove(plantLoc)) {
                 Debug.debug_print(this, "can't get closer to plant");
@@ -145,10 +150,13 @@ public strictfp class BotGardener extends x_Base.BotGardener {
                 // randomlyJitter();
                 // Debug.debug_print(this, "jitter2");
             }
-            return;
+            // If we aren't successful in getting closer, return and try again
+            if (myLoc.distanceTo(plantLoc) >= 0.01f) {
+                return;
+            }
         }
         // Check if can plant
-        if (rc.canPlantTree(plantDir)) {
+        if (rc.getTeamBullets() >= PLANT_TREE_MIN_BULLETS && rc.canPlantTree(plantDir)) {
             Debug.debug_print(this, "planting");
             rc.plantTree(plantDir);
         } else {
@@ -170,9 +178,22 @@ public strictfp class BotGardener extends x_Base.BotGardener {
         if (trees.length == 0) {
             return;
         }
-        final MapLocation centerLoc = formation.getArcCenter();
-        if (tryBuildRobot(buildType, centerLoc.directionTo(myLoc))) {
-            buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+
+        // But only if we don't have enough lumberjacks
+        final RobotInfo[] robots = rc.senseNearbyRobots(TREE_SPAWN_LUMBERJACK_RADIUS, myTeam);
+        int numLumberjacks = 0;
+        for (final RobotInfo robot : robots) {
+            if (robot.type == RobotType.LUMBERJACK) {
+                numLumberjacks++;
+            }
+        }
+        if (trees.length + 1 > numLumberjacks) {
+            // final MapLocation centerLoc = formation.getArcCenter();
+            // final Direction spawnDir = centerLoc.directionTo(myLoc);
+            final Direction spawnDir = myLoc.directionTo(trees[0].location);
+            if (tryBuildRobot(buildType, spawnDir)) {
+                buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+            }
         }
     }
 }

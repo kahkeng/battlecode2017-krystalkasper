@@ -47,8 +47,8 @@ public strictfp class Formations {
     }
 
     public final MapLocation getArcCenter() {
-        return enemyInitialCentroid;
-        // return mapCentroid;
+        // return enemyInitialCentroid;
+        return mapCentroid;
     }
 
     public final MapLocation getArcLoc(final Direction dir) {

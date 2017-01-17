@@ -11,7 +11,7 @@ import x_Base.Combat;
 public strictfp class BotArchon extends BotArcBase {
 
     /** Hire a gardener if none in this radius. */
-    public static final float GARDENER_RADIUS = 7.0f;
+    public static final float GARDENER_RADIUS = 10.0f;
 
     public BotArchon(final RobotController rc) {
         super(rc);

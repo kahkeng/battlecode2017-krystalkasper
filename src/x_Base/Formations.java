@@ -7,6 +7,8 @@ import battlecode.common.RobotType;
 
 public strictfp class Formations {
 
+    public static final float EDGE_BUFFER = 6.0f;
+
     public final BotBase bot;
     public final MapLocation enemyInitialCentroid;
     public final MapLocation myInitialHomeBase;
@@ -16,19 +18,9 @@ public strictfp class Formations {
 
     public Formations(final BotBase bot) {
         this.bot = bot;
-        // get enemy centroid
-        float x = 0, y = 0;
-        for (final MapLocation loc : bot.enemyInitialArchonLocs) {
-            x += loc.x;
-            y += loc.y;
-        }
-        this.enemyInitialCentroid = new MapLocation(x / bot.numInitialArchons, y / bot.numInitialArchons);
-        for (final MapLocation loc : bot.myInitialArchonLocs) {
-            x += loc.x;
-            y += loc.y;
-        }
-        final int numArchons = 2 * bot.numInitialArchons;
-        this.mapCentroid = new MapLocation(x / numArchons, y / numArchons);
+        this.enemyInitialCentroid = bot.mapEdges.enemyInitialCentroid;
+        this.mapCentroid = bot.mapEdges.mapCentroid;
+
         // our home base is the archon that is the furthest from enemy centroid
         int furthestIndex = 0;
         float furthestDistance = bot.myInitialArchonLocs[0].distanceTo(enemyInitialCentroid);
@@ -52,7 +44,20 @@ public strictfp class Formations {
     }
 
     public final MapLocation getArcLoc(final Direction dir) {
-        return getArcCenter().add(dir, separation);
+        final float deltaX = (bot.mapEdges.maxX - bot.mapEdges.minX) * 0.5f - EDGE_BUFFER;
+        final float deltaY = (bot.mapEdges.maxY - bot.mapEdges.minY) * 0.5f - EDGE_BUFFER;
+        if (deltaX < separation || deltaY < separation) {
+            final float a = Math.min(deltaX, separation);
+            final float b = Math.min(deltaY, separation);
+            final double b1 = b * Math.cos(dir.radians);
+            final double a1 = a * Math.sin(dir.radians);
+            final double R = a * b / Math.sqrt(b1 * b1 + a1 * a1);
+            final float dx = (float) (R * Math.cos(dir.radians));
+            final float dy = (float) (R * Math.sin(dir.radians));
+            return getArcCenter().translate(dx, dy);
+        } else {
+            return getArcCenter().add(dir, separation);
+        }
     }
 
     public final Direction getArcDir(final MapLocation myLoc) {

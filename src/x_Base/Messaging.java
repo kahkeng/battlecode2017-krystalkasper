@@ -13,8 +13,14 @@ public strictfp class Messaging {
     public static final int FIELDS_GARDENER = 1;
     public static final int FIELDS_ENEMY_ROBOTS = 3;
 
+    // first 4 fields are for map edges
+    public static final int OFFSET_MIN_X = 0;
+    public static final int OFFSET_MAX_X = 1;
+    public static final int OFFSET_MIN_Y = 2;
+    public static final int OFFSET_MAX_Y = 3;
+
     /** Channel offset for archon data. */
-    public static final int OFFSET_ARCHON_START = 0;
+    public static final int OFFSET_ARCHON_START = 4;
     public static final int OFFSET_ARCHON_END = OFFSET_ARCHON_START
             + GameConstants.NUMBER_OF_ARCHONS_MAX * FIELDS_ARCHON;
     public static final int OFFSET_GARDENER_START = OFFSET_ARCHON_END;
@@ -48,6 +54,53 @@ public strictfp class Messaging {
 
     public static final int getIDFromHeartbeat(final int heartbeat) {
         return heartbeat >> BITSHIFT;
+    }
+
+    public static final void broadcastMapMinX(final BotBase bot) throws GameActionException {
+        bot.rc.broadcast(OFFSET_MIN_X, (int) (bot.mapEdges.minX * 100) + 1);
+    }
+
+    public static final void broadcastMapMaxX(final BotBase bot) throws GameActionException {
+        bot.rc.broadcast(OFFSET_MAX_X, (int) (bot.mapEdges.maxX * 100) + 1);
+    }
+
+    public static final void broadcastMapMinY(final BotBase bot) throws GameActionException {
+        bot.rc.broadcast(OFFSET_MIN_Y, (int) (bot.mapEdges.minY * 100) + 1);
+    }
+
+    public static final void broadcastMapMaxY(final BotBase bot) throws GameActionException {
+        bot.rc.broadcast(OFFSET_MAX_Y, (int) (bot.mapEdges.maxY * 100) + 1);
+    }
+
+    public static final void processBroadcastedMapEdges(final BotBase bot) throws GameActionException {
+        if (!bot.mapEdges.foundMinX) {
+            final int value = bot.rc.readBroadcast(OFFSET_MIN_X);
+            if (value > 0) {
+                bot.mapEdges.minX = (value - 1) * 0.01f;
+                bot.mapEdges.foundMinX = true;
+            }
+        }
+        if (!bot.mapEdges.foundMaxX) {
+            final int value = bot.rc.readBroadcast(OFFSET_MAX_X);
+            if (value > 0) {
+                bot.mapEdges.maxX = (value - 1) * 0.01f;
+                bot.mapEdges.foundMaxX = true;
+            }
+        }
+        if (!bot.mapEdges.foundMinY) {
+            final int value = bot.rc.readBroadcast(OFFSET_MIN_Y);
+            if (value > 0) {
+                bot.mapEdges.minY = (value - 1) * 0.01f;
+                bot.mapEdges.foundMinY = true;
+            }
+        }
+        if (!bot.mapEdges.foundMaxY) {
+            final int value = bot.rc.readBroadcast(OFFSET_MAX_Y);
+            if (value > 0) {
+                bot.mapEdges.maxY = (value - 1) * 0.01f;
+                bot.mapEdges.foundMaxY = true;
+            }
+        }
     }
 
     public static final void broadcastArchonLocation(final BotArchon bot)

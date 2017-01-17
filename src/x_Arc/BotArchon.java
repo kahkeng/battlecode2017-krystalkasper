@@ -29,6 +29,7 @@ public strictfp class BotArchon extends BotArcBase {
                     fleeFromEnemyAlongArc(enemyLoc);
                 }
                 hireGardenersIfNoneAround();
+                moveCloserToArc();
 
                 Clock.yield();
 

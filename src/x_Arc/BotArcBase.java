@@ -80,4 +80,13 @@ public strictfp class BotArcBase extends x_Base.BotBase {
         }
     }
 
+    public final void moveCloserToArc() throws GameActionException {
+        final MapLocation arcLoc = getArcLoc();
+        final MapLocation standbyLoc = arcLoc.add(arcDirection, FLEE_RADIUS);
+        if (myLoc.distanceTo(standbyLoc) > FLEE_RADIUS / 2) {
+            if (!tryMove(standbyLoc)) {
+                randomlyJitter();
+            }
+        }
+    }
 }

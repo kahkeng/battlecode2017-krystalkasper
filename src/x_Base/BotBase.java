@@ -24,6 +24,7 @@ public strictfp class BotBase {
     public final int numInitialArchons;
     public final RobotType myType;
     public final int myID;
+    public final MapEdges mapEdges;
 
     public static MapLocation homeArchon = null;
     public static MapLocation myLoc = null;
@@ -38,6 +39,7 @@ public strictfp class BotBase {
         numInitialArchons = myInitialArchonLocs.length;
         myType = rc.getType();
         myID = rc.getID();
+        mapEdges = new MapEdges(this);
     }
 
     public final void startLoop() throws GameActionException {
@@ -48,6 +50,8 @@ public strictfp class BotBase {
             rc.donate((int) ((bullets - MAX_BULLET_STASH) / GameConstants.BULLET_EXCHANGE_RATE)
                     * GameConstants.BULLET_EXCHANGE_RATE);
         }
+        mapEdges.detectMapEdges();
+        Messaging.processBroadcastedMapEdges(this);
     }
 
     public final void findHomeArchon() throws GameActionException {

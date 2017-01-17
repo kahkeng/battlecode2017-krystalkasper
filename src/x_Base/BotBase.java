@@ -41,8 +41,10 @@ public strictfp class BotBase {
 
     public final void startLoop() throws GameActionException {
         myLoc = rc.getLocation();
-        if (rc.getTeamBullets() > MAX_BULLET_STASH) {
-            rc.donate(GameConstants.BULLET_EXCHANGE_RATE);
+        final float bullets = rc.getTeamBullets();
+        if (bullets > MAX_BULLET_STASH) {
+            rc.donate((int) ((bullets - MAX_BULLET_STASH) / GameConstants.BULLET_EXCHANGE_RATE)
+                    * GameConstants.BULLET_EXCHANGE_RATE);
         }
     }
 

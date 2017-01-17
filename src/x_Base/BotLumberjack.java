@@ -187,7 +187,20 @@ public strictfp class BotLumberjack extends BotArcBase {
         }
         final TreeInfo[] neutralTrees = rc.senseNearbyTrees(myLoc, myType.bodyRadius + myType.strideRadius,
                 Team.NEUTRAL);
+        // Prioritize trees with robots
         for (final TreeInfo tree : neutralTrees) {
+            if (tree.containedRobot == null) {
+                continue;
+            }
+            if (rc.canChop(tree.ID)) {
+                rc.chop(tree.ID);
+                return;
+            }
+        }
+        for (final TreeInfo tree : neutralTrees) {
+            if (tree.containedRobot != null) {
+                continue;
+            }
             if (rc.canChop(tree.ID)) {
                 rc.chop(tree.ID);
                 return;

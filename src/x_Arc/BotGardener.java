@@ -85,9 +85,9 @@ public strictfp class BotGardener extends BotArcBase {
             return;
         }
         final MapLocation arcLoc = formation.getArcLoc(arcDirection);
-        // rc.setIndicatorLine(formation.myInitialHomeBase, formation.enemyInitialCentroid, 0, 255, 0);
-        // rc.setIndicatorLine(arcLoc, formation.enemyInitialCentroid, 0, 0, 255);
-        rc.setIndicatorDot(arcLoc, 0, 255, 0);
+        // Debug.debug_line(this, formation.myInitialHomeBase, formation.enemyInitialCentroid, 0, 255, 0);
+        // Debug.debug_line(this, arcLoc, formation.enemyInitialCentroid, 0, 0, 255);
+        Debug.debug_dot(this, arcLoc, 0, 255, 0);
         // Goal is to make sure radius of X around the home base arc is filled with our trees
 
         // To sense up to X around the arc, you need to be something like at most sense_radius - X away

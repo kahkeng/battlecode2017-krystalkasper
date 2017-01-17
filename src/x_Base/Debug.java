@@ -19,4 +19,14 @@ public strictfp class Debug {
             System.out.println(s);
         }
     }
+
+    public static final void debug_dot(final BotBase bot, final MapLocation loc, final int red, final int green,
+            final int blue) {
+        bot.rc.setIndicatorDot(loc, red, green, blue);
+    }
+
+    public static final void debug_line(final BotBase bot, final MapLocation startLoc, final MapLocation endLoc,
+            final int red, final int green, final int blue) {
+        bot.rc.setIndicatorLine(startLoc, endLoc, red, green, blue);
+    }
 }

@@ -4,6 +4,7 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import x_Base.Debug;
 import x_Base.Formations;
 
 public strictfp class BotArcBase extends x_Base.BotBase {
@@ -69,7 +70,7 @@ public strictfp class BotArcBase extends x_Base.BotBase {
         }
         final MapLocation arcLoc = getArcLoc();
         final MapLocation fleeLoc = arcLoc.add(arcDirection, FLEE_RADIUS);
-        rc.setIndicatorDot(fleeLoc, 255, 0, 255);
+        Debug.debug_dot(this, fleeLoc, 255, 0, 255);
         if (myLoc.distanceTo(fleeLoc) > FLEE_RADIUS) {
             if (!tryMove(fleeLoc)) {
                 randomlyJitter();

@@ -101,8 +101,8 @@ public strictfp class BotLumberjack extends BotArcBase {
 
     public final void clearNeutralTreesAlongArc() throws GameActionException {
         final MapLocation arcLoc = getArcLoc();
-        // rc.setIndicatorLine(formation.myInitialHomeBase, formation.enemyInitialCentroid, 255, 0, 0);
-        // rc.setIndicatorDot(arcLoc, 255, 0, 0);
+        // Debug.debug_line(this, formation.myInitialHomeBase, formation.enemyInitialCentroid, 255, 0, 0);
+        // Debug.debug_dot(this, arcLoc, 255, 0, 0);
 
         // If there are 2 lumberjacks closer than us to arcLoc, move on
         final float arcLocDist = myLoc.distanceTo(arcLoc);

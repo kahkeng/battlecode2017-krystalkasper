@@ -8,6 +8,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
+import battlecode.common.TreeInfo;
 
 public strictfp class BotBase {
 
@@ -41,6 +42,7 @@ public strictfp class BotBase {
 
     public final void startLoop() throws GameActionException {
         myLoc = rc.getLocation();
+        shakeTrees();
         final float bullets = rc.getTeamBullets();
         if (bullets > MAX_BULLET_STASH) {
             rc.donate((int) ((bullets - MAX_BULLET_STASH) / GameConstants.BULLET_EXCHANGE_RATE)
@@ -60,6 +62,16 @@ public strictfp class BotBase {
             if (homeArchon == null || distance < minDistance) {
                 homeArchon = archon;
                 minDistance = distance;
+            }
+        }
+    }
+
+    public final void shakeTrees() throws GameActionException {
+        final TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+        for (final TreeInfo tree : trees) {
+            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
+                rc.shake(tree.ID);
+                return;
             }
         }
     }
@@ -103,7 +115,7 @@ public strictfp class BotBase {
         // First, try intended direction
         if (rc.canMove(loc)) {
             rc.move(loc);
-            myLoc = rc.getLocation();
+            startLoop();
             return true;
         }
         final Direction dir = myLoc.directionTo(loc);
@@ -148,7 +160,7 @@ public strictfp class BotBase {
         // First, try intended direction
         if (rc.canMove(dir, moveDistance)) {
             rc.move(dir, moveDistance);
-            myLoc = rc.getLocation();
+            startLoop();
             return true;
         }
 
@@ -161,14 +173,14 @@ public strictfp class BotBase {
             final Direction leftDir = dir.rotateLeftDegrees(offset);
             if (rc.canMove(leftDir, moveDistance)) {
                 rc.move(leftDir, moveDistance);
-                myLoc = rc.getLocation();
+                startLoop();
                 return true;
             }
             // Try the offset on the right side
             final Direction rightDir = dir.rotateRightDegrees(offset);
             if (rc.canMove(rightDir, moveDistance)) {
                 rc.move(rightDir, moveDistance);
-                myLoc = rc.getLocation();
+                startLoop();
                 return true;
             }
             // No move performed, try slightly further

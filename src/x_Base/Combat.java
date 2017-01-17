@@ -2,6 +2,7 @@ package x_Base;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
@@ -222,7 +223,7 @@ public strictfp class Combat {
                     sideDir = bot.arcDirection;
                 }
                 moveLoc = nearestEnemy.location.add(sideDir,
-                        enemyRadius + bot.myType.strideRadius + bot.myType.bodyRadius - 0.01f);
+                        enemyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS - 0.01f);
             }
             // Try to move first before attacking
             final float enemyDistance2;

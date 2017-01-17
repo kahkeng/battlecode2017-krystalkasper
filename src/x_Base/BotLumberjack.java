@@ -27,7 +27,7 @@ public strictfp class BotLumberjack extends BotArcBase {
             try {
                 startLoop();
 
-                if (strikeEnemiesFromBehind()) {
+                if (Combat.strikeEnemiesFromBehind(this)) {
                     // Make space for movement
                     chopAnyNearbyUnownedTrees();
                 } else {
@@ -44,10 +44,6 @@ public strictfp class BotLumberjack extends BotArcBase {
                 e.printStackTrace();
             }
         }
-    }
-
-    public final boolean strikeEnemiesFromBehind() throws GameActionException {
-        return Combat.strikeEnemiesFromBehind(this);
     }
 
     public final boolean clearEnemyTrees() throws GameActionException {

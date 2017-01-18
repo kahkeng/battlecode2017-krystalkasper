@@ -27,7 +27,7 @@ public strictfp class BotScout extends x_Arc.BotArcBase {
 
                 if (!Combat.harrassEnemy(this)) {
                     if (randomTarget != null) {
-                        if (myLoc.distanceTo(randomTarget) <= 3.0f) {
+                        if (myLoc.distanceTo(randomTarget) <= 6.0f) {
                             randomTarget = null;
                         } else {
                             tryMove(randomTarget);
@@ -58,7 +58,7 @@ public strictfp class BotScout extends x_Arc.BotArcBase {
             return;
         }
         final MapLocation archonLoc = enemyInitialArchonLocs[archonID];
-        if (myLoc.distanceTo(archonLoc) <= 3.0f) {
+        if (myLoc.distanceTo(archonLoc) <= 6.0f) {
             archonID = (archonID + 1) % numInitialArchons;
             patrolEnemyArchonLocs(attempt + 1);
         } else {

@@ -2,6 +2,7 @@ package x_Duck16;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
+import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.TreeInfo;
@@ -10,19 +11,21 @@ import x_Base.Debug;
 
 public strictfp class BotScout extends x_Arc.BotArcBase {
 
+    public static int archonID = 0;
+
     public BotScout(final RobotController rc) {
         super(rc);
         DEBUG = true;
     }
 
     public void run() throws GameActionException {
-        int archonID = (rc.getRoundNum() / 50) % numInitialArchons;
+        archonID = (rc.getRoundNum() / 50) % numInitialArchons;
         while (true) {
             try {
                 startLoop();
 
                 if (!Combat.harrassEnemy(this)) {
-                    tryMove(enemyInitialArchonLocs[archonID]);
+                    patrolEnemyArchonLocs(0);
                 }
 
                 Clock.yield();
@@ -31,6 +34,19 @@ public strictfp class BotScout extends x_Arc.BotArcBase {
                 System.out.println("Scout Exception");
                 e.printStackTrace();
             }
+        }
+    }
+
+    public final void patrolEnemyArchonLocs(final int attempt) throws GameActionException {
+        if (attempt > 2) {
+            return;
+        }
+        final MapLocation archonLoc = enemyInitialArchonLocs[archonID];
+        if (myLoc.distanceTo(archonLoc) <= 3.0f) {
+            archonID = (archonID + 1) % numInitialArchons;
+            patrolEnemyArchonLocs(attempt + 1);
+        } else {
+            tryMove(archonLoc);
         }
     }
 

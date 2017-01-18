@@ -59,6 +59,10 @@ public strictfp class BotGardener extends x_Arc.BotGardener {
             startLoop();
             Clock.yield();
         }
+        while (!tryPlantTrees()) {
+            startLoop();
+            Clock.yield();
+        }
     }
 
 }

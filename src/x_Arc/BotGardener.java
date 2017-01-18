@@ -78,6 +78,20 @@ public strictfp class BotGardener extends BotArcBase {
         }
     }
 
+    public final boolean tryPlantTrees() throws GameActionException {
+        Direction dir = Direction.getNorth();
+        int i = 0;
+        while (i < 12 && !rc.canPlantTree(dir)) {
+            dir = dir.rotateRightDegrees(30.0f);
+            i += 1;
+        }
+        if (rc.canPlantTree(dir)) {
+            rc.plantTree(dir);
+            return true;
+        }
+        return false;
+    }
+
     public final void plantTreesInArc(int attempt) throws GameActionException {
         if (attempt > 1) {
             randomlyJitter();

@@ -166,8 +166,7 @@ public strictfp class Combat {
                 typeScore = 100;
                 break;
             case ARCHON:
-                typeScore = -100; // only if nothing else around
-                break;
+                continue; // don't count archon as enemy
             default:
                 typeScore = 0;
                 break;
@@ -234,22 +233,54 @@ public strictfp class Combat {
         RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {
             Debug.debug_dot(bot, worstEnemy.location, 0, 0, 0);
-            // if < 7 distance, stay out of sensor range
             final float enemyRadius = worstEnemy.getRadius();
             final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
             final float minDistance = enemyDistance - enemyRadius - bot.myType.bodyRadius;
             final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
             final Direction rotateDir;
-            if (willCollideWithFriendly(bot, enemyDir, enemyDistance)
-                    || willCollideWithTree(bot, enemyDir, enemyDistance)) {
-                rotateDir = enemyDir.opposite()
-                        .rotateLeftRads(bot.myType.strideRadius / enemyDistance);
+            final boolean rotated;
+            if (minDistance <= HARRASS_RANGE + 1.0f && (willCollideWithFriendly(bot, enemyDir, enemyDistance)
+                    || willCollideWithTree(bot, enemyDir, enemyDistance))) {
+                if (bot.preferRight) {
+                    rotateDir = enemyDir.opposite()
+                            .rotateRightRads(bot.myType.strideRadius / enemyDistance);
+                } else {
+                    rotateDir = enemyDir.opposite()
+                            .rotateLeftRads(bot.myType.strideRadius / enemyDistance);
+                }
+                rotated = true;
             } else {
                 rotateDir = enemyDir.opposite();
+                rotated = false;
+            }
+            final float moveDist;
+            final float harrassRange;
+            switch (worstEnemy.type) {
+            case SOLDIER:
+            case TANK:
+            case LUMBERJACK:
+            case SCOUT:
+                moveDist = bot.myType.strideRadius;
+                harrassRange = HARRASS_RANGE;
+                break;
+            case GARDENER:
+            case ARCHON:
+            default:
+                if (enemyDistance <= HARRASS_RANGE + 1.0f) {
+                    moveDist = bot.myType.bulletSpeed;
+                } else {
+                    moveDist = bot.myType.strideRadius;
+                }
+                harrassRange = 0.01f;
+                break;
             }
             final MapLocation moveLoc = worstEnemy.location.add(rotateDir,
-                    HARRASS_RANGE + enemyRadius + bot.myType.bodyRadius);
-            bot.tryMove(moveLoc);
+                    harrassRange + enemyRadius + bot.myType.bodyRadius);
+            if (!bot.tryMove(moveLoc, moveDist)) {
+                if (rotated) {
+                    bot.preferRight = !bot.preferRight;
+                }
+            }
             final Direction latestEnemyDir = bot.myLoc.directionTo(worstEnemy.location);
             final float latestEnemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
 

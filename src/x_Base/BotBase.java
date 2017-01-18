@@ -29,6 +29,7 @@ public strictfp class BotBase {
     public static MapLocation homeArchon = null;
     public static MapLocation myLoc = null;
     public static final MapLocation[] broadcastedEnemies = new MapLocation[BotBase.MAX_ENEMY_ROBOTS + 1];
+    public static boolean preferRight = false;
 
     public BotBase(final RobotController rc) {
         this.rc = rc;

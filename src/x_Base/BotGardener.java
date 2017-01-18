@@ -48,7 +48,7 @@ public strictfp class BotGardener extends BotBase {
         }
     }
 
-    public final void plantTrees() throws GameActionException {
+    public final boolean plantTrees() throws GameActionException {
         Direction dir = Direction.getNorth();
         int i = 0;
         while (i < 5 && !rc.canPlantTree(dir)) {
@@ -57,7 +57,9 @@ public strictfp class BotGardener extends BotBase {
         }
         if (i < 5) {
             rc.plantTree(dir);
+            return true;
         }
+        return false;
     }
 
     public final void buildUnits() throws GameActionException {

@@ -92,15 +92,12 @@ public strictfp class Combat {
     }
 
     public static final boolean seekAndAttackAndSurroundEnemy(final x_Arc.BotArcBase bot) throws GameActionException {
-        // See if enemy within sensor range
         final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
-        for (final RobotInfo enemy : enemies) {
-            Messaging.broadcastEnemyRobot(bot, enemy);
-        }
-        RobotInfo nearestEnemy = enemies.length == 0 ? null : enemies[0];
-        if (nearestEnemy != null) {
-            final float enemyRadius = nearestEnemy.getRadius();
-            final Direction enemyDir = bot.myLoc.directionTo(nearestEnemy.location);
+        RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        if (worstEnemy != null) {
+            Messaging.broadcastEnemyRobot(bot, worstEnemy);
+            final float enemyRadius = worstEnemy.getRadius();
+            final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
 
             final Direction backDir = bot.getArcLoc().directionTo(bot.getNextArcLoc());
             final Direction sideDir; // side dir depends on which side of enemy we are on
@@ -109,32 +106,19 @@ public strictfp class Combat {
             } else {
                 sideDir = bot.arcDirection;
             }
-            final MapLocation moveLoc = nearestEnemy.location.add(sideDir,
+            final MapLocation moveLoc = worstEnemy.location.add(sideDir,
                     enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - 0.01f);
 
             // move first before attacking
             bot.tryMove(moveLoc);
-            final Direction latestEnemyDir = bot.myLoc.directionTo(nearestEnemy.location);
+            final Direction latestEnemyDir = bot.myLoc.directionTo(worstEnemy.location);
 
-            final float minDistance = nearestEnemy.location.distanceTo(bot.myLoc) - enemyRadius - bot.myType.bodyRadius;
+            final float minDistance = worstEnemy.location.distanceTo(bot.myLoc) - enemyRadius - bot.myType.bodyRadius;
             boolean distanceAttack = false;
             if (minDistance <= DISTANCE_ATTACK_RANGE) {
-                // Check if any friendly robots lie in path
-                final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(DISTANCE_ATTACK_RANGE, bot.myTeam);
-                boolean willCollide = false;
-                for (final RobotInfo friendly : friendlies) {
-                    final float friendlyDist = bot.myLoc.distanceTo(friendly.location);
-                    final float diffRad = latestEnemyDir.radiansBetween(bot.myLoc.directionTo(friendly.location));
-                    if (Math.abs(diffRad) <= Math.PI / 3) {
-                        final double perpDist = Math.abs(Math.sin(diffRad) * friendlyDist);
-                        // TODO: make this have some buffer or account for trajectory
-                        if (perpDist <= friendly.getRadius() + 0.1f) { // will collide
-                            willCollide = true;
-                            break;
-                        }
-                    }
-                }
-                if (!willCollide) {
+                final float latestEnemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+                if (!willCollideWithFriendly(bot, latestEnemyDir, latestEnemyDistance)
+                        && !willCollideWithTree(bot, latestEnemyDir, latestEnemyDistance)) {
                     distanceAttack = true;
                 }
             }
@@ -362,46 +346,47 @@ public strictfp class Combat {
     public static boolean strikeEnemiesFromBehind(final BotLumberjack bot) throws GameActionException {
         // See if enemy within sensor range
         final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
-        RobotInfo nearestEnemy = enemies.length == 0 ? null : enemies[0];
-        if (nearestEnemy != null) {
-            final float enemyDistance = nearestEnemy.location.distanceTo(bot.myLoc);
-            final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(nearestEnemy.location,
+        RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        if (worstEnemy != null) {
+            Messaging.broadcastEnemyRobot(bot, worstEnemy);
+            final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(worstEnemy.location,
                     bot.myType.bodyRadius + bot.myType.strideRadius, bot.myTeam);
             boolean isNearest = true;
             for (final RobotInfo friendly : friendlies) {
                 if (friendly.type != RobotType.LUMBERJACK) {
                     continue;
                 }
-                if (nearestEnemy.location.distanceTo(friendly.location) < enemyDistance) {
+                if (worstEnemy.location.distanceTo(friendly.location) < enemyDistance) {
                     isNearest = false;
                     break;
                 }
             }
-            final float enemyRadius = nearestEnemy.getRadius();
+            final float enemyRadius = worstEnemy.getRadius();
             final MapLocation moveLoc;
             final Direction backDir = bot.getArcLoc().directionTo(bot.getNextArcLoc());
             if (isNearest) {
                 // If I'm nearest lumberjack, or if there's no other lumberjack already striking distance,
                 // then I'm going to try to get exactly behind enemy to strike them
-                moveLoc = nearestEnemy.location.add(backDir,
+                moveLoc = worstEnemy.location.add(backDir,
                         enemyRadius + bot.myType.bodyRadius + 0.01f);
             } else {
                 // Otherwise, there's another lumberjack that can strike it. I will keep close, and
                 // strike if enemy damage outweighs self damage
-                final Direction enemyDir = nearestEnemy.location.directionTo(bot.myLoc);
+                final Direction enemyDir = worstEnemy.location.directionTo(bot.myLoc);
                 final Direction sideDir; // side dir depends on which side of enemy we are on
                 if (backDir.radiansBetween(enemyDir) < 0) {
                     sideDir = bot.arcDirection.opposite();
                 } else {
                     sideDir = bot.arcDirection;
                 }
-                moveLoc = nearestEnemy.location.add(sideDir,
+                moveLoc = worstEnemy.location.add(sideDir,
                         enemyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS - 0.01f);
             }
             // Try to move first before attacking
             final float enemyDistance2;
             if (bot.tryMove(moveLoc)) {
-                enemyDistance2 = nearestEnemy.location.distanceTo(bot.myLoc);
+                enemyDistance2 = worstEnemy.location.distanceTo(bot.myLoc);
             } else {
                 enemyDistance2 = enemyDistance;
             }

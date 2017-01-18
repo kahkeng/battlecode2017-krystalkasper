@@ -113,18 +113,23 @@ public strictfp class BotBase {
     }
 
     public final boolean tryMove(final MapLocation loc) throws GameActionException {
+        return tryMove(loc, myType.strideRadius);
+    }
+
+    public final boolean tryMove(final MapLocation loc, final float moveDistance) throws GameActionException {
         if (rc.hasMoved()) {
             return false;
         }
         // First, try intended direction
-        if (rc.canMove(loc)) {
+        final float locDistance = myLoc.distanceTo(loc);
+        if (locDistance <= moveDistance && rc.canMove(loc)) {
             rc.move(loc);
             startLoop();
             return true;
         }
+        // At this point, either locDistance is further than moveDistance, or loc is occupied
         final Direction dir = myLoc.directionTo(loc);
-        final float strideDist = Math.min(myType.strideRadius, myLoc.distanceTo(loc));
-        return tryMove(dir, strideDist, 15, 6);
+        return tryMove(dir, Math.min(moveDistance, locDistance), 15, 6);
     }
 
     /**
@@ -211,29 +216,14 @@ public strictfp class BotBase {
      * @return True if the line of the bullet's path intersects with this robot's current position.
      */
     public final boolean willCollideWithMe(final BulletInfo bullet) {
-        MapLocation myLocation = rc.getLocation();
-
-        // Get relevant bullet information
-        Direction propagationDirection = bullet.dir;
-        MapLocation bulletLocation = bullet.location;
-
-        // Calculate bullet relations to this robot
-        Direction directionToRobot = bulletLocation.directionTo(myLocation);
-        float distToRobot = bulletLocation.distanceTo(myLocation);
-        float theta = propagationDirection.radiansBetween(directionToRobot);
+        final MapLocation bulletLocation = bullet.location;
+        final float theta = bullet.dir.radiansBetween(bulletLocation.directionTo(myLoc));
 
         // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
         if (Math.abs(theta) > Math.PI / 2) {
             return false;
         }
 
-        // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
-        // This is the distance of a line that goes from myLocation and intersects perpendicularly with
-        // propagationDirection.
-        // This corresponds to the smallest radius circle centered at our location that would intersect with the
-        // line that is the path of the bullet.
-        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
-
-        return (perpendicularDist <= rc.getType().bodyRadius);
+        return ((float) Math.abs(bulletLocation.distanceTo(myLoc) * Math.sin(theta)) <= rc.getType().bodyRadius);
     }
 }

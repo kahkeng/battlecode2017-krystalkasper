@@ -6,12 +6,14 @@ import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import battlecode.common.TreeInfo;
 
 public strictfp class Combat {
 
     public static final float DISTANCE_ATTACK_RANGE = 5.0f;
     public static final float SURROUND_RANGE = 1.0f;
     public static final float ENEMY_REACTION_RANGE = 10.0f;
+    public static final float HARRASS_RANGE = 3.0f; // range for harrassing
 
     public static final MapLocation senseNearbyEnemies(final BotBase bot) throws GameActionException {
         final RobotInfo[] enemyRobots = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
@@ -143,6 +145,128 @@ public strictfp class Combat {
         }
         // Else head towards closest known broadcasted enemies
         return headTowardsBroadcastedEnemy(bot);
+    }
+
+    public static final RobotInfo prioritizedEnemy(final BotBase bot, final RobotInfo[] enemies) {
+        // Choose units in lethal order
+        RobotInfo worstEnemy = null;
+        float worstScore = 0;
+        for (final RobotInfo enemy : enemies) {
+            final float typeScore;
+            switch (enemy.type) {
+            case SOLDIER:
+            case TANK:
+                typeScore = 200;
+                break;
+            case LUMBERJACK:
+            case SCOUT:
+                typeScore = 150;
+                break;
+            case GARDENER:
+                typeScore = 100;
+                break;
+            case ARCHON:
+                typeScore = -100; // only if nothing else around
+                break;
+            default:
+                typeScore = 0;
+                break;
+            }
+            final float enemyDistance = enemy.location.distanceTo(bot.myLoc);
+            final float distanceScore;
+            if (enemyDistance <= HARRASS_RANGE * 1.5) {
+                distanceScore = 100;
+            } else if (enemyDistance <= HARRASS_RANGE * 2.5) {
+                distanceScore = 50;
+            } else {
+                distanceScore = 1;
+            }
+            final float score = typeScore + distanceScore;
+            if (worstEnemy == null || score > worstScore) {
+                worstEnemy = enemy;
+                worstScore = score;
+            }
+        }
+        return worstEnemy;
+    }
+
+    public static final boolean willCollideWithFriendly(final BotBase bot, final Direction bulletDir,
+            final float enemyDistance)
+            throws GameActionException {
+        final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(enemyDistance, bot.myTeam);
+        for (final RobotInfo friendly : friendlies) {
+            final float diffRad = bulletDir.radiansBetween(bot.myLoc.directionTo(friendly.location));
+            if (Math.abs(diffRad) <= Math.PI / 2) {
+                // TODO: make this have some buffer or account for trajectory
+                final float friendlyDist = bot.myLoc.distanceTo(friendly.location);
+                if (Math.abs(Math.sin(diffRad) * friendlyDist) <= friendly.getRadius() + 0.1f) {
+                    final float distForward = (float) Math.cos(diffRad) * friendlyDist;
+                    if (distForward >= 0 && distForward <= enemyDistance) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public static final boolean willCollideWithTree(final BotBase bot, final Direction bulletDir,
+            final float enemyDistance) {
+        final TreeInfo[] trees = bot.rc.senseNearbyTrees(enemyDistance);
+        for (final TreeInfo tree : trees) {
+            final float diffRad = bulletDir.radiansBetween(bot.myLoc.directionTo(tree.location));
+            if (Math.abs(diffRad) <= Math.PI / 2) {
+                // TODO: make this have some buffer or account for trajectory
+                final float treeDist = bot.myLoc.distanceTo(tree.location);
+                if (Math.abs(Math.sin(diffRad) * treeDist) <= tree.getRadius() + 0.1f) {
+                    final float distForward = (float) Math.cos(diffRad) * treeDist;
+                    if (distForward >= 0 && distForward <= enemyDistance) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public static final boolean harrassEnemy(final x_Arc.BotArcBase bot) throws GameActionException {
+        final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+        RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        if (worstEnemy != null) {
+            Debug.debug_dot(bot, worstEnemy.location, 0, 0, 0);
+            // if < 7 distance, stay out of sensor range
+            final float enemyRadius = worstEnemy.getRadius();
+            final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            final float minDistance = enemyDistance - enemyRadius - bot.myType.bodyRadius;
+            final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
+            final Direction rotateDir;
+            if (willCollideWithFriendly(bot, enemyDir, enemyDistance)
+                    || willCollideWithTree(bot, enemyDir, enemyDistance)) {
+                rotateDir = enemyDir.opposite()
+                        .rotateLeftRads(bot.myType.strideRadius / enemyDistance);
+            } else {
+                rotateDir = enemyDir.opposite();
+            }
+            final MapLocation moveLoc = worstEnemy.location.add(rotateDir,
+                    HARRASS_RANGE + enemyRadius + bot.myType.bodyRadius);
+            bot.tryMove(moveLoc);
+            final Direction latestEnemyDir = bot.myLoc.directionTo(worstEnemy.location);
+            final float latestEnemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+
+            boolean distanceAttack = false;
+            if (minDistance <= HARRASS_RANGE + 1) {
+                if (!willCollideWithFriendly(bot, latestEnemyDir, latestEnemyDistance)
+                        && !willCollideWithTree(bot, latestEnemyDir, latestEnemyDistance)) {
+                    distanceAttack = true;
+                }
+            }
+            if (bot.rc.canFireSingleShot() && (distanceAttack || minDistance < bot.myType.bodyRadius)) {
+                bot.rc.fireSingleShot(latestEnemyDir);
+            }
+            return true;
+        }
+        return false;
+
     }
 
     public static final boolean stationaryAttackEnemy(final x_Arc.BotArcBase bot) throws GameActionException {

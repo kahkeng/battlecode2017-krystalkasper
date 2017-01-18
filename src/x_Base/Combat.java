@@ -166,7 +166,12 @@ public strictfp class Combat {
                 typeScore = 100;
                 break;
             case ARCHON:
-                continue; // don't count archon as enemy
+                if (bot.numInitialArchons > 1) {
+                    continue; // don't count archon as enemy unless it is the only one, to ensure patrol
+                } else {
+                    typeScore = 1;
+                    break;
+                }
             default:
                 typeScore = 0;
                 break;

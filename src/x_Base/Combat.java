@@ -150,7 +150,7 @@ public strictfp class Combat {
                 typeScore = 100;
                 break;
             case ARCHON:
-                if (bot.rc.getRoundNum() < 1000) {
+                if (bot.rc.getRoundNum() < 1000 && bot.myType != RobotType.LUMBERJACK) {
                     // we don't want to attack archons that early since it is a waste of bullets
                     continue;
                 } else {

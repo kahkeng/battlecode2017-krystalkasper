@@ -2,6 +2,7 @@ package x_Arc;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
@@ -15,6 +16,7 @@ public strictfp class BotArchon extends BotArcBase {
 
     public BotArchon(final RobotController rc) {
         super(rc);
+        DEBUG = true;
         radianStep = formation.getRadianStep(myLoc, FLEE_RADIUS);
     }
 
@@ -47,9 +49,16 @@ public strictfp class BotArchon extends BotArcBase {
             if (robot.type != RobotType.GARDENER) {
                 continue;
             }
+            // those surrounded by 4 trees don't count
+            final TreeInfo[] trees = rc.senseNearbyTrees(robot.location, robot.type.bodyRadius +
+                    GameConstants.BULLET_TREE_RADIUS + 0.5f, myTeam);
+            if (trees.length >= 4) {
+                continue;
+            }
             found = true;
             break;
         }
+        // Debug.debug_print(this, "hire gardener " + found);
         if (!found) {
             tryHireGardener(formation.getArcDir(myLoc).opposite());
         }

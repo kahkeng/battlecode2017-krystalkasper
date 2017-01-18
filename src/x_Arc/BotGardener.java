@@ -217,7 +217,7 @@ public strictfp class BotGardener extends BotArcBase {
                 numLumberjacks++;
             }
         }
-        if (trees.length + 1 > numLumberjacks && numLumberjacks < 2) {
+        if (trees.length > numLumberjacks && numLumberjacks < 2) {
             // final MapLocation centerLoc = formation.getArcCenter();
             // final Direction spawnDir = centerLoc.directionTo(myLoc);
             final Direction spawnDir = trees.length > 0 ? myLoc.directionTo(trees[0].location) : arcDirection;

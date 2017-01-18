@@ -12,7 +12,7 @@ public strictfp class Combat {
 
     public static final float DISTANCE_ATTACK_RANGE = 5.0f;
     public static final float SURROUND_RANGE = 1.0f;
-    public static final float ENEMY_REACTION_RANGE = 10.0f;
+    public static final float ENEMY_REACTION_RANGE = 30.0f;
     public static final float HARRASS_RANGE = 3.0f; // range for harrassing
 
     public static final MapLocation senseNearbyEnemies(final BotBase bot) throws GameActionException {
@@ -232,6 +232,7 @@ public strictfp class Combat {
         final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
         RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {
+            Messaging.broadcastEnemyRobot(bot, worstEnemy);
             Debug.debug_dot(bot, worstEnemy.location, 0, 0, 0);
             final float enemyRadius = worstEnemy.getRadius();
             final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
@@ -296,8 +297,7 @@ public strictfp class Combat {
             }
             return true;
         }
-        return false;
-
+        return headTowardsBroadcastedEnemy(bot);
     }
 
     public static final boolean stationaryAttackEnemy(final x_Arc.BotArcBase bot) throws GameActionException {

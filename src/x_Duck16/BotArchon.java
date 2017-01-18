@@ -19,11 +19,9 @@ public strictfp class BotArchon extends x_Arc.BotArcBase {
     }
 
     public void run() throws GameActionException {
-        try {
-            earlyGame();
-        } catch (Exception e) {
-            System.out.println("Archon Exception");
-            e.printStackTrace();
+        boolean shouldSpawnGardeners = false;
+        if (rc.getLocation().equals(formation.furthestArchon)) {
+            shouldSpawnGardeners = true;
         }
         while (true) {
             try {
@@ -34,7 +32,12 @@ public strictfp class BotArchon extends x_Arc.BotArcBase {
                 if (enemyLoc != null) {
                     fleeFromEnemyAlongArc(enemyLoc);
                 }
-                hireGardenersIfNoneAround();
+                if (!shouldSpawnGardeners && (rc.getRoundNum() > 55)) {
+                    shouldSpawnGardeners = true;
+                }
+                if (shouldSpawnGardeners) {
+                    hireGardenersIfNoneAround();
+                }
                 moveCloserToArc();
 
                 Clock.yield();
@@ -43,22 +46,6 @@ public strictfp class BotArchon extends x_Arc.BotArcBase {
                 System.out.println("Archon Exception");
                 e.printStackTrace();
             }
-        }
-    }
-
-    public final void earlyGame() throws GameActionException {
-        if (rc.getRoundNum() > 10) {
-            return;
-        }
-        if (!rc.getLocation().equals(myInitialArchonLocs[0])) {
-            while (rc.getRoundNum() < 55) {
-                Clock.yield();
-            }
-            return;
-        }
-        while (!tryBuildRobot(RobotType.GARDENER, formation.baseDir)) {
-            startLoop();
-            Clock.yield();
         }
     }
 

@@ -5,6 +5,7 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
 public strictfp class BotGardener extends x_Arc.BotGardener {
@@ -69,7 +70,10 @@ public strictfp class BotGardener extends x_Arc.BotGardener {
             try {
                 startLoop();
                 waterTrees();
-                tryPlantTreesWithSpace();
+                final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
+                if (enemies.length == 0) {
+                    tryPlantTreesWithSpace();
+                }
                 final RobotType buildType;
                 if (withScout) {
                     switch (buildIndex) {

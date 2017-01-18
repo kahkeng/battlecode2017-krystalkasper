@@ -7,6 +7,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import x_Base.Messaging;
 
 public strictfp class BotGardener extends x_Arc.BotGardener {
 
@@ -73,6 +74,10 @@ public strictfp class BotGardener extends x_Arc.BotGardener {
                 final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
                 if (enemies.length == 0) {
                     tryPlantTreesWithSpace();
+                } else {
+                    for (final RobotInfo enemy : enemies) {
+                        Messaging.broadcastEnemyRobot(this, enemy);
+                    }
                 }
                 final RobotType buildType;
                 if (withScout) {

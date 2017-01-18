@@ -7,6 +7,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import battlecode.common.TreeInfo;
 import x_Base.Combat;
 
 public strictfp class BotArchon extends BotArcBase {

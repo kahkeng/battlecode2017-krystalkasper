@@ -56,6 +56,12 @@ public strictfp class BotArcBase extends x_Base.BotBase {
             return;
         }
         advanceArcDirection();
+        if (rc.getRoundNum() < 300) {
+            final MapLocation newArcLoc = getArcLoc();
+            if (newArcLoc.distanceTo(formation.myInitialHomeBase) > 8.0f) {
+                reverseArcDirection();
+            }
+        }
     }
 
     public final void fleeFromEnemyAlongArc(final MapLocation enemyLoc) throws GameActionException {

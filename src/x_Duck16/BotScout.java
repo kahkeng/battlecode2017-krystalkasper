@@ -12,6 +12,7 @@ import x_Base.Debug;
 public strictfp class BotScout extends x_Arc.BotArcBase {
 
     public static int archonID = 0;
+    public static MapLocation randomTarget = null;
 
     public BotScout(final RobotController rc) {
         super(rc);
@@ -25,7 +26,15 @@ public strictfp class BotScout extends x_Arc.BotArcBase {
                 startLoop();
 
                 if (!Combat.harrassEnemy(this)) {
-                    patrolEnemyArchonLocs(0);
+                    if (randomTarget != null) {
+                        if (myLoc.distanceTo(randomTarget) <= 3.0f) {
+                            randomTarget = null;
+                        } else {
+                            tryMove(randomTarget);
+                        }
+                    } else {
+                        patrolEnemyArchonLocs(0);
+                    }
                 }
 
                 Clock.yield();
@@ -38,7 +47,10 @@ public strictfp class BotScout extends x_Arc.BotArcBase {
     }
 
     public final void patrolEnemyArchonLocs(final int attempt) throws GameActionException {
-        if (attempt > 2) {
+        if (attempt > 3) {
+            // go to a random broadcasted location
+            final MapLocation[] locs = rc.senseBroadcastingRobotLocations();
+            randomTarget = locs.length > 0 ? locs[0] : null;
             return;
         }
         final MapLocation archonLoc = enemyInitialArchonLocs[archonID];

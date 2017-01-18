@@ -150,9 +150,7 @@ public strictfp class Combat {
                 typeScore = 100;
                 break;
             case ARCHON:
-                if (bot.numInitialArchons > 1 && bot.rc.getRoundNum() < 1000) {
-                    // don't count archon as enemy unless it is the only one, to ensure patrol
-                    // but also don't do this anymore if more than 1000 rounds have passed
+                if (bot.rc.getRoundNum() < 1000) {
                     // we don't want to attack archons that early since it is a waste of bullets
                     continue;
                 } else {

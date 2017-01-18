@@ -25,10 +25,10 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
                 startLoop();
                 // Messaging.broadcastGardener(this);
                 // final MapLocation[] myArchons = Messaging.readArchonLocation(this);
-                if (bulletsDelta >= 0.0f && bulletsDelta < 4.0f) {
+                if (bulletsDelta >= 0.0f && bulletsDelta < 10.0f) {
                     lowDeltaCount += 1;
                 }
-                if (lowDeltaCount > 10) {
+                if (lowDeltaCount > 3) {
                     becomeHarasser();
                 }
 

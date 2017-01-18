@@ -273,7 +273,6 @@ public strictfp class Combat {
                 harrassRange = HARRASS_RANGE;
                 break;
             case GARDENER:
-            case ARCHON:
             default:
                 if (enemyDistance <= HARRASS_RANGE + 1.0f) {
                     moveDist = bot.myType.bulletSpeed;
@@ -282,6 +281,17 @@ public strictfp class Combat {
                 }
                 harrassRange = 0.01f;
                 break;
+            case ARCHON:
+                if (enemyDistance <= HARRASS_RANGE + 1.0f) {
+                    moveDist = bot.myType.bulletSpeed;
+                } else {
+                    moveDist = bot.myType.strideRadius;
+                }
+                if (bot.myType == RobotType.SCOUT) {
+                    harrassRange = HARRASS_RANGE; // give space for other units to come in
+                } else {
+                    harrassRange = 0.01f; // give space for other units to come in
+                }
             }
             final MapLocation moveLoc = worstEnemy.location.add(rotateDir,
                     harrassRange + enemyRadius + bot.myType.bodyRadius);

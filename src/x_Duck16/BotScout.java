@@ -50,7 +50,11 @@ public strictfp class BotScout extends x_Arc.BotArcBase {
         if (attempt > 3) {
             // go to a random broadcasted location
             final MapLocation[] locs = rc.senseBroadcastingRobotLocations();
-            randomTarget = locs.length > 0 ? locs[0] : null;
+            if (locs.length == 0) {
+                randomTarget = formation.mapCentroid;
+            } else {
+                randomTarget = locs[0];
+            }
             return;
         }
         final MapLocation archonLoc = enemyInitialArchonLocs[archonID];

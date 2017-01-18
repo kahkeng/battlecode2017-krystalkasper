@@ -60,6 +60,10 @@ public strictfp class BotGardener extends x_Arc.BotGardener {
             startLoop();
             Clock.yield();
         }
+        harassmentLoop(true);
+    }
+
+    public final void harassmentLoop(final boolean withScout) {
         int buildIndex = 0;
         while (true) {
             try {
@@ -67,21 +71,39 @@ public strictfp class BotGardener extends x_Arc.BotGardener {
                 waterTrees();
                 tryPlantTreesWithSpace();
                 final RobotType buildType;
-                switch (buildIndex) {
-                case 0:
-                case 1:
-                default:
-                    buildType = RobotType.SCOUT;
-                    break;
-                case 2:
-                    buildType = RobotType.SOLDIER;
-                    break;
-                case 3: // TODO: based on tree density
-                    buildType = RobotType.LUMBERJACK;
-                    break;
+                if (withScout) {
+                    switch (buildIndex) {
+                    default:
+                    case 0:
+                        buildType = RobotType.SCOUT;
+                        break;
+                    case 1:
+                        buildType = RobotType.SOLDIER;
+                        break;
+                    case 2: // TODO: based on tree density
+                        buildType = RobotType.LUMBERJACK;
+                        break;
+                    }
+                } else {
+                    switch (buildIndex) {
+                    default:
+                    case 0:
+                        buildType = RobotType.SOLDIER;
+                        break;
+                    case 1: // TODO: based on tree density
+                        buildType = RobotType.LUMBERJACK;
+                        break;
+                    }
                 }
-                if (tryBuildRobot(buildType, formation.baseDir)) {
-                    buildIndex = (buildIndex + 1) % 4;
+                if (rc.getTeamBullets() >= buildType.bulletCost + buildCount * BUILD_PENALTY) {
+                    if (tryBuildRobot(buildType, formation.baseDir)) {
+                        if (withScout) {
+                            buildIndex = (buildIndex + 1) % 3;
+                        } else {
+                            buildIndex = (buildIndex + 1) % 2;
+                        }
+                        buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+                    }
                 }
                 Clock.yield();
             } catch (Exception e) {

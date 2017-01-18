@@ -30,6 +30,8 @@ public strictfp class BotBase {
     public static MapLocation myLoc = null;
     public static final MapLocation[] broadcastedEnemies = new MapLocation[BotBase.MAX_ENEMY_ROBOTS + 1];
     public static boolean preferRight = false;
+    public static float lastRoundBullets;
+    public static float bulletsDelta;
 
     public BotBase(final RobotController rc) {
         this.rc = rc;
@@ -41,6 +43,8 @@ public strictfp class BotBase {
         myType = rc.getType();
         myID = rc.getID();
         mapEdges = new MapEdges(this);
+        lastRoundBullets = rc.getTeamBullets();
+        bulletsDelta = 0;
     }
 
     public final void startLoop() throws GameActionException {
@@ -51,6 +55,8 @@ public strictfp class BotBase {
             rc.donate((int) ((bullets - MAX_BULLET_STASH) / GameConstants.BULLET_EXCHANGE_RATE)
                     * GameConstants.BULLET_EXCHANGE_RATE);
         }
+        bulletsDelta = bullets - lastRoundBullets;
+        lastRoundBullets = bullets;
         mapEdges.detectMapEdges();
         Messaging.processBroadcastedMapEdges(this);
     }

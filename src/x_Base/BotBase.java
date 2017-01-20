@@ -51,7 +51,10 @@ public strictfp class BotBase {
         myLoc = rc.getLocation();
         shakeTrees();
         final float bullets = rc.getTeamBullets();
-        if (bullets > MAX_BULLET_STASH) {
+        if (rc.getRoundNum() == rc.getRoundLimit() || rc.getTeamVictoryPoints()
+                + bullets / GameConstants.BULLET_EXCHANGE_RATE >= GameConstants.VICTORY_POINTS_TO_WIN) {
+            rc.donate(bullets);
+        } else if (bullets > MAX_BULLET_STASH) {
             rc.donate((int) ((bullets - MAX_BULLET_STASH) / GameConstants.BULLET_EXCHANGE_RATE)
                     * GameConstants.BULLET_EXCHANGE_RATE);
         }

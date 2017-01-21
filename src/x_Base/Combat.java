@@ -348,8 +348,9 @@ public strictfp class Combat {
         if (worstEnemy != null) {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
             final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            final float enemyRadius = worstEnemy.getRadius();
             final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(worstEnemy.location,
-                    bot.myType.bodyRadius + bot.myType.strideRadius, bot.myTeam);
+                    enemyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS, bot.myTeam);
             boolean isNearest = true;
             for (final RobotInfo friendly : friendlies) {
                 if (friendly.type != RobotType.LUMBERJACK) {
@@ -360,7 +361,6 @@ public strictfp class Combat {
                     break;
                 }
             }
-            final float enemyRadius = worstEnemy.getRadius();
             final MapLocation moveLoc;
             final Direction backDir = bot.getArcLoc().directionTo(bot.getNextArcLoc());
             if (isNearest) {
@@ -368,6 +368,7 @@ public strictfp class Combat {
                 // then I'm going to try to get exactly behind enemy to strike them
                 moveLoc = worstEnemy.location.add(backDir,
                         enemyRadius + bot.myType.bodyRadius + 0.01f);
+                Debug.debug_dot(bot, moveLoc, 127, 127, 127);
             } else {
                 // Otherwise, there's another lumberjack that can strike it. I will keep close, and
                 // strike if enemy damage outweighs self damage
@@ -380,6 +381,7 @@ public strictfp class Combat {
                 }
                 moveLoc = worstEnemy.location.add(sideDir,
                         enemyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS - 0.01f);
+                Debug.debug_dot(bot, moveLoc, 255, 127, 0);
             }
             // Try to move first before attacking
             final float enemyDistance2;
@@ -391,19 +393,13 @@ public strictfp class Combat {
             // Now check amount of damage dealt
             if (bot.rc.canStrike() && enemyDistance2 <= bot.myType.bodyRadius + bot.myType.strideRadius
                     + enemyRadius) {
-                int netHits = 0;
-                if (!isNearest) {
-                    final RobotInfo[] robots = bot.rc
-                            .senseNearbyRobots(bot.myType.bodyRadius + bot.myType.strideRadius);
-                    for (final RobotInfo robot : robots) {
-                        if (robot.team == bot.myTeam) {
-                            netHits -= 1;
-                        } else if (robot.team == bot.enemyTeam) {
-                            netHits += 1;
-                        }
-                    }
+                if (isNearest || getNetLumberjackHits(bot) >= 0) {
+                    bot.rc.strike();
                 }
-                if (netHits >= 0) {
+            } else if (bot.rc.canStrike()) {
+                // Consider the case where we are stuck and unable to get to worstEnemy.
+                // We still might want to strike if netHits is positive.
+                if (getNetLumberjackHits(bot) >= 1) {
                     bot.rc.strike();
                 }
             }
@@ -411,6 +407,20 @@ public strictfp class Combat {
         }
         // Else head towards closest known broadcasted enemies
         return headTowardsBroadcastedEnemy(bot);
+    }
+
+    public static final int getNetLumberjackHits(final BotBase bot) {
+        int netHits = 0;
+        final RobotInfo[] robots = bot.rc
+                .senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS);
+        for (final RobotInfo robot : robots) {
+            if (robot.team == bot.myTeam) {
+                netHits -= 1;
+            } else if (robot.team == bot.enemyTeam) {
+                netHits += 1;
+            }
+        }
+        return netHits;
     }
 
     public static final boolean headTowardsBroadcastedEnemy(final BotBase bot) throws GameActionException {

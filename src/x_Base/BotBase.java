@@ -52,14 +52,14 @@ public strictfp class BotBase {
         shakeTrees();
         final float bullets = rc.getTeamBullets();
         if (rc.getRoundNum() == rc.getRoundLimit() || rc.getTeamVictoryPoints()
-                + bullets / GameConstants.BULLET_EXCHANGE_RATE >= GameConstants.VICTORY_POINTS_TO_WIN) {
+                + bullets / rc.getVictoryPointCost() >= GameConstants.VICTORY_POINTS_TO_WIN) {
             rc.donate(bullets);
         } else if (bullets > MAX_BULLET_STASH) {
-            rc.donate((int) ((bullets - MAX_BULLET_STASH) / GameConstants.BULLET_EXCHANGE_RATE)
-                    * GameConstants.BULLET_EXCHANGE_RATE);
+            rc.donate((int) ((bullets - MAX_BULLET_STASH) / rc.getVictoryPointCost())
+                    * rc.getVictoryPointCost());
         }
         bulletsDelta = bullets - lastRoundBullets;
-        lastRoundBullets = bullets;
+        lastRoundBullets = rc.getTeamBullets(); // use current figure in case we donated above
         mapEdges.detectMapEdges();
         Messaging.processBroadcastedMapEdges(this);
     }

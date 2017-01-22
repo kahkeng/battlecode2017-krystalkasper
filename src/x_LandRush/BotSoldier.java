@@ -19,12 +19,12 @@ public strictfp class BotSoldier extends x_Base.BotSoldier {
                 startLoop();
 
                 // Rush to enemy archon location
-                if (!Combat.seekAndAttackAndSurroundEnemy(this)) {
+                if (true || !Combat.seekAndAttackAndSurroundEnemy(this)) {
                     // patrolAlongArc();
                     nav.setDestination(enemyInitialArchonLocs[0]);
                     final MapLocation nextLoc = nav.getNextLocation();
                     if (!tryMove(nextLoc)) {
-                        break;
+                        System.out.println("can't move to nextLoc " + nextLoc);
                     }
                 }
 

@@ -23,7 +23,7 @@ public strictfp class BotTank extends x_Base.BotTank {
                     nav.setDestination(enemyInitialArchonLocs[0]);
                     final MapLocation nextLoc = nav.getNextLocation();
                     if (!tryMove(nextLoc)) {
-                        break;
+                        System.out.println("can't move to nextLoc " + nextLoc);
                     }
                 }
 

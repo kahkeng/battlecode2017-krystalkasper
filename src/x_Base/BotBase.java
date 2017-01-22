@@ -25,6 +25,7 @@ public strictfp class BotBase {
     public final RobotType myType;
     public final int myID;
     public final MapEdges mapEdges;
+    public final TangentBugNavigator nav;
 
     public static MapLocation homeArchon = null;
     public static MapLocation myLoc = null;
@@ -43,6 +44,7 @@ public strictfp class BotBase {
         myType = rc.getType();
         myID = rc.getID();
         mapEdges = new MapEdges(this);
+        nav = new TangentBugNavigator(this);
         lastRoundBullets = rc.getTeamBullets();
         bulletsDelta = 0;
     }

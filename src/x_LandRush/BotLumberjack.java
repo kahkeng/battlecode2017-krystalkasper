@@ -27,7 +27,7 @@ public strictfp class BotLumberjack extends x_Base.BotLumberjack {
                             nav.setDestination(enemyInitialArchonLocs[0]);
                             final MapLocation nextLoc = nav.getNextLocation();
                             if (!tryMove(nextLoc)) {
-                                break;
+                                System.out.println("can't move to nextLoc " + nextLoc);
                             }
                         }
                     }

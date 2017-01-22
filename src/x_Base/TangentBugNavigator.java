@@ -3,6 +3,7 @@ package x_Base;
 import java.util.HashSet;
 import java.util.Set;
 
+import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
@@ -11,9 +12,10 @@ import battlecode.common.TreeInfo;
 
 public strictfp class TangentBugNavigator {
 
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
     private static final int MAX_WALLS = 100;
-    private static final float EPS = 0.02f;
+    private static final float EPS = 0.001f; // buffer to add to not always exactly touch edges
+    private static final float LEAVE_THRESHOLD = 1.0f; // distance improvement before we leave obstacle
 
     boolean preferRight;
 
@@ -43,7 +45,7 @@ public strictfp class TangentBugNavigator {
     }
 
     public void setDestination(MapLocation destination) {
-        if (this.destination != null && !this.destination.equals(destination)) {
+        if (this.destination == null || !this.destination.equals(destination)) {
             this.destination = destination;
             reset();
         }
@@ -67,7 +69,8 @@ public strictfp class TangentBugNavigator {
     public MapLocation getNextLocation() {
         final MapLocation currLoc = rc.getLocation();
         final MapLocation destLoc = destination;
-        if (currLoc.equals(destLoc)) { // TODO
+        Debug.debug_dot(bot, destLoc, 255, 255, 255);
+        if (currLoc.equals(destLoc)) { // TODO: threshold for distance
             return null;
         }
         nearbyRobots = rc.senseNearbyRobots();
@@ -77,7 +80,7 @@ public strictfp class TangentBugNavigator {
         // but missing some stuff about m-line checks, but seems to work
         for (;;) {
             // Maximum sensing range. This should reduce if we are close to destination or if we have ever been close
-            float maxDist = Math.min(bot.myType.sensorRadius, currLoc.distanceTo(destination));
+            float maxDist = Math.min(bot.myType.sensorRadius, currLoc.distanceTo(destLoc));
             // maxDist = Math.max(2, maxDist);
 
             switch (state) {
@@ -88,7 +91,8 @@ public strictfp class TangentBugNavigator {
                 final ObstacleInfo obstacleInfo = hasObstacleToward(currLoc, destLoc, maxDist);
                 if (obstacleInfo != null) {
                     state = State.FOLLOW_OBSTACLE;
-                    followWallPoint = new FollowWallPoint(destination, new ObstacleInfo(currLoc, bot.myType.bodyRadius),
+                    followWallPoint = new FollowWallPoint(destination,
+                            new ObstacleInfo(currLoc, bot.myType.bodyRadius, true),
                             obstacleInfo, preferRight, true);
                     lastObstacleLoc = obstacleInfo.location;
                     lastMetObstacleLoc = obstacleInfo.location.add(obstacleInfo.location.directionTo(currLoc),
@@ -111,7 +115,7 @@ public strictfp class TangentBugNavigator {
                 }
                 // TODO: should we check that we reached the m-line first?
                 // TODO: also check that way to goal is unimpeded?
-                if (currLoc.distanceTo(destLoc) < lastMetObstacleDist) {
+                if (currLoc.distanceTo(destLoc) < Math.max(lastMetObstacleDist - LEAVE_THRESHOLD, EPS)) {
                     if (DEBUG) {
                         Debug.debug_print(bot,
                                 "leaving obstacle at " + currLoc + " followWallPoint=" + followWallPoint);
@@ -122,31 +126,38 @@ public strictfp class TangentBugNavigator {
                 }
                 computeSubsequentWallPoints(followWallPoint, maxDist);
                 if (DEBUG) {
-                    for (int i = 0; i < pointsSize; i++) {
-                        Debug.debug_print(bot, "  wp=" + pointsList[i]);
-                    }
+                    /*
+                     * for (int i = 0; i < pointsSize; i++) { Debug.debug_print(bot, "  wp=" + pointsList[i]); }
+                     */
                 }
 
                 // Search through wall points in reverse order to find first one that has a greedy accurate path
                 // to get to the edge location of the wall
                 // TODO: do we need to go step by step in case we overshoot the goal?
+                Debug.debug_dot(bot, followWallPoint.obstacle.location, 0, 255, 0); // start: green
+                System.out.println("clock2 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
                 for (int i = pointsSize - 1; i >= 0; i--) {
                     final FollowWallPoint candidate = pointsList[i];
                     final MapLocation edgeLoc = candidate.getEdgeLoc(currLoc, this);
+                    Debug.debug_dot(bot, edgeLoc, 0, 0, 255);
                     boolean isClear = canPathTowardsLocation(edgeLoc);
                     if (DEBUG) {
-                        Debug.debug_print(bot, " candidate wp " + candidate + " isClear=" + isClear + " edgeLoc="
-                                + edgeLoc);
+                        // Debug.debug_print(bot, " candidate wp " + candidate + " isClear=" + isClear + " edgeLoc=" +
+                        // edgeLoc);
                     }
                     if (isClear) {
                         if (DEBUG) {
-                            Debug.debug_print(bot, " changing wp from " + followWallPoint + " to " + candidate);
+                            // Debug.debug_print(bot, " changing wp from " + followWallPoint + " to " + candidate);
                         }
                         followWallPoint = candidate;
                         break;
                     }
+                    System.out.println("clock2a " + i + " " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
                 }
+                System.out.println("clock3 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
                 final MapLocation edgeLoc = followWallPoint.getEdgeLoc(currLoc, this);
+                Debug.debug_dot(bot, followWallPoint.obstacle.location, 255, 0, 0); // end: red
+                Debug.debug_dot(bot, edgeLoc, 255, 255, 0);
                 if (DEBUG) {
                     Debug.debug_print(bot,
                             "returning2 " + edgeLoc + " followWallPoint=" + followWallPoint);
@@ -172,10 +183,12 @@ public strictfp class TangentBugNavigator {
         }
         if (Combat.willObjectCollideWithRobot(bot, currLoc.directionTo(destLoc), destDistance, bot.myType.bodyRadius,
                 nearbyRobots)) {
+            // System.out.println("will collide with robot");
             return false;
         }
         if (Combat.willObjectCollideWithTree(bot, currLoc.directionTo(destLoc), destDistance, bot.myType.bodyRadius,
                 nearbyTrees)) {
+            // System.out.println("will collide with tree");
             return false;
         }
         return true;
@@ -187,10 +200,16 @@ public strictfp class TangentBugNavigator {
         final RobotInfo[] robots = rc.senseNearbyRobots(obstacle.location, senseRadius, null);
         final TreeInfo[] trees = rc.senseNearbyTrees(obstacle.location, senseRadius, null);
         for (final RobotInfo robot : robots) {
-            obstacles[size++] = new ObstacleInfo(robot.location, robot.getRadius());
+            if (robot.location.equals(obstacle.location)) {
+                continue;
+            }
+            obstacles[size++] = new ObstacleInfo(robot.location, robot.getRadius(), true);
         }
         for (final TreeInfo tree : trees) {
-            obstacles[size++] = new ObstacleInfo(tree.location, tree.radius);
+            if (tree.location.equals(obstacle.location)) {
+                continue;
+            }
+            obstacles[size++] = new ObstacleInfo(tree.location, tree.radius, false);
         }
         return size;
     }
@@ -202,43 +221,56 @@ public strictfp class TangentBugNavigator {
         pointsSize = 0;
 
         if (DEBUG) {
-            Debug.debug_print(bot, " getting wp start=" + startPoint + " maxDist=" + maxDist);
+            // Debug.debug_print(bot, " getting wp start=" + startPoint + " maxDist=" + maxDist);
         }
         final MapLocation currLoc = bot.myLoc;
 
-        final Set<ObstacleInfo> seen = new HashSet<ObstacleInfo>();
-        seen.add(startPoint.obstacle);
+        final Set<FollowWallPoint> seen = new HashSet<FollowWallPoint>();
+        seen.add(startPoint);
         ObstacleInfo currObstacle = startPoint.obstacle;
         boolean found = true;
         boolean madeLoop = false;
-        outer: while (found) {
+        System.out.println("clock-1 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
+        outer: while (found && Clock.getBytecodesLeft() >= 5000) {
             found = false;
             final float senseRadius = currObstacle.radius + bot.myType.bodyRadius * 2 + EPS;
-            if (!rc.canSenseAllOfCircle(currObstacle.location, senseRadius)) {
-                break;
-            }
+            Debug.debug_line(bot, currObstacle.location,
+                    currObstacle.location.add(currLoc.directionTo(currObstacle.location), senseRadius), 255, 0, 255);
+            ObstacleInfo nextObstacle = null;
+            // if archon or tree obstacle, has issues, we will need to supplement with another method
             final int size = getObstaclesAroundObstacle(currObstacle, sensedObstacles);
             // pick the obstacle that has smallest angle
             final Direction obstacleDir = currObstacle.location.directionTo(currLoc);
-            ObstacleInfo nextObstacle = null;
             float smallestAngle = 0;
+            System.out.println("clock-2 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
             for (int i = 0; i < size; i++) {
-                final ObstacleInfo obstacle = sensedObstacles[i];
+                final ObstacleInfo candidateObstacle = sensedObstacles[i];
+                // TODO: this needs to use the tangential edge angle, instead of the obstacle center angle
                 final float radBetween = obstacleDir
-                        .radiansBetween(currObstacle.location.directionTo(obstacle.location));
+                        .radiansBetween(currObstacle.location.directionTo(candidateObstacle.location));
                 final float radBetween2;
-                if (radBetween < 0) {
-                    radBetween2 = radBetween + (float) Math.PI * 2;
+                if (preferRight) {
+                    if (radBetween < 0) {
+                        radBetween2 = radBetween + (float) Math.PI * 2;
+                    } else {
+                        radBetween2 = radBetween;
+                    }
                 } else {
-                    radBetween2 = radBetween;
+                    if (radBetween < 0) {
+                        radBetween2 = -radBetween;
+                    } else {
+                        radBetween2 = (float) Math.PI * 2 - radBetween;
+                    }
                 }
                 if (nextObstacle == null || radBetween2 < smallestAngle) {
-                    nextObstacle = obstacle;
+                    nextObstacle = candidateObstacle;
                     smallestAngle = radBetween2;
                 }
             }
             if (nextObstacle != null) {
-                if (seen.contains(nextObstacle)) {
+                final FollowWallPoint nextPoint = new FollowWallPoint(destination, currObstacle, nextObstacle,
+                        preferRight, false);
+                if (seen.contains(nextPoint)) {
                     // we've made a loop around an existing obstacle
                     if (DEBUG) {
                         Debug.debug_print(bot, "  made loop around");
@@ -246,38 +278,68 @@ public strictfp class TangentBugNavigator {
                     madeLoop = true;
                     break outer;
                 }
-                seen.add(nextObstacle);
-                final FollowWallPoint nextPoint = new FollowWallPoint(destination, currObstacle, nextObstacle,
-                        preferRight, false);
+                seen.add(nextPoint);
                 pointsList[pointsSize++] = nextPoint;
                 found = true;
                 currObstacle = nextObstacle;
                 if (DEBUG) {
-                    Debug.debug_print(bot, " added " + nextPoint);
+                    // Debug.debug_print(bot, " added " + nextPoint);
                 }
+                System.out.println("clock0 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
                 continue outer;
             }
         }
 
+        System.out.println("clock " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
         if (madeLoop) {
-            // Only take the list up to and including the furthest distance location.
-
-            float furthestDist = currLoc.distanceTo(startPoint.obstacle.location);
+            if (pointsSize > 0) {
+                Debug.debug_line(bot, startPoint.obstacle.location, pointsList[0].obstacle.location, 255, 255, 255);
+            }
+            for (int i = 0; i < pointsSize - 1; i++) {
+                Debug.debug_line(bot, pointsList[i].obstacle.location, pointsList[i + 1].obstacle.location, 255, 255,
+                        255);
+            }
+            // Only take the list up to and including the furthest angle
+            final Direction obstacleDir = currLoc.directionTo(startPoint.obstacle.location);
             int furthestIndex = -1;
+            float furthestAngle = 0;
             for (int i = 0; i < pointsSize; i++) {
                 final FollowWallPoint wp = pointsList[i];
-                final float dist = currLoc.distanceTo(wp.obstacle.location);
-                if (dist > furthestDist) {
-                    furthestDist = dist;
+                final Direction dir = currLoc.directionTo(wp.obstacle.location);
+                final float radBetween = obstacleDir.radiansBetween(dir);
+                final float radBetween2;
+                if (preferRight) {
+                    if (radBetween < 0) {
+                        radBetween2 = -radBetween;
+                    } else {
+                        break;
+                    }
+                } else {
+                    if (radBetween < 0) {
+                        radBetween2 = radBetween + (float) Math.PI * 2;
+                    } else {
+                        break;
+                    }
+                }
+                if (radBetween2 > furthestAngle) {
+                    furthestAngle = radBetween2;
                     furthestIndex = i;
                 }
             }
             if (DEBUG) {
-                Debug.debug_print(bot,
-                        "  currLoc=" + currLoc + " furthestDist=" + furthestDist + " furthestIndex=" + furthestIndex);
-                Debug.debug_print(bot, "  trimming return list size from " + pointsSize + " to " + (furthestIndex + 1));
+                /*
+                 * Debug.debug_print(bot, "  currLoc=" + currLoc + " furthestAngle=" + furthestAngle + " furthestIndex="
+                 * + furthestIndex); Debug.debug_print(bot, "  trimming return list size from " + pointsSize + " to " +
+                 * (furthestIndex + 1));
+                 */
             }
             pointsSize = furthestIndex + 1;
+        }
+        if (pointsSize > 0) {
+            Debug.debug_line(bot, startPoint.obstacle.location, pointsList[0].obstacle.location, 255, 255, 0);
+        }
+        for (int i = 0; i < pointsSize - 1; i++) {
+            Debug.debug_line(bot, pointsList[i].obstacle.location, pointsList[i + 1].obstacle.location, 255, 255, 0);
         }
     }
 
@@ -307,18 +369,35 @@ public strictfp class TangentBugNavigator {
          * (number of orthogonal adjacent obstacles is 1). This might also not return a traversable location.
          */
         final MapLocation getEdgeLoc(final MapLocation currLoc, TangentBugNavigator nav) {
-            // TODO: improve this
-            // For simplicity, just take 90 degrees off to side off this obstacle
-            final Direction obsDir = currLoc.directionTo(obstacle.location);
-            final MapLocation edgeLoc;
-            if (preferRight) {
-                edgeLoc = obstacle.location.add(obsDir.rotateRightDegrees(90f),
-                        obstacle.radius + nav.bot.myType.bodyRadius);
+            final float radiiSum = (nav.bot.myType.bodyRadius + obstacle.radius);
+            final float cosine = radiiSum / currLoc.distanceTo(obstacle.location);
+            final float theta = (float) Math.acos(cosine);
+            final Direction dir;
+            if (theta * radiiSum < nav.bot.myType.strideRadius) { // we're rounding too slowly around corner
+                final float sine = nav.bot.myType.strideRadius / 2 / radiiSum;
+                final float alpha = (float) Math.asin(sine) * 2;
+                dir = preferRight ? obstacle.location.directionTo(currLoc).rotateLeftRads(alpha)
+                        : obstacle.location.directionTo(currLoc).rotateRightRads(alpha);
             } else {
-                edgeLoc = obstacle.location.add(obsDir.rotateLeftDegrees(90f),
-                        obstacle.radius + nav.bot.myType.bodyRadius);
+                dir = preferRight ? obstacle.location.directionTo(currLoc).rotateLeftRads(theta)
+                        : obstacle.location.directionTo(currLoc).rotateRightRads(theta);
             }
-            return edgeLoc;
+            return obstacle.location.add(dir, radiiSum + EPS);
+        }
+
+        @Override
+        public int hashCode() {
+            return previousObstacle.hashCode() * 37 + obstacle.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof FollowWallPoint)) {
+                return false;
+            }
+            final FollowWallPoint p = (FollowWallPoint) o;
+            return p.previousObstacle.equals(previousObstacle) && p.obstacle.equals(obstacle)
+                    && p.firstTime == firstTime;
         }
 
         @Override
@@ -330,10 +409,12 @@ public strictfp class TangentBugNavigator {
     static class ObstacleInfo {
         final MapLocation location;
         final float radius;
+        final boolean isRobot;
 
-        ObstacleInfo(final MapLocation location, final float radius) {
+        ObstacleInfo(final MapLocation location, final float radius, boolean isRobot) {
             this.location = location;
             this.radius = radius;
+            this.isRobot = isRobot;
         }
 
         @Override
@@ -347,12 +428,12 @@ public strictfp class TangentBugNavigator {
                 return false;
             }
             final ObstacleInfo p = (ObstacleInfo) o;
-            return p.location.equals(location) && p.radius == radius;
+            return p.location.equals(location) && p.radius == radius && p.isRobot == isRobot;
         }
 
         @Override
         public String toString() {
-            return "ObstacleInfo(" + location + ", " + radius + ")";
+            return "ObstacleInfo(" + location + ", " + radius + ", " + isRobot + ")";
         }
 
     }

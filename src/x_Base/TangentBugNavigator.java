@@ -192,9 +192,9 @@ public strictfp class TangentBugNavigator {
         return true;
     }
 
-    private final int getObstaclesAroundObstacle(final ObstacleInfo obstacle, final ObstacleInfo[] obstacles) {
+    private final int getObstaclesAroundObstacle(final ObstacleInfo obstacle, final float senseRadius,
+            final ObstacleInfo[] obstacles) {
         int size = 0;
-        final float senseRadius = obstacle.radius + bot.myType.bodyRadius * 2 + EPS;
         final RobotInfo[] robots = rc.senseNearbyRobots(obstacle.location, senseRadius, null);
         final TreeInfo[] trees = rc.senseNearbyTrees(obstacle.location, senseRadius, null);
         for (final RobotInfo robot : robots) {
@@ -246,7 +246,7 @@ public strictfp class TangentBugNavigator {
             first = false;
             ObstacleInfo nextObstacle = null;
             // if archon or tree obstacle, has issues, we will need to supplement with another method
-            final int size = getObstaclesAroundObstacle(currObstacle, sensedObstacles);
+            final int size = getObstaclesAroundObstacle(currObstacle, senseRadius, sensedObstacles);
             // pick the obstacle that has smallest angle to current obstacle dir
             float smallestAngle = 0;
             for (int i = 0; i < size; i++) {

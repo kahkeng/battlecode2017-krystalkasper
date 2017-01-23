@@ -14,7 +14,7 @@ public strictfp class TangentBugNavigator {
 
     private static final boolean DEBUG = true;
     private static final int MAX_WALLS = 100;
-    private static final float EPS = 0.001f; // buffer to add to not always exactly touch edges
+    private static final float EPS = 0.04f; // buffer to add to not always exactly touch edges
     private static final float LEAVE_THRESHOLD = 1.0f; // distance improvement before we leave obstacle
 
     boolean preferRight;
@@ -140,7 +140,7 @@ public strictfp class TangentBugNavigator {
                     final FollowWallPoint candidate = pointsList[i];
                     final MapLocation edgeLoc = candidate.getEdgeLoc(currLoc, this);
                     Debug.debug_dot(bot, edgeLoc, 0, 0, 255);
-                    boolean isClear = canPathTowardsLocation(edgeLoc);
+                    boolean isClear = canPathTowardsLocation2(edgeLoc);
                     if (DEBUG) {
                         // Debug.debug_print(bot, " candidate wp " + candidate + " isClear=" + isClear + " edgeLoc=" +
                         // edgeLoc);
@@ -178,18 +178,50 @@ public strictfp class TangentBugNavigator {
     private final boolean canPathTowardsLocation(final MapLocation destLoc) {
         final MapLocation currLoc = bot.myLoc;
         final float destDistance = currLoc.distanceTo(destLoc);
-        if (destDistance > bot.myType.sensorRadius) {
+        if (destDistance > bot.myType.sensorRadius - bot.myType.bodyRadius) {
             return false;
         }
-        if (Combat.willObjectCollideWithRobot(bot, currLoc.directionTo(destLoc), destDistance, bot.myType.bodyRadius,
-                nearbyRobots)) {
+        final Direction destDir = currLoc.directionTo(destLoc);
+        if (Combat.willObjectCollideWithRobot(bot, destDir, destDistance, bot.myType.bodyRadius, nearbyRobots)) {
             // System.out.println("will collide with robot");
             return false;
         }
-        if (Combat.willObjectCollideWithTree(bot, currLoc.directionTo(destLoc), destDistance, bot.myType.bodyRadius,
-                nearbyTrees)) {
+        if (Combat.willObjectCollideWithTree(bot, destDir, destDistance, bot.myType.bodyRadius, nearbyTrees)) {
             // System.out.println("will collide with tree");
             return false;
+        }
+        return true;
+    }
+
+    /**
+     * Determine if we can greedily navigate towards destLoc, inclusive of whether destLoc is traversable. We need to be
+     * within sensing range of destLoc for this to work.
+     */
+    private final boolean canPathTowardsLocation2(final MapLocation destLoc) {
+        final MapLocation currLoc = bot.myLoc;
+        final float destDistance = currLoc.distanceTo(destLoc);
+        if (destDistance > bot.myType.sensorRadius - bot.myType.bodyRadius) {
+            return false;
+        }
+        // we use overlapping circles that cover a rectangular box with robot width and length of travel
+        // to find potential obstacles.
+        final float startDist = bot.myType.bodyRadius; // start point of the centers of circles
+        final float endDist = destDistance + bot.myType.bodyRadius; // end point of centers of circles, no need to go
+                                                                    // further than this
+        final float senseRadius = (float) (bot.myType.bodyRadius * Math.sqrt(2));
+        final Direction destDir = currLoc.directionTo(destLoc);
+        float centerDist = startDist;
+        while (centerDist <= endDist) {
+            final MapLocation centerLoc = currLoc.add(destDir, centerDist);
+            final RobotInfo[] robots = bot.rc.senseNearbyRobots(centerLoc, senseRadius, null);
+            if (Combat.willObjectCollideWithRobot(bot, destDir, destDistance, bot.myType.bodyRadius, robots)) {
+                return false;
+            }
+            final TreeInfo[] trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
+            if (Combat.willObjectCollideWithTree(bot, destDir, destDistance, bot.myType.bodyRadius, trees)) {
+                return false;
+            }
+            centerDist += 2 * bot.myType.bodyRadius;
         }
         return true;
     }

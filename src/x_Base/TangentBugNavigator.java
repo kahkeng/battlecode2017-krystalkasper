@@ -135,12 +135,11 @@ public strictfp class TangentBugNavigator {
                 // to get to the edge location of the wall
                 // TODO: do we need to go step by step in case we overshoot the goal?
                 Debug.debug_dot(bot, followWallPoint.obstacle.location, 0, 255, 0); // start: green
-                System.out.println("clock2 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
                 for (int i = pointsSize - 1; i >= 0; i--) {
                     final FollowWallPoint candidate = pointsList[i];
                     final MapLocation edgeLoc = candidate.getEdgeLoc(currLoc, this);
                     Debug.debug_dot(bot, edgeLoc, 0, 0, 255);
-                    boolean isClear = canPathTowardsLocation2(edgeLoc);
+                    boolean isClear = canPathTowardsLocation(edgeLoc);
                     if (DEBUG) {
                         // Debug.debug_print(bot, " candidate wp " + candidate + " isClear=" + isClear + " edgeLoc=" +
                         // edgeLoc);
@@ -152,9 +151,7 @@ public strictfp class TangentBugNavigator {
                         followWallPoint = candidate;
                         break;
                     }
-                    System.out.println("clock2a " + i + " " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
                 }
-                System.out.println("clock3 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
                 final MapLocation edgeLoc = followWallPoint.getEdgeLoc(currLoc, this);
                 Debug.debug_dot(bot, followWallPoint.obstacle.location, 255, 0, 0); // end: red
                 Debug.debug_dot(bot, edgeLoc, 255, 255, 0);
@@ -182,11 +179,11 @@ public strictfp class TangentBugNavigator {
             return false;
         }
         final Direction destDir = currLoc.directionTo(destLoc);
-        if (Combat.willObjectCollideWithRobot(bot, destDir, destDistance, bot.myType.bodyRadius, nearbyRobots)) {
+        if (Combat.willObjectCollideWithRobot2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
             // System.out.println("will collide with robot");
             return false;
         }
-        if (Combat.willObjectCollideWithTree(bot, destDir, destDistance, bot.myType.bodyRadius, nearbyTrees)) {
+        if (Combat.willObjectCollideWithTree2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
             // System.out.println("will collide with tree");
             return false;
         }
@@ -260,9 +257,9 @@ public strictfp class TangentBugNavigator {
         final Set<FollowWallPoint> seen = new HashSet<FollowWallPoint>();
         seen.add(startPoint);
         ObstacleInfo currObstacle = startPoint.obstacle;
+        Direction obstacleDir = startPoint.previousObstacle.location.directionTo(currObstacle.location);
         boolean found = true;
         boolean madeLoop = false;
-        System.out.println("clock-1 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
         outer: while (found && Clock.getBytecodesLeft() >= 5000) {
             found = false;
             final float senseRadius = currObstacle.radius + bot.myType.bodyRadius * 2 + EPS;
@@ -271,24 +268,22 @@ public strictfp class TangentBugNavigator {
             ObstacleInfo nextObstacle = null;
             // if archon or tree obstacle, has issues, we will need to supplement with another method
             final int size = getObstaclesAroundObstacle(currObstacle, sensedObstacles);
-            // pick the obstacle that has smallest angle
-            final Direction obstacleDir = currObstacle.location.directionTo(currLoc);
+            // pick the obstacle that has smallest angle to current obstacle dir
             float smallestAngle = 0;
-            System.out.println("clock-2 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
             for (int i = 0; i < size; i++) {
                 final ObstacleInfo candidateObstacle = sensedObstacles[i];
                 // TODO: this needs to use the tangential edge angle, instead of the obstacle center angle
-                final float radBetween = obstacleDir
+                final float radBetween = obstacleDir.opposite()
                         .radiansBetween(currObstacle.location.directionTo(candidateObstacle.location));
                 final float radBetween2;
                 if (preferRight) {
-                    if (radBetween < 0) {
+                    if (radBetween <= EPS) {
                         radBetween2 = radBetween + (float) Math.PI * 2;
                     } else {
                         radBetween2 = radBetween;
                     }
                 } else {
-                    if (radBetween < 0) {
+                    if (radBetween <= EPS) {
                         radBetween2 = -radBetween;
                     } else {
                         radBetween2 = (float) Math.PI * 2 - radBetween;
@@ -313,16 +308,15 @@ public strictfp class TangentBugNavigator {
                 seen.add(nextPoint);
                 pointsList[pointsSize++] = nextPoint;
                 found = true;
+                obstacleDir = currObstacle.location.directionTo(nextObstacle.location);
                 currObstacle = nextObstacle;
                 if (DEBUG) {
                     // Debug.debug_print(bot, " added " + nextPoint);
                 }
-                System.out.println("clock0 " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
                 continue outer;
             }
         }
 
-        System.out.println("clock " + Clock.getBytecodeNum() + " " + Clock.getBytecodesLeft());
         if (madeLoop) {
             if (pointsSize > 0) {
                 Debug.debug_line(bot, startPoint.obstacle.location, pointsList[0].obstacle.location, 255, 255, 255);
@@ -332,13 +326,13 @@ public strictfp class TangentBugNavigator {
                         255);
             }
             // Only take the list up to and including the furthest angle
-            final Direction obstacleDir = currLoc.directionTo(startPoint.obstacle.location);
+            final Direction startObstacleDir = currLoc.directionTo(startPoint.obstacle.location);
             int furthestIndex = -1;
             float furthestAngle = 0;
             for (int i = 0; i < pointsSize; i++) {
                 final FollowWallPoint wp = pointsList[i];
                 final Direction dir = currLoc.directionTo(wp.obstacle.location);
-                final float radBetween = obstacleDir.radiansBetween(dir);
+                final float radBetween = startObstacleDir.radiansBetween(dir);
                 final float radBetween2;
                 if (preferRight) {
                     if (radBetween < 0) {

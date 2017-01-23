@@ -197,6 +197,7 @@ public strictfp class Combat {
         for (final RobotInfo robot : robots) {
             if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, robot.location,
                     robot.getRadius(), /* isTargetRobot= */true)) {
+                Debug.debug_dot(bot, robot.location, 0, 0, 0);
                 return true;
             }
         }
@@ -245,6 +246,7 @@ public strictfp class Combat {
         for (final TreeInfo tree : trees) {
             if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, tree.location,
                     tree.getRadius(), /* isTargetRobot= */false)) {
+                Debug.debug_dot(bot, tree.location, 0, 0, 0);
                 return true;
             }
         }

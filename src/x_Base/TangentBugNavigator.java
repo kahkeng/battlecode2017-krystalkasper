@@ -5,6 +5,7 @@ import java.util.Set;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
@@ -38,7 +39,7 @@ public strictfp class TangentBugNavigator {
     public TangentBugNavigator(final BotBase bot) {
         this.bot = bot;
         this.rc = bot.rc;
-        preferRight = true;
+        preferRight = false;
         reset();
     }
 
@@ -155,6 +156,17 @@ public strictfp class TangentBugNavigator {
                     }
                 }
                 final MapLocation edgeLoc = followWallPoint.getEdgeLoc(currLoc, this);
+                // Check if this is off map, if so, we reverse direction
+                try {
+                    final MapLocation offLoc = edgeLoc.add(currLoc.directionTo(edgeLoc), bot.myType.bodyRadius);
+                    if (rc.canSenseLocation(offLoc) && !rc.onTheMap(offLoc)) {
+                        preferRight = !preferRight;
+                        reset();
+                        continue;
+                    }
+                } catch (GameActionException e) {
+                    e.printStackTrace();
+                }
                 Debug.debug_dot(bot, followWallPoint.obstacle.location, 255, 0, 0); // end: red
                 Debug.debug_dot(bot, edgeLoc, 255, 255, 0);
                 if (DEBUG) {
@@ -255,7 +267,7 @@ public strictfp class TangentBugNavigator {
                         radBetween2 = radBetween;
                     }
                 } else {
-                    if (radBetween <= EPS) {
+                    if (radBetween <= -EPS) {
                         radBetween2 = -radBetween;
                     } else {
                         radBetween2 = (float) Math.PI * 2 - radBetween;
@@ -323,9 +335,9 @@ public strictfp class TangentBugNavigator {
                     }
                 } else {
                     if (radBetween < 0) {
-                        radBetween2 = radBetween + (float) Math.PI * 2;
-                    } else {
                         break;
+                    } else {
+                        radBetween2 = radBetween;
                     }
                 }
                 if (radBetween2 > furthestAngle) {

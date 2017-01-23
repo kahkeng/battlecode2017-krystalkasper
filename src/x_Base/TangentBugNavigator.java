@@ -402,17 +402,27 @@ public strictfp class TangentBugNavigator {
          */
         final MapLocation getEdgeLoc(final MapLocation currLoc, TangentBugNavigator nav) {
             final float radiiSum = (nav.bot.myType.bodyRadius + obstacle.radius);
-            final float cosine = radiiSum / currLoc.distanceTo(obstacle.location);
-            final float theta = (float) Math.acos(cosine);
+            final float obsDist = currLoc.distanceTo(obstacle.location);
             final Direction dir;
-            if (theta * radiiSum < nav.bot.myType.strideRadius) { // we're rounding too slowly around corner
+            // If we are practically adjacent to obstacle already, round around it
+            if (obsDist <= radiiSum + EPS * 2) { // + nav.bot.myType.strideRadius?
                 final float sine = nav.bot.myType.strideRadius / 2 / radiiSum;
                 final float alpha = (float) Math.asin(sine) * 2;
                 dir = preferRight ? obstacle.location.directionTo(currLoc).rotateLeftRads(alpha)
                         : obstacle.location.directionTo(currLoc).rotateRightRads(alpha);
-            } else {
+            } else if (firstTime) {
+                // If first time, we don't have any info about previous obstacle. Go to tangent point.
+                final float cosine = radiiSum / obsDist;
+                final float theta = (float) Math.acos(cosine);
                 dir = preferRight ? obstacle.location.directionTo(currLoc).rotateLeftRads(theta)
                         : obstacle.location.directionTo(currLoc).rotateRightRads(theta);
+
+            } else {
+                // We have some previous obstacle info. We aim to be at a right angle to the "wall".
+                // This means the position is independent of where we are and is less subject to weird issues like
+                // having the robot collide into the previous or next obstacle (and thus get rejected as a candidate)
+                dir = preferRight ? previousObstacle.location.directionTo(obstacle.location).rotateRightDegrees(90.0f)
+                        : previousObstacle.location.directionTo(obstacle.location).rotateLeftDegrees(90.0f);
             }
             return obstacle.location.add(dir, radiiSum + EPS);
         }

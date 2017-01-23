@@ -205,7 +205,7 @@ public strictfp class Combat {
                     }
                 }
             }
-            if (robotDist > totalDistance + objectRadius + robotRadius) {
+            if (robotDist > totalDistance + 2.0f + 2.0f /* max objectRadius + robotRadius */) {
                 break;
             }
         }
@@ -238,15 +238,24 @@ public strictfp class Combat {
                     if (distForward >= -objectRadius - treeRadius
                             && distForward <= totalDistance + objectRadius + treeRadius - EPS) {
                         Debug.debug_dot(bot, tree.location, 0, 0, 0);
+                        debug_print1(bot, objectDir, totalDistance, tree, treeDist, diffRad, distForward);
                         return true;
                     }
                 }
             }
-            if (treeDist > totalDistance + objectRadius + treeRadius) {
+            // must be max object radius and max tree radius
+            if (treeDist > totalDistance + 2.0f + GameConstants.NEUTRAL_TREE_MAX_RADIUS) {
                 break;
             }
         }
         return false;
+    }
+
+    private static void debug_print1(final BotBase bot, final Direction objectDir, final float totalDistance,
+            final TreeInfo tree, final float treeDist, final float diffRad, final float distForward) {
+        System.out.println("tree " + tree.ID + " " + distForward + "/" + totalDistance + " "
+                + (Math.abs(Math.sin(diffRad) * treeDist)));
+        System.out.println("dist " + bot.myLoc.add(objectDir, totalDistance).distanceTo(tree.location));
     }
 
     public static final ObstacleInfo whichRobotOrTreeWillObjectCollideWith(final BotBase bot, final Direction objectDir,

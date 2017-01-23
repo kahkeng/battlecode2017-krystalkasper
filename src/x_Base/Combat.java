@@ -120,8 +120,8 @@ public strictfp class Combat {
             boolean distanceAttack = false;
             if (minDistance <= DISTANCE_ATTACK_RANGE) {
                 final float latestEnemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
-                if (!willBulletCollideWithFriendly(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)
-                        && !willBulletCollideWithTree(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)) {
+                if (!willBulletCollideWithFriendlies(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)
+                        && !willBulletCollideWithTrees(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)) {
                     distanceAttack = true;
                 }
             }
@@ -182,79 +182,76 @@ public strictfp class Combat {
         return worstEnemy;
     }
 
-    public static final boolean willBulletCollideWithFriendly(final BotBase bot, final Direction bulletDir,
+    public static final boolean willBulletCollideWithFriendlies(final BotBase bot, final Direction bulletDir,
             final float enemyDistance, final float enemyRadius)
             throws GameActionException {
         // Note: this needs to detect friendlies, so we can't just use willObjectCollideWithRobot2
         final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(enemyDistance, bot.myTeam);
-        return willObjectCollideWithRobot(bot, bulletDir, enemyDistance - enemyRadius, 0.0f, friendlies);
+        return willObjectCollideWithRobots(bot, bulletDir, enemyDistance - enemyRadius, 0.0f, friendlies);
     }
 
-    public static final boolean willObjectCollideWithRobot(final BotBase bot, final Direction objectDir,
+    public static final boolean willObjectCollideWithRobots(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius, final RobotInfo[] robots) {
         // Note: trees array might have distance in sorted order from specified center location,
         // not necessarily from bot.myLoc
         for (final RobotInfo robot : robots) {
-            final float robotDist = bot.myLoc.distanceTo(robot.location);
-            final float robotRadius = robot.getRadius();
-            final double theta = Math.asin((objectRadius + robotRadius) / robotDist);
-            final float diffRad = objectDir.radiansBetween(bot.myLoc.directionTo(robot.location));
-            if (Math.abs(diffRad) > theta) {
-                continue; // won't collide
-            }
-            final float limitDist = (float) (Math.cos(theta) * Math.cos(theta) * robotDist);
-            final float straightDist = (float) Math.cos(diffRad) * totalDistance;
-            if (straightDist >= limitDist) {
-                return true; // will collide
-            }
-            final float apartDist = bot.myLoc.add(objectDir, totalDistance).distanceTo(robot.location);
-            if (apartDist <= robotRadius + objectRadius) {
-                return true; // will collide
+            if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, robot.location,
+                    robot.getRadius(), /* isTargetRobot= */true)) {
+                return true;
             }
         }
         return false;
     }
 
-    public static final boolean willBulletCollideWithTree(final BotBase bot, final Direction bulletDir,
+    public static final boolean willBulletCollideWithTrees(final BotBase bot, final Direction bulletDir,
             final float enemyDistance, final float enemyRadius) {
-        return willObjectCollideWithTree2(bot, bulletDir, enemyDistance - enemyRadius, 0.0f);
+        return willObjectCollideWithTrees2(bot, bulletDir, enemyDistance - enemyRadius, 0.0f);
     }
 
-    public static final boolean willObjectCollideWithTree(final BotBase bot, final Direction objectDir,
+    public static final boolean willObjectCollideWithTreeOrRobot(final BotBase bot, final Direction objectDir,
+            final float totalDistance, final float objectRadius,
+            final MapLocation targetLoc, final float targetRadius, final boolean isTargetRobot) {
+        final float targetDist = bot.myLoc.distanceTo(targetLoc);
+        if (!isTargetRobot && targetDist <= targetRadius + objectRadius + EPS) { // scout over a tree
+            // check if the bullet coming from scout's edge will overlap with tree
+            final MapLocation bulletLoc = bot.myLoc.add(objectDir, bot.myType.bodyRadius);
+            if (bulletLoc.distanceTo(targetLoc) < targetRadius - EPS) {
+                return true; // will collide
+            } else {
+                return false; // won't collide
+            }
+        }
+        final double theta = Math.asin((objectRadius + targetRadius) / targetDist);
+        final float diffRad = objectDir.radiansBetween(bot.myLoc.directionTo(targetLoc));
+        if (Math.abs(diffRad) > theta) {
+            return false; // won't collide
+        }
+        final float limitDist = (float) (Math.cos(theta) * Math.cos(theta) * targetDist);
+        final float straightDist = (float) Math.cos(diffRad) * totalDistance;
+        if (straightDist >= limitDist) {
+            return true; // will collide
+        }
+        final float apartDist = bot.myLoc.add(objectDir, totalDistance).distanceTo(targetLoc);
+        if (apartDist <= targetRadius + objectRadius) {
+            return true; // will collide
+        }
+        return false;
+    }
+
+    public static final boolean willObjectCollideWithTrees(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius, final TreeInfo[] trees) {
         // Note: trees array might have distance in sorted order from specified center location,
         // not necessarily from bot.myLoc
         for (final TreeInfo tree : trees) {
-            final float treeDist = bot.myLoc.distanceTo(tree.location);
-            final float treeRadius = tree.getRadius();
-            if (treeDist <= treeRadius + objectRadius + EPS) { // scout over a tree
-                // check if the bullet coming from scout's edge will overlap with tree
-                final MapLocation bulletLoc = bot.myLoc.add(objectDir, bot.myType.bodyRadius);
-                if (bulletLoc.distanceTo(tree.location) < treeRadius - EPS) {
-                    return true; // will collide
-                } else {
-                    continue; // won't collide
-                }
-            }
-            final double theta = Math.asin((objectRadius + treeRadius) / treeDist);
-            final float diffRad = objectDir.radiansBetween(bot.myLoc.directionTo(tree.location));
-            if (Math.abs(diffRad) > theta) {
-                continue; // won't collide
-            }
-            final float limitDist = (float) (Math.cos(theta) * Math.cos(theta) * treeDist);
-            final float straightDist = (float) Math.cos(diffRad) * totalDistance;
-            if (straightDist >= limitDist) {
-                return true; // will collide
-            }
-            final float apartDist = bot.myLoc.add(objectDir, totalDistance).distanceTo(tree.location);
-            if (apartDist <= treeRadius + objectRadius) {
-                return true; // will collide
+            if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, tree.location,
+                    tree.getRadius(), /* isTargetRobot= */false)) {
+                return true;
             }
         }
         return false;
     }
 
-    public static final boolean willObjectCollideWithTree2(final BotBase bot, final Direction objectDir,
+    public static final boolean willObjectCollideWithTrees2(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius) {
         // we use overlapping circles that cover a rectangular box with robot width and length of travel
         // to find potential obstacles.
@@ -268,7 +265,7 @@ public strictfp class Combat {
         while (centerDist <= endDist) {
             final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
             final TreeInfo[] trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
-            if (Combat.willObjectCollideWithTree(bot, objectDir, totalDistance, objectRadius, trees)) {
+            if (Combat.willObjectCollideWithTrees(bot, objectDir, totalDistance, objectRadius, trees)) {
                 return true;
             }
             centerDist += 2 * boxRadius;
@@ -276,7 +273,7 @@ public strictfp class Combat {
         return false;
     }
 
-    public static final boolean willObjectCollideWithRobot2(final BotBase bot, final Direction objectDir,
+    public static final boolean willObjectCollideWithRobots2(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius) {
         // we use overlapping circles that cover a rectangular box with robot width and length of travel
         // to find potential obstacles.
@@ -290,7 +287,7 @@ public strictfp class Combat {
         while (centerDist <= endDist) {
             final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
             final RobotInfo[] robots = bot.rc.senseNearbyRobots(centerLoc, senseRadius, null);
-            if (Combat.willObjectCollideWithRobot(bot, objectDir, totalDistance, objectRadius, robots)) {
+            if (Combat.willObjectCollideWithRobots(bot, objectDir, totalDistance, objectRadius, robots)) {
                 return true;
             }
             centerDist += 2 * boxRadius;
@@ -299,65 +296,49 @@ public strictfp class Combat {
     }
 
     public static final ObstacleInfo whichRobotOrTreeWillObjectCollideWith(final BotBase bot, final Direction objectDir,
-            final float totalDistance, final float objectRadius, final RobotInfo[] robots, final TreeInfo[] trees) {
-        final int robotsSize = robots.length;
-        final int treesSize = trees.length;
-        int robotIndex = 0, treeIndex = 0;
-        RobotInfo robot = robotsSize == 0 ? null : robots[0];
-        TreeInfo tree = treesSize == 0 ? null : trees[0];
-        float robotDist = robot == null ? 0 : bot.myLoc.distanceTo(robot.location);
-        float treeDist = tree == null ? 0 : bot.myLoc.distanceTo(tree.location);
-        while (robotIndex < robotsSize || treeIndex < treesSize) {
-            if (tree == null || robot != null && robotDist < treeDist) {
+            final float totalDistance, final float objectRadius) {
+        // we use overlapping circles that cover a rectangular box with robot width and length of travel
+        // to find potential obstacles.
+        final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
+        final float startDist = boxRadius; // start point of the centers of circles
+        final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
+                                                         // further than this
+        final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
+        final MapLocation currLoc = bot.myLoc;
+        float centerDist = startDist;
+        while (centerDist <= endDist) {
+            final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
+            final RobotInfo[] robots = bot.rc.senseNearbyRobots(centerLoc, senseRadius, null);
+            final TreeInfo[] trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
+            // pick nearest by collision edge
+            ObstacleInfo nearestObstacle = null;
+            float nearestEdgeDist = 0f;
+            for (final RobotInfo robot : robots) {
                 final float robotRadius = robot.getRadius();
-                if (robotDist > totalDistance + objectRadius + robotRadius) {
-                    robotIndex = robotsSize;
-                    robot = null;
-                    continue;
-                }
-                final float diffRad = objectDir.radiansBetween(bot.myLoc.directionTo(robot.location));
-                if (Math.abs(diffRad) <= Math.PI / 2) {
-                    if (Math.abs(Math.sin(diffRad) * robotDist) <= objectRadius + robotRadius + EPS) {
-                        final float distForward = (float) Math.cos(diffRad) * robotDist;
-                        // TODO: the robotRadius term isn't the most accurate, assumes robot is square
-                        if (distForward >= -objectRadius && distForward <= totalDistance + objectRadius + robotRadius) {
-                            return new ObstacleInfo(robot.location, robotRadius, true);
-                        }
+                if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, robot.location,
+                        robotRadius, /* isTargetRobot= */true)) {
+                    final float edgeDist = currLoc.distanceTo(robot.location) - robotRadius;
+                    if (nearestObstacle == null || edgeDist < nearestEdgeDist) {
+                        nearestObstacle = new ObstacleInfo(robot.location, robotRadius, true);
+                        nearestEdgeDist = edgeDist;
                     }
-                }
-                robotIndex++;
-                if (robotIndex < robotsSize) {
-                    robot = robots[robotIndex];
-                    robotDist = bot.myLoc.distanceTo(robot.location);
-                } else {
-                    robot = null;
-                }
-            } else {
-                final float treeRadius = tree.getRadius();
-                if (treeDist > totalDistance + objectRadius + treeRadius) {
-                    treeIndex = treesSize;
-                    tree = null;
-                    continue;
-                }
-                final float diffRad = objectDir.radiansBetween(bot.myLoc.directionTo(tree.location));
-                if (Math.abs(diffRad) <= Math.PI / 2) {
-                    // TODO: make this have some buffer or account for trajectory
-                    if (Math.abs(Math.sin(diffRad) * treeDist) <= objectRadius + treeRadius + EPS) {
-                        final float distForward = (float) Math.cos(diffRad) * treeDist;
-                        // TODO: using treeRadius term isn't the most accurate, assumes tree is square
-                        if (distForward >= 0 && distForward <= totalDistance + objectRadius + treeRadius) {
-                            return new ObstacleInfo(tree.location, treeRadius, false);
-                        }
-                    }
-                }
-                treeIndex++;
-                if (treeIndex < treesSize) {
-                    tree = trees[treeIndex];
-                    treeDist = bot.myLoc.distanceTo(tree.location);
-                } else {
-                    tree = null;
                 }
             }
+            for (final TreeInfo tree : trees) {
+                final float treeRadius = tree.getRadius();
+                if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, tree.location,
+                        treeRadius, /* isTargetRobot= */false)) {
+                    final float edgeDist = currLoc.distanceTo(tree.location) - treeRadius;
+                    if (nearestObstacle == null || edgeDist < nearestEdgeDist) {
+                        nearestObstacle = new ObstacleInfo(tree.location, treeRadius, false);
+                        nearestEdgeDist = edgeDist;
+                    }
+                }
+            }
+            if (nearestObstacle != null) {
+                return nearestObstacle;
+            }
+            centerDist += 2 * boxRadius;
         }
         return null;
     }
@@ -375,8 +356,8 @@ public strictfp class Combat {
             final Direction rotateDir;
             final boolean rotated;
             if (minDistance <= HARRASS_RANGE + 1.0f
-                    && (willBulletCollideWithFriendly(bot, enemyDir, enemyDistance, enemyRadius)
-                            || willBulletCollideWithTree(bot, enemyDir, enemyDistance, enemyRadius))) {
+                    && (willBulletCollideWithFriendlies(bot, enemyDir, enemyDistance, enemyRadius)
+                            || willBulletCollideWithTrees(bot, enemyDir, enemyDistance, enemyRadius))) {
                 if (bot.preferRight) {
                     rotateDir = enemyDir.opposite()
                             .rotateRightRads(bot.myType.strideRadius / enemyDistance);
@@ -432,8 +413,8 @@ public strictfp class Combat {
 
             boolean distanceAttack = false;
             if (minDistance <= HARRASS_RANGE + 1) {
-                if (!willBulletCollideWithFriendly(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)
-                        && !willBulletCollideWithTree(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)) {
+                if (!willBulletCollideWithFriendlies(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)
+                        && !willBulletCollideWithTrees(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)) {
                     distanceAttack = true;
                 }
             }

@@ -34,8 +34,6 @@ public strictfp class TangentBugNavigator {
     final FollowWallPoint[] pointsList = new FollowWallPoint[MAX_WALLS + 1];
     final ObstacleInfo[] sensedObstacles = new ObstacleInfo[MAX_WALLS + 1];
     int pointsSize = 0;
-    RobotInfo[] nearbyRobots;
-    TreeInfo[] nearbyTrees;
 
     public TangentBugNavigator(final BotBase bot) {
         this.bot = bot;
@@ -62,7 +60,7 @@ public strictfp class TangentBugNavigator {
             final float maxDist) {
         final float destDistance = Math.min(currLoc.distanceTo(destLoc), maxDist);
         final ObstacleInfo obstacle = Combat.whichRobotOrTreeWillObjectCollideWith(bot, currLoc.directionTo(destLoc),
-                destDistance, bot.myType.bodyRadius, nearbyRobots, nearbyTrees);
+                destDistance, bot.myType.bodyRadius);
         return obstacle;
     }
 
@@ -73,8 +71,6 @@ public strictfp class TangentBugNavigator {
         if (currLoc.equals(destLoc)) { // TODO: threshold for distance
             return null;
         }
-        nearbyRobots = rc.senseNearbyRobots();
-        nearbyTrees = rc.senseNearbyTrees();
 
         // Bug 2 algorithm: https://www.cs.cmu.edu/~motionplanning/lecture/Chap2-Bug-Alg_howie.pdf
         // but missing some stuff about m-line checks, but seems to work
@@ -179,46 +175,13 @@ public strictfp class TangentBugNavigator {
             return false;
         }
         final Direction destDir = currLoc.directionTo(destLoc);
-        if (Combat.willObjectCollideWithRobot2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
+        if (Combat.willObjectCollideWithRobots2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
             // System.out.println("will collide with robot");
             return false;
         }
-        if (Combat.willObjectCollideWithTree2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
+        if (Combat.willObjectCollideWithTrees2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
             // System.out.println("will collide with tree");
             return false;
-        }
-        return true;
-    }
-
-    /**
-     * Determine if we can greedily navigate towards destLoc, inclusive of whether destLoc is traversable. We need to be
-     * within sensing range of destLoc for this to work.
-     */
-    private final boolean canPathTowardsLocation2(final MapLocation destLoc) {
-        final MapLocation currLoc = bot.myLoc;
-        final float destDistance = currLoc.distanceTo(destLoc);
-        if (destDistance > bot.myType.sensorRadius - bot.myType.bodyRadius) {
-            return false;
-        }
-        // we use overlapping circles that cover a rectangular box with robot width and length of travel
-        // to find potential obstacles.
-        final float startDist = bot.myType.bodyRadius; // start point of the centers of circles
-        final float endDist = destDistance + bot.myType.bodyRadius; // end point of centers of circles, no need to go
-                                                                    // further than this
-        final float senseRadius = (float) (bot.myType.bodyRadius * Math.sqrt(2));
-        final Direction destDir = currLoc.directionTo(destLoc);
-        float centerDist = startDist;
-        while (centerDist <= endDist) {
-            final MapLocation centerLoc = currLoc.add(destDir, centerDist);
-            final RobotInfo[] robots = bot.rc.senseNearbyRobots(centerLoc, senseRadius, null);
-            if (Combat.willObjectCollideWithRobot(bot, destDir, destDistance, bot.myType.bodyRadius, robots)) {
-                return false;
-            }
-            final TreeInfo[] trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
-            if (Combat.willObjectCollideWithTree(bot, destDir, destDistance, bot.myType.bodyRadius, trees)) {
-                return false;
-            }
-            centerDist += 2 * bot.myType.bodyRadius;
         }
         return true;
     }

@@ -132,6 +132,9 @@ public strictfp class TangentBugNavigator {
                 // TODO: do we need to go step by step in case we overshoot the goal?
                 Debug.debug_dot(bot, followWallPoint.obstacle.location, 0, 255, 0); // start: green
                 for (int i = pointsSize - 1; i >= 0; i--) {
+                    if (Clock.getBytecodesLeft() < 3000) {
+                        i = 0;
+                    }
                     final FollowWallPoint candidate = pointsList[i];
                     final MapLocation edgeLoc = candidate.getEdgeLoc(currLoc, this);
                     Debug.debug_dot(bot, edgeLoc, 0, 0, 255);
@@ -146,6 +149,9 @@ public strictfp class TangentBugNavigator {
                         }
                         followWallPoint = candidate;
                         break;
+                    }
+                    if (Clock.getBytecodesLeft() < 3000 && i > 1) {
+                        i = 1;
                     }
                 }
                 final MapLocation edgeLoc = followWallPoint.getEdgeLoc(currLoc, this);
@@ -220,14 +226,24 @@ public strictfp class TangentBugNavigator {
         final Set<FollowWallPoint> seen = new HashSet<FollowWallPoint>();
         seen.add(startPoint);
         ObstacleInfo currObstacle = startPoint.obstacle;
+        Direction previousDir = null;
         Direction obstacleDir = startPoint.previousObstacle.location.directionTo(currObstacle.location);
         boolean found = true;
+        boolean first = true; // always process start point at least once
         boolean madeLoop = false;
         outer: while (found && Clock.getBytecodesLeft() >= 5000) {
             found = false;
             final float senseRadius = currObstacle.radius + bot.myType.bodyRadius * 2 + EPS;
+            // break if we are no longer in sensor range and the angle has turned away
+            if (!first && bot.myLoc.distanceTo(currObstacle.location) + senseRadius > bot.myType.sensorRadius) {
+                final float radBetween = previousDir.radiansBetween(obstacleDir);
+                if (preferRight && radBetween > 0 || !preferRight && radBetween < 0) {
+                    break;
+                }
+            }
             Debug.debug_line(bot, currObstacle.location,
                     currObstacle.location.add(currLoc.directionTo(currObstacle.location), senseRadius), 255, 0, 255);
+            first = false;
             ObstacleInfo nextObstacle = null;
             // if archon or tree obstacle, has issues, we will need to supplement with another method
             final int size = getObstaclesAroundObstacle(currObstacle, sensedObstacles);
@@ -271,6 +287,7 @@ public strictfp class TangentBugNavigator {
                 seen.add(nextPoint);
                 pointsList[pointsSize++] = nextPoint;
                 found = true;
+                previousDir = obstacleDir;
                 obstacleDir = currObstacle.location.directionTo(nextObstacle.location);
                 currObstacle = nextObstacle;
                 if (DEBUG) {

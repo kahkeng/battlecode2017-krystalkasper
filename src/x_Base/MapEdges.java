@@ -41,6 +41,18 @@ public strictfp class MapEdges {
         }
     }
 
+    public final boolean isOffMap(final MapLocation loc) {
+        // We determine a location to be "off map" if a robot centered at this loc will overlap with
+        // map boundaries
+        final float bodyRadius = bot.myType.bodyRadius;
+        if (maxX - loc.x <= bodyRadius || loc.x - minX <= bodyRadius || maxY - loc.y <= bodyRadius
+                || loc.y - minY <= bodyRadius) {
+            // System.out.println("offmap " + loc + " " + minX + "/" + maxX + " " + minY + "/" + maxY);
+            return true;
+        }
+        return false;
+    }
+
     public final void detectMapEdges() throws GameActionException {
         final MapLocation myLoc = bot.rc.getLocation();
         final float sensorRange = bot.myType.sensorRadius - 0.01f;

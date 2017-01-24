@@ -212,11 +212,19 @@ public strictfp class Combat {
     public static final boolean willObjectCollideWithTreeOrRobot(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius,
             final MapLocation targetLoc, final float targetRadius, final boolean isTargetRobot) {
+        // System.out .println("willObjectCollide " + objectDir + " " + totalDistance + " " + targetLoc + " " +
+        // targetRadius);
+        // System.out.println("myLoc " + bot.myLoc);
+        // System.out.println("goto " + bot.myLoc.add(objectDir, totalDistance));
+        Debug.debug_dot(bot, bot.myLoc.add(objectDir, totalDistance), 0, 255, 0);
+        // System.out.println("apart " + bot.myLoc.add(objectDir, totalDistance).distanceTo(targetLoc));
         final float targetDist = bot.myLoc.distanceTo(targetLoc);
+        // System.out.println("targetDist=" + targetDist);
         if (!isTargetRobot && targetDist <= targetRadius + objectRadius + EPS) { // scout over a tree
             // check if the bullet coming from scout's edge will overlap with tree
             final MapLocation bulletLoc = bot.myLoc.add(objectDir, bot.myType.bodyRadius);
             if (bulletLoc.distanceTo(targetLoc) < targetRadius - EPS) {
+                // System.out.println("collide1 " + bulletLoc.distanceTo(targetLoc) + "/" + targetRadius);
                 return true; // will collide
             } else {
                 return false; // won't collide
@@ -230,10 +238,13 @@ public strictfp class Combat {
         final float limitDist = (float) (Math.cos(theta) * Math.cos(theta) * targetDist);
         final float straightDist = (float) Math.cos(diffRad) * totalDistance;
         if (straightDist >= limitDist) {
+            // System.out.println( "collide3 " + straightDist + "/" + limitDist + " " + totalDistance + " " + diffRad +
+            // " " + theta);
             return true; // will collide
         }
         final float apartDist = bot.myLoc.add(objectDir, totalDistance).distanceTo(targetLoc);
         if (apartDist <= targetRadius + objectRadius) {
+            // System.out.println("collide4 " + apartDist + "/" + (targetRadius + objectRadius));
             return true; // will collide
         }
         return false;
@@ -247,6 +258,7 @@ public strictfp class Combat {
             if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, tree.location,
                     tree.getRadius(), /* isTargetRobot= */false)) {
                 Debug.debug_dot(bot, tree.location, 0, 0, 0);
+                // Debug.debug_print(bot, "colliding with tree " + tree);
                 return true;
             }
         }

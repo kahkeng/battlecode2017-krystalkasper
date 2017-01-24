@@ -5,7 +5,6 @@ import java.util.Set;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
-import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
@@ -16,7 +15,7 @@ public strictfp class TangentBugNavigator {
     private static final boolean DEBUG = true;
     private static final int MAX_WALLS = 100;
     private static final float EPS = 0.04f; // buffer to add to not always exactly touch edges
-    private static final float LEAVE_THRESHOLD = 1.0f; // distance improvement before we leave obstacle
+    private static final float LEAVE_THRESHOLD = 0.0f; // distance improvement before we leave obstacle
 
     boolean preferRight;
 
@@ -39,7 +38,7 @@ public strictfp class TangentBugNavigator {
     public TangentBugNavigator(final BotBase bot) {
         this.bot = bot;
         this.rc = bot.rc;
-        preferRight = false;
+        preferRight = true;
         reset();
     }
 
@@ -138,7 +137,9 @@ public strictfp class TangentBugNavigator {
                     }
                     final FollowWallPoint candidate = pointsList[i];
                     final MapLocation edgeLoc = candidate.getEdgeLoc(currLoc, this);
-                    Debug.debug_dot(bot, edgeLoc, 0, 0, 255);
+                    Debug.debug_line(bot, candidate.obstacle.location, edgeLoc, 0, 0, 255);
+                    // System.out.println( i + "/" + pointsSize + " " + Clock.getBytecodesLeft() + " " + candidate + " "
+                    // + edgeLoc);
                     boolean isClear = canPathTowardsLocation(edgeLoc);
                     if (DEBUG) {
                         // Debug.debug_print(bot, " candidate wp " + candidate + " isClear=" + isClear + " edgeLoc=" +
@@ -156,16 +157,12 @@ public strictfp class TangentBugNavigator {
                     }
                 }
                 final MapLocation edgeLoc = followWallPoint.getEdgeLoc(currLoc, this);
-                // Check if this is off map, if so, we reverse direction
-                try {
-                    final MapLocation offLoc = edgeLoc.add(currLoc.directionTo(edgeLoc), bot.myType.bodyRadius);
-                    if (rc.canSenseLocation(offLoc) && !rc.onTheMap(offLoc)) {
-                        preferRight = !preferRight;
-                        reset();
-                        continue;
-                    }
-                } catch (GameActionException e) {
-                    e.printStackTrace();
+                // Check if one stride towards edgeLoc is off map, if so, we reverse direction
+                if (bot.mapEdges.isOffMap(bot.myLoc.add(bot.myLoc.directionTo(edgeLoc), bot.myType.strideRadius))) {
+                    Debug.debug_print(bot, "reversing");
+                    preferRight = !preferRight;
+                    reset();
+                    continue;
                 }
                 Debug.debug_dot(bot, followWallPoint.obstacle.location, 255, 0, 0); // end: red
                 Debug.debug_dot(bot, edgeLoc, 255, 255, 0);
@@ -191,6 +188,9 @@ public strictfp class TangentBugNavigator {
         final float destDistance = currLoc.distanceTo(destLoc);
         if (destDistance > bot.myType.sensorRadius - bot.myType.bodyRadius) {
             return false;
+        }
+        if (destDistance <= bot.myType.strideRadius) {
+            return rc.canMove(destLoc);
         }
         final Direction destDir = currLoc.directionTo(destLoc);
         if (Combat.willObjectCollideWithRobots2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
@@ -393,7 +393,8 @@ public strictfp class TangentBugNavigator {
             final Direction dir;
             // If we are practically adjacent to obstacle already, round around it
             if (obsDist <= radiiSum + EPS * 2) { // + nav.bot.myType.strideRadius?
-                final float sine = nav.bot.myType.strideRadius / 2 / radiiSum;
+                // The divisor has to include the buffer that we will be giving ourselves away from obstacle
+                final float sine = nav.bot.myType.strideRadius / 2 / (radiiSum + EPS * 2);
                 final float alpha = (float) Math.asin(sine) * 2;
                 dir = preferRight ? obstacle.location.directionTo(currLoc).rotateLeftRads(alpha)
                         : obstacle.location.directionTo(currLoc).rotateRightRads(alpha);

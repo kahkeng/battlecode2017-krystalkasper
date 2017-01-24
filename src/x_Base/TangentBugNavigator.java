@@ -5,6 +5,7 @@ import java.util.Set;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
@@ -95,13 +96,13 @@ public strictfp class TangentBugNavigator {
                             obstacleInfo.radius + bot.myType.bodyRadius);
                     lastMetObstacleDist = lastMetObstacleLoc.distanceTo(destLoc);
                     if (DEBUG) {
-                        Debug.debug_print(bot,
-                                "met obstacle " + lastObstacleLoc + " followWallPoint=" + followWallPoint);
+                        // Debug.debug_print(bot, "met obstacle " + lastObstacleLoc + " followWallPoint=" +
+                        // followWallPoint);
                     }
                     continue;
                 }
                 if (DEBUG) {
-                    Debug.debug_print(bot, "returning1 " + destLoc);
+                    // Debug.debug_print(bot, "returning1 " + destLoc);
                 }
                 return destLoc;
             }
@@ -113,13 +114,20 @@ public strictfp class TangentBugNavigator {
                 // TODO: also check that way to goal is unimpeded?
                 if (currLoc.distanceTo(destLoc) < Math.max(lastMetObstacleDist - LEAVE_THRESHOLD, EPS)) {
                     if (DEBUG) {
-                        Debug.debug_print(bot,
-                                "leaving obstacle at " + currLoc + " followWallPoint=" + followWallPoint);
+                        // Debug.debug_print(bot, "leaving obstacle at " + currLoc + " followWallPoint=" +
+                        // followWallPoint);
                     }
                     state = State.TOWARD_GOAL;
                     followWallPoint = null;
                     continue;
                 }
+                // Check if followWallPoint is still valid, esp if obstacle has moved away
+                if (!followWallPoint.isValid(this)) {
+                    Debug.debug_print(bot, "obstacle moved");
+                    reset();
+                    continue;
+                }
+
                 computeSubsequentWallPoints(followWallPoint, maxDist);
                 if (DEBUG) {
                     /*
@@ -159,7 +167,7 @@ public strictfp class TangentBugNavigator {
                 final MapLocation edgeLoc = followWallPoint.getEdgeLoc(currLoc, this);
                 // Check if one stride towards edgeLoc is off map, if so, we reverse direction
                 if (bot.mapEdges.isOffMap(bot.myLoc.add(bot.myLoc.directionTo(edgeLoc), bot.myType.strideRadius))) {
-                    Debug.debug_print(bot, "reversing");
+                    // Debug.debug_print(bot, "reversing");
                     preferRight = !preferRight;
                     reset();
                     continue;
@@ -167,8 +175,7 @@ public strictfp class TangentBugNavigator {
                 Debug.debug_dot(bot, followWallPoint.obstacle.location, 255, 0, 0); // end: red
                 Debug.debug_dot(bot, edgeLoc, 255, 255, 0);
                 if (DEBUG) {
-                    Debug.debug_print(bot,
-                            "returning2 " + edgeLoc + " followWallPoint=" + followWallPoint);
+                    // Debug.debug_print(bot, "returning2 " + edgeLoc + " followWallPoint=" + followWallPoint);
                 }
                 return edgeLoc;
             }
@@ -294,7 +301,7 @@ public strictfp class TangentBugNavigator {
                 if (seen.contains(nextPoint)) {
                     // we've made a loop around an existing obstacle
                     if (DEBUG) {
-                        Debug.debug_print(bot, "  made loop around");
+                        // Debug.debug_print(bot, " made loop around");
                     }
                     madeLoop = true;
                     break outer;
@@ -384,10 +391,28 @@ public strictfp class TangentBugNavigator {
         }
 
         /**
+         * Determine if this wall point obstacle is still valid, or if it might have moved.
+         */
+        final boolean isValid(final TangentBugNavigator nav) {
+            if (!nav.bot.rc.canSenseLocation(obstacle.location)) {
+                return true;
+            }
+            try {
+                if (obstacle.isRobot && nav.bot.rc.senseRobotAtLocation(obstacle.location) == null ||
+                        !obstacle.isRobot && nav.bot.rc.senseTreeAtLocation(obstacle.location) == null) {
+                    return false;
+                }
+            } catch (GameActionException e) {
+                return false;
+            }
+            return true;
+        }
+
+        /**
          * Return location at edge of wall. This might change depending on current location, if we are at a sharp edge
          * (number of orthogonal adjacent obstacles is 1). This might also not return a traversable location.
          */
-        final MapLocation getEdgeLoc(final MapLocation currLoc, TangentBugNavigator nav) {
+        final MapLocation getEdgeLoc(final MapLocation currLoc, final TangentBugNavigator nav) {
             final float radiiSum = (nav.bot.myType.bodyRadius + obstacle.radius);
             final float obsDist = currLoc.distanceTo(obstacle.location);
             final Direction dir;

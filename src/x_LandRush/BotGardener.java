@@ -18,9 +18,6 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
                     startLoop();
                     Clock.yield();
                 }
-                while (true) {
-                    Clock.yield();
-                }
             } catch (Exception e) {
                 System.out.println("Gardener Exception");
                 e.printStackTrace();

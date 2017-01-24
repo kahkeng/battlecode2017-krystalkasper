@@ -9,6 +9,7 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
+import x_Base.TangentBugNavigator.ObstacleInfo;
 
 public strictfp class BotBase {
 
@@ -26,6 +27,8 @@ public strictfp class BotBase {
     public final int myID;
     public final MapEdges mapEdges;
     public final TangentBugNavigator nav;
+    public final Formations formation;
+    public final Meta meta;
 
     public static MapLocation homeArchon = null;
     public static MapLocation myLoc = null;
@@ -45,8 +48,11 @@ public strictfp class BotBase {
         myID = rc.getID();
         mapEdges = new MapEdges(this);
         nav = new TangentBugNavigator(this);
+        formation = new Formations(this);
+        meta = new Meta(this);
         lastRoundBullets = rc.getTeamBullets();
         bulletsDelta = 0;
+        myLoc = rc.getLocation();
     }
 
     public final void startLoop() throws GameActionException {
@@ -80,6 +86,44 @@ public strictfp class BotBase {
                 minDistance = distance;
             }
         }
+    }
+
+    public final TreeInfo archonFindTreesToShake() throws GameActionException {
+        TreeInfo nearestTree = null;
+        float nearestDist = 0;
+        Direction dir = Direction.NORTH;
+        for (int i = 0; i < 12; i++) {
+            final ObstacleInfo obstacle = Combat.whichRobotOrTreeWillObjectCollideWith(this,
+                    dir, 5.0f, myType.bodyRadius);
+            if (obstacle != null && !obstacle.isRobot) {
+                final TreeInfo tree = rc.senseTree(obstacle.id);
+                if (tree.containedBullets > 0) {
+                    final float dist = myLoc.distanceTo(tree.location);
+                    if (nearestTree == null || dist < nearestDist) {
+                        nearestTree = tree;
+                        nearestDist = dist;
+                    }
+                }
+            }
+            dir = dir.rotateRightDegrees(30.0f);
+        }
+        return nearestTree;
+    }
+
+    public final TreeInfo scoutFindTreesToShake() throws GameActionException {
+        TreeInfo nearestTree = null;
+        float nearestDist = 0;
+        final TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+        for (final TreeInfo tree : trees) {
+            if (tree.containedBullets > 0) {
+                final float dist = myLoc.distanceTo(tree.location);
+                if (nearestTree == null || dist < nearestDist) {
+                    nearestTree = tree;
+                    nearestDist = dist;
+                }
+            }
+        }
+        return nearestTree;
     }
 
     public final void shakeTrees() throws GameActionException {
@@ -118,6 +162,40 @@ public strictfp class BotBase {
             dir = dir.rotateRightDegrees(degreeDelta * i * sign);
         }
         if (i < numTries) {
+            rc.hireGardener(dir);
+            return true;
+        }
+        return false;
+    }
+
+    public final boolean tryHireGardenerWithSpace(Direction dir) throws GameActionException {
+        final int numTries = 12;
+        final float degreeDelta = 360.0f / numTries;
+        for (int i = 0; i < numTries; i++) {
+            if (rc.canHireGardener(dir)) {
+                final MapLocation gardenerLoc = myLoc.add(dir,
+                        myType.bodyRadius + RobotType.GARDENER.bodyRadius + 0.01f);
+                int canBuild = 0;
+                final float buildRadius = RobotType.SOLDIER.bodyRadius;
+                Direction dir2 = dir;
+                for (int j = 0; j < 6; j++) {
+                    final MapLocation buildLoc = gardenerLoc.add(dir2,
+                            RobotType.GARDENER.bodyRadius + buildRadius + 0.01f);
+                    if (rc.senseNearbyRobots(buildLoc, buildRadius, null).length == 0
+                            && rc.senseNearbyTrees(buildLoc, buildRadius, null).length == 0) {
+                        canBuild += 1;
+                        break;
+                    }
+                    dir2 = dir2.rotateRightDegrees(60.0f);
+                }
+                if (canBuild > 0) {
+                    break;
+                }
+            }
+            final int sign = (i % 2) * 2 - 1;
+            dir = dir.rotateRightDegrees(degreeDelta * i * sign);
+        }
+        if (rc.canHireGardener(dir)) {
             rc.hireGardener(dir);
             return true;
         }

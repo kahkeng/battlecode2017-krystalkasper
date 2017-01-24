@@ -5,7 +5,6 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import x_Base.Debug;
-import x_Base.Formations;
 
 public strictfp class BotArcBase extends x_Base.BotBase {
 
@@ -15,14 +14,11 @@ public strictfp class BotArcBase extends x_Base.BotBase {
     /** Flee at this distance from arc and at this step. */
     public static final float FLEE_RADIUS = 4.0f;
 
-    public final Formations formation;
     public static Direction arcDirection;
     public static float radianStep; // positive is rotating clockwise relative to enemy base
 
     public BotArcBase(final RobotController rc) {
         super(rc);
-        formation = new Formations(this);
-        myLoc = rc.getLocation();
         arcDirection = formation.getArcDir(myLoc);
         radianStep = formation.getRadianStep(myLoc, FLEE_RADIUS); // default radian step
     }

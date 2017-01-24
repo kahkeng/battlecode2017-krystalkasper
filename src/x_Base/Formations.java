@@ -14,6 +14,7 @@ public strictfp class Formations {
     public final MapLocation myInitialHomeBase;
     public final MapLocation mapCentroid; // not necessarily map center if reflected map
     public final MapLocation furthestArchon;
+    public final MapLocation nearestArchon;
     public final Direction baseDir; // direction from base to center
     public final float separation;
 
@@ -23,16 +24,22 @@ public strictfp class Formations {
         this.mapCentroid = bot.mapEdges.mapCentroid;
 
         // our home base is the archon that is the furthest from enemy centroid
+        int nearestIndex = 0;
         int furthestIndex = 0;
         float furthestDistance = bot.myInitialArchonLocs[0].distanceTo(enemyInitialCentroid);
+        float nearestDistance = furthestDistance;
         for (int i = 1; i < bot.numInitialArchons; i++) {
             float distance = bot.myInitialArchonLocs[1].distanceTo(enemyInitialCentroid);
             if (distance > furthestDistance) {
                 furthestDistance = distance;
                 furthestIndex = i;
+            } else if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestIndex = i;
             }
         }
         this.furthestArchon = bot.myInitialArchonLocs[furthestIndex];
+        this.nearestArchon = bot.myInitialArchonLocs[nearestIndex];
         this.baseDir = furthestArchon.directionTo(getArcCenter());
         this.myInitialHomeBase = furthestArchon.add(baseDir,
                 RobotType.ARCHON.bodyRadius + GameConstants.BULLET_TREE_RADIUS * 4 + 0.01f);

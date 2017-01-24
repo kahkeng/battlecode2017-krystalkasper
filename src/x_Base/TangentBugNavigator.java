@@ -89,7 +89,7 @@ public strictfp class TangentBugNavigator {
                 if (obstacleInfo != null) {
                     state = State.FOLLOW_OBSTACLE;
                     followWallPoint = new FollowWallPoint(destination,
-                            new ObstacleInfo(currLoc, bot.myType.bodyRadius, true),
+                            new ObstacleInfo(currLoc, bot.myType.bodyRadius, true, 0),
                             obstacleInfo, preferRight, true);
                     lastObstacleLoc = obstacleInfo.location;
                     lastMetObstacleLoc = obstacleInfo.location.add(obstacleInfo.location.directionTo(currLoc),
@@ -220,13 +220,13 @@ public strictfp class TangentBugNavigator {
             if (robot.location.equals(obstacle.location)) {
                 continue;
             }
-            obstacles[size++] = new ObstacleInfo(robot.location, robot.getRadius(), true);
+            obstacles[size++] = new ObstacleInfo(robot.location, robot.getRadius(), true, robot.ID);
         }
         for (final TreeInfo tree : trees) {
             if (tree.location.equals(obstacle.location)) {
                 continue;
             }
-            obstacles[size++] = new ObstacleInfo(tree.location, tree.radius, false);
+            obstacles[size++] = new ObstacleInfo(tree.location, tree.radius, false, tree.ID);
         }
         return size;
     }
@@ -461,20 +461,22 @@ public strictfp class TangentBugNavigator {
         }
     }
 
-    static class ObstacleInfo {
-        final MapLocation location;
-        final float radius;
-        final boolean isRobot;
+    public static class ObstacleInfo {
+        public final MapLocation location;
+        public final float radius;
+        public final boolean isRobot;
+        public final int id;
 
-        ObstacleInfo(final MapLocation location, final float radius, boolean isRobot) {
+        ObstacleInfo(final MapLocation location, final float radius, final boolean isRobot, final int id) {
             this.location = location;
             this.radius = radius;
             this.isRobot = isRobot;
+            this.id = id;
         }
 
         @Override
         public int hashCode() {
-            return location.hashCode();
+            return location.hashCode() + id;
         }
 
         @Override
@@ -483,12 +485,12 @@ public strictfp class TangentBugNavigator {
                 return false;
             }
             final ObstacleInfo p = (ObstacleInfo) o;
-            return p.location.equals(location) && p.radius == radius && p.isRobot == isRobot;
+            return p.location.equals(location) && p.radius == radius && p.isRobot == isRobot && p.id == id;
         }
 
         @Override
         public String toString() {
-            return "ObstacleInfo(" + location + ", " + radius + ", " + isRobot + ")";
+            return "ObstacleInfo(" + location + ", " + radius + ", " + isRobot + ", " + id + ")";
         }
 
     }

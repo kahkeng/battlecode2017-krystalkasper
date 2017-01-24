@@ -333,7 +333,7 @@ public strictfp class Combat {
                         robotRadius, /* isTargetRobot= */true)) {
                     final float edgeDist = currLoc.distanceTo(robot.location) - robotRadius;
                     if (nearestObstacle == null || edgeDist < nearestEdgeDist) {
-                        nearestObstacle = new ObstacleInfo(robot.location, robotRadius, true);
+                        nearestObstacle = new ObstacleInfo(robot.location, robotRadius, true, robot.ID);
                         nearestEdgeDist = edgeDist;
                     }
                 }
@@ -344,7 +344,7 @@ public strictfp class Combat {
                         treeRadius, /* isTargetRobot= */false)) {
                     final float edgeDist = currLoc.distanceTo(tree.location) - treeRadius;
                     if (nearestObstacle == null || edgeDist < nearestEdgeDist) {
-                        nearestObstacle = new ObstacleInfo(tree.location, treeRadius, false);
+                        nearestObstacle = new ObstacleInfo(tree.location, treeRadius, false, tree.ID);
                         nearestEdgeDist = edgeDist;
                     }
                 }
@@ -357,7 +357,7 @@ public strictfp class Combat {
         return null;
     }
 
-    public static final boolean harrassEnemy(final x_Arc.BotArcBase bot) throws GameActionException {
+    public static final boolean harrassEnemy(final BotBase bot) throws GameActionException {
         final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
         RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {

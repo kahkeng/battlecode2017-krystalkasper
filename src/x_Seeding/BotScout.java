@@ -6,6 +6,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.TreeInfo;
 import x_Base.Combat;
+import x_Base.Messaging;
 
 public strictfp class BotScout extends x_Base.BotBase {
 
@@ -23,6 +24,7 @@ public strictfp class BotScout extends x_Base.BotBase {
         while (true) {
             try {
                 startLoop();
+                Messaging.broadcastScout(this);
 
                 if (Combat.avoidEnemy(this)) {
                     lastSawEnemy = rc.getRoundNum();
@@ -53,19 +55,24 @@ public strictfp class BotScout extends x_Base.BotBase {
     }
 
     public final void patrolEnemyArchonLocs(final int attempt) throws GameActionException {
-        if (attempt > 3 || rc.getRoundNum() - lastSawEnemy > 100) {
-            // go to a random broadcasted location
-            final MapLocation[] locs = rc.senseBroadcastingRobotLocations();
-            if (locs.length == 0) {
-                randomTarget = formation.mapCentroid;
-            } else {
-                randomTarget = locs[0];
-            }
+        if (attempt > 4) {
+            // go to the furthest broadcasted location from my archon
+            /*
+             * final MapLocation[] locs = rc.senseBroadcastingRobotLocations();
+             * 
+             * if (locs.length == 0) { randomTarget = formation.mapCentroid; } else { randomTarget = locs[0]; }
+             */
+            randomTarget = formation.mapCentroid;
             return;
         }
-        final MapLocation archonLoc = enemyInitialArchonLocs[archonID];
-        if (myLoc.distanceTo(archonLoc) <= 6.0f) {
-            archonID = (archonID + 1) % numInitialArchons;
+        final MapLocation archonLoc;
+        if (archonID < enemyInitialArchonLocs.length) {
+            archonLoc = enemyInitialArchonLocs[archonID];
+        } else {
+            archonLoc = Messaging.getLastEnemyLocation(this);
+        }
+        if (archonLoc == null || myLoc.distanceTo(archonLoc) <= 6.0f) {
+            archonID = (archonID + 1) % (numInitialArchons + 1);
             patrolEnemyArchonLocs(attempt + 1);
         } else {
             tryMove(archonLoc);

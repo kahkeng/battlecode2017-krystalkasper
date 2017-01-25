@@ -12,6 +12,7 @@ public strictfp class Messaging {
     /** Number of fields for archon data. */
     public static final int FIELDS_ARCHON = 3;
     public static final int FIELDS_GARDENER = 1;
+    public static final int FIELDS_SCOUT = 1;
     public static final int FIELDS_ENEMY_ROBOTS = 3;
     public static final int FIELDS_NEUTRAL_TREES = 3;
     public static final int FIELDS_MY_TREES = 4;
@@ -28,7 +29,9 @@ public strictfp class Messaging {
             + GameConstants.NUMBER_OF_ARCHONS_MAX * FIELDS_ARCHON;
     public static final int OFFSET_GARDENER_START = OFFSET_ARCHON_END;
     public static final int OFFSET_GARDENER_END = OFFSET_GARDENER_START + BotArchon.MAX_GARDENERS * FIELDS_GARDENER;
-    public static final int OFFSET_ENEMY_ROBOTS_START = OFFSET_GARDENER_END;
+    public static final int OFFSET_SCOUT_START = OFFSET_GARDENER_END;
+    public static final int OFFSET_SCOUT_END = OFFSET_SCOUT_START + BotArchon.MAX_SCOUTS * FIELDS_SCOUT;
+    public static final int OFFSET_ENEMY_ROBOTS_START = OFFSET_SCOUT_END;
     public static final int OFFSET_ENEMY_ROBOTS_END = OFFSET_ENEMY_ROBOTS_START
             + BotBase.MAX_ENEMY_ROBOTS * FIELDS_ENEMY_ROBOTS;
     public static final int OFFSET_NEUTRAL_TREES_START = OFFSET_ENEMY_ROBOTS_END;
@@ -181,6 +184,39 @@ public strictfp class Messaging {
         return count;
     }
 
+    public static final void broadcastScout(final x_Seeding.BotScout bot) throws GameActionException {
+        final int threshold = bot.rc.getRoundNum();
+        int channel = OFFSET_SCOUT_START;
+        while (channel < OFFSET_SCOUT_END && getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {
+            channel += FIELDS_SCOUT;
+        }
+        if (channel < OFFSET_SCOUT_END) {
+            bot.rc.broadcast(channel, getHeartbeat(bot));
+        }
+    }
+
+    public static final void broadcastPotentialScout(final BotBase bot) throws GameActionException {
+        final int threshold = bot.rc.getRoundNum();
+        int channel = OFFSET_SCOUT_START;
+        while (channel < OFFSET_SCOUT_END && getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {
+            channel += FIELDS_SCOUT;
+        }
+        if (channel < OFFSET_SCOUT_END) {
+            bot.rc.broadcast(channel, getPotentialHeartbeat(bot, 20));
+        }
+    }
+
+    public static final int getNumScouts(final BotBase bot) throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int count = 0;
+        int channel = OFFSET_SCOUT_START;
+        while (channel < OFFSET_SCOUT_END && getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {
+            count += 1;
+            channel += FIELDS_SCOUT;
+        }
+        return count;
+    }
+
     public static final void broadcastEnemyRobot(final BotBase bot, final RobotInfo enemyRobot)
             throws GameActionException {
         final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
@@ -213,6 +249,16 @@ public strictfp class Messaging {
             channel += FIELDS_ENEMY_ROBOTS;
         }
         return count;
+    }
+
+    public static final MapLocation getLastEnemyLocation(final BotBase bot) throws GameActionException {
+        int channel = OFFSET_ENEMY_ROBOTS_START;
+        final int heartbeat = bot.rc.readBroadcast(channel);
+        if (heartbeat == 0) {
+            return null;
+        }
+        return new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
+                bot.rc.readBroadcastFloat(channel + 2));
     }
 
     public static final void broadcastNeutralTree(final BotBase bot, final TreeInfo neutralTree)

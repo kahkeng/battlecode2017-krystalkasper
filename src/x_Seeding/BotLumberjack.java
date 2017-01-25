@@ -141,6 +141,7 @@ public strictfp class BotLumberjack extends BotBase {
             }
         }
         if (nearestTree != null) {
+            Messaging.broadcastNeutralTree(this, nearestTree);
             clearSpecificNeutralTree(nearestTree);
             return;
         }
@@ -224,7 +225,7 @@ public strictfp class BotLumberjack extends BotBase {
             return;
         }
         final TreeInfo[] neutralTrees = rc.senseNearbyTrees(myLoc,
-                myType.bodyRadius + +GameConstants.INTERACTION_DIST_FROM_EDGE + 0.01f,
+                myType.bodyRadius + GameConstants.INTERACTION_DIST_FROM_EDGE + 0.01f,
                 Team.NEUTRAL);
         // Prioritize trees with robots, lowest health first
         for (final TreeInfo tree : neutralTrees) {

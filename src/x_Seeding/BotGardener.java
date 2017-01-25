@@ -108,7 +108,9 @@ public strictfp class BotGardener extends BotBase {
                         }
                     }
                 }
-                if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
+                if (Messaging.getNumScouts(this) < 1) {
+                    buildScouts(formation.baseDir);
+                } else if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
                     buildLumberjacksForFarming();
                     if (rc.getRobotCount() < rc.getTreeCount()) {
                         buildSoldiers(formation.baseDir);
@@ -260,6 +262,21 @@ public strictfp class BotGardener extends BotBase {
         return bestTree;
     }
 
+    public final void buildScouts(final Direction buildDir) throws GameActionException {
+        if (!rc.isBuildReady()) {
+            return;
+        }
+        final RobotType buildType = RobotType.SCOUT;
+        if (rc.getTeamBullets() < buildType.bulletCost + buildCount * BUILD_PENALTY) {
+            return;
+        }
+
+        if (tryBuildRobot(buildType, buildDir)) {
+            Messaging.broadcastPotentialScout(this);
+            buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+        }
+    }
+
     public final void buildSoldiers(final Direction buildDir) throws GameActionException {
         if (!rc.isBuildReady()) {
             return;
@@ -348,11 +365,13 @@ public strictfp class BotGardener extends BotBase {
         if (meta.isLongGame()) {
             while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
                 startLoop();
+                Messaging.broadcastPotentialScout(this);
                 earlyFleeFromEnemy();
                 Clock.yield();
             }
             while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
                 startLoop();
+                Messaging.broadcastPotentialScout(this);
                 earlyFleeFromEnemy();
                 Clock.yield();
             }

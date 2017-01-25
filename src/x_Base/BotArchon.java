@@ -8,6 +8,7 @@ import battlecode.common.RobotController;
 
 public strictfp class BotArchon extends BotBase {
     public static final int MAX_GARDENERS = 2;
+    public static final int MAX_SCOUTS = 3;
 
     public int myArchonID = -1;
 

@@ -53,6 +53,12 @@ public strictfp class MapEdges {
         return false;
     }
 
+    public final float distanceFromCorner(final MapLocation loc) {
+        final float dx = Math.min(maxX - loc.x, loc.x - minX);
+        final float dy = Math.min(maxY - loc.y, loc.y - minY);
+        return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
     public final void detectMapEdges() throws GameActionException {
         final MapLocation myLoc = bot.rc.getLocation();
         final float sensorRange = bot.myType.sensorRadius - 0.01f;

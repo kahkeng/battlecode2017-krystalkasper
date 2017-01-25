@@ -29,7 +29,9 @@ public strictfp class BotScout extends x_Base.BotBase {
                 } else {
                     final TreeInfo tree = scoutFindTreesToShake();
                     if (tree != null) {
-                        tryMove(tree.location);
+                        if (!tryMove(tree.location)) {
+                            randomlyJitter();
+                        }
                     } else if (randomTarget != null) {
                         if (myLoc.distanceTo(randomTarget) <= 6.0f) {
                             randomTarget = null;

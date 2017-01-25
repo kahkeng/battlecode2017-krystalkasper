@@ -54,11 +54,9 @@ public strictfp class BotGardener extends x_Arc.BotGardener {
             startLoop();
             Clock.yield();
         }
-        if (meta.isLongGame()) {
-            while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
-                startLoop();
-                Clock.yield();
-            }
+        while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
+            startLoop();
+            Clock.yield();
         }
         while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
             startLoop();

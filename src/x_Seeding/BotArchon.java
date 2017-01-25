@@ -1,18 +1,24 @@
 package x_Seeding;
 
+import java.util.HashMap;
+
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
+import battlecode.common.GameConstants;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.TreeInfo;
 import x_Base.Combat;
+import x_Base.Debug;
+import x_Base.Messaging;
 
 public strictfp class BotArchon extends x_Base.BotArchon {
 
     /** Hire a gardener if none in this radius. */
     public static final float GARDENER_RADIUS = 10.0f;
+    public static final float ARCHON_WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH / 4;
+    public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
 
     public BotArchon(final RobotController rc) {
         super(rc);
@@ -31,9 +37,11 @@ public strictfp class BotArchon extends x_Base.BotArchon {
                 // Messaging.broadcastArchonLocation(this);
 
                 // TODO: prioritized enemies
-                final MapLocation enemyLoc = Combat.senseNearbyEnemies(this);
-                if (enemyLoc != null) {
-                    // fleeFromEnemyAlongArc(enemyLoc);
+                final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
+                final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);
+                if (worstEnemy != null) {
+                    Messaging.broadcastEnemyRobot(this, worstEnemy);
+                    fleeFromEnemy(worstEnemy.location);
                 }
                 if (!shouldSpawnGardeners && (rc.getRoundNum() > 55
                         || rc.getRoundNum() <= 5 && rc.getRobotCount() == numInitialArchons)) {
@@ -41,11 +49,18 @@ public strictfp class BotArchon extends x_Base.BotArchon {
                 }
                 if (shouldSpawnGardeners) {
                     hireGardenersIfNoneAroundWithSpace();
+                    if (worstEnemy == null) {
+                        hireGardenersIfNeedWatering();
+                    }
                 }
 
                 final TreeInfo tree = archonFindTreesToShake();
                 if (tree != null) {
-                    tryMove(tree.location);
+                    if (!tryMove(tree.location)) {
+                        randomlyJitter();
+                    }
+                } else {
+                    randomlyJitter();
                 }
                 // moveCloserToArc();
 
@@ -59,6 +74,37 @@ public strictfp class BotArchon extends x_Base.BotArchon {
 
     }
 
+    public final void hireGardenersIfNeedWatering() throws GameActionException {
+        // Check if we have a tree to water
+        TreeInfo bestTree = null;
+        float bestScore = 0f;
+        final TreeInfo[] trees = rc.senseNearbyTrees(-1, myTeam);
+        for (final TreeInfo tree : trees) {
+            // Check if this is a new tree
+            Integer round = seenTreeIDs.get(tree.ID);
+            if (round == null) {
+                seenTreeIDs.put(tree.ID, rc.getRoundNum());
+                continue;
+            } else if (rc.getRoundNum() - round < 10) {
+                continue;
+            }
+            final float score = tree.health /*
+                                             * - GameConstants.BULLET_TREE_DECAY_RATE * myLoc.distanceTo(tree.location)
+                                             * / RobotType.GARDENER.strideRadius / 1.2f
+                                             */;
+            if (score < ARCHON_WATER_THRESHOLD) {
+                Debug.debug_line(this, myLoc, tree.location, 255, 0, 0);
+                if (bestTree == null || score < bestScore) {
+                    bestTree = tree;
+                    bestScore = score;
+                }
+            }
+        }
+        if (bestTree != null) {
+            tryHireGardener(myLoc.directionTo(bestTree.location));
+        }
+    }
+
     public final void hireGardenersIfNoneAroundWithSpace() throws GameActionException {
         // Only hire if gardener has space to spawn
         final RobotInfo[] robots = rc.senseNearbyRobots(GARDENER_RADIUS, myTeam);
@@ -67,17 +113,12 @@ public strictfp class BotArchon extends x_Base.BotArchon {
             if (robot.type != RobotType.GARDENER) {
                 continue;
             }
-            // those surrounded by 4 trees don't count
-            /*
-             * final TreeInfo[] trees = rc.senseNearbyTrees(robot.location, robot.type.bodyRadius +
-             * GameConstants.BULLET_TREE_RADIUS + 0.5f, myTeam); if (trees.length >= 4) { continue; }
-             */
             found = true;
             break;
         }
         // Debug.debug_print(this, "hire gardener " + found);
         if (!found) {
-            tryHireGardenerWithSpace(formation.getArcDir(myLoc).opposite());
+            tryHireGardenerWithSpace(formation.baseDir);
         }
     }
 }

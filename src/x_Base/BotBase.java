@@ -15,6 +15,8 @@ public strictfp class BotBase {
 
     public static final float MAX_BULLET_STASH = 1000.0f;
     public static final int MAX_ENEMY_ROBOTS = 10; // in message broadcasts
+    public static final float ARCHON_SHAKE_DISTANCE = 10.0f;
+    public static final float FLEE_DISTANCE = 5.0f;
     public static boolean DEBUG = false;
 
     public final RobotController rc;
@@ -94,7 +96,7 @@ public strictfp class BotBase {
         Direction dir = Direction.NORTH;
         for (int i = 0; i < 12; i++) {
             final ObstacleInfo obstacle = Combat.whichRobotOrTreeWillObjectCollideWith(this,
-                    dir, 5.0f, myType.bodyRadius);
+                    dir, ARCHON_SHAKE_DISTANCE, myType.bodyRadius);
             if (obstacle != null && !obstacle.isRobot) {
                 final TreeInfo tree = rc.senseTree(obstacle.id);
                 if (tree.containedBullets > 0) {
@@ -133,6 +135,27 @@ public strictfp class BotBase {
                 rc.shake(tree.ID);
                 return;
             }
+        }
+    }
+
+    public final void fleeFromEnemy(final MapLocation enemyLoc) throws GameActionException {
+        final Direction enemyDir = enemyLoc.directionTo(myLoc);
+        final MapLocation fleeLoc = myLoc.add(enemyDir, FLEE_DISTANCE);
+        final MapLocation fleeLoc2;
+        if (mapEdges.distanceFromCorner(fleeLoc) < FLEE_DISTANCE * 3) {
+            final MapLocation fleeLocL = myLoc.add(enemyDir.rotateLeftDegrees(45.0f), FLEE_DISTANCE);
+            final MapLocation fleeLocR = myLoc.add(enemyDir.rotateRightDegrees(45.0f), FLEE_DISTANCE);
+            if (mapEdges.distanceFromCorner(fleeLocL) > mapEdges.distanceFromCorner(fleeLocR)) {
+                fleeLoc2 = fleeLocL;
+            } else {
+                fleeLoc2 = fleeLocR;
+            }
+        } else {
+            fleeLoc2 = fleeLoc;
+        }
+        nav.setDestination(fleeLoc2);
+        if (!tryMove(nav.getNextLocation())) {
+            randomlyJitter();
         }
     }
 
@@ -207,7 +230,7 @@ public strictfp class BotBase {
     }
 
     public final boolean tryMove(final MapLocation loc, final float moveDistance) throws GameActionException {
-        if (rc.hasMoved()) {
+        if (rc.hasMoved() || loc == null) {
             return false;
         }
         // First, try intended direction

@@ -46,7 +46,7 @@ public strictfp class Combat {
         for (final RobotInfo enemy : enemies) {
             Messaging.broadcastEnemyRobot(bot, enemy);
         }
-        RobotInfo nearestEnemy = enemies.length == 0 ? null : enemies[0];
+        final RobotInfo nearestEnemy = enemies.length == 0 ? null : enemies[0];
         if (nearestEnemy != null) {
             final float minDistance = nearestEnemy.location.distanceTo(bot.myLoc) - nearestEnemy.getRadius()
                     - bot.myType.bodyRadius;
@@ -96,7 +96,7 @@ public strictfp class Combat {
 
     public static final boolean seekAndAttackAndSurroundEnemy(final x_Arc.BotArcBase bot) throws GameActionException {
         final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
-        RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
             final float enemyRadius = worstEnemy.getRadius();
@@ -359,7 +359,7 @@ public strictfp class Combat {
 
     public static final boolean harrassEnemy(final BotBase bot) throws GameActionException {
         final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
-        RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
             Debug.debug_dot(bot, worstEnemy.location, 0, 0, 0);
@@ -446,7 +446,7 @@ public strictfp class Combat {
         for (final RobotInfo enemy : enemies) {
             Messaging.broadcastEnemyRobot(bot, enemy);
         }
-        RobotInfo nearestEnemy = enemies.length == 0 ? null : enemies[0];
+        final RobotInfo nearestEnemy = enemies.length == 0 ? null : enemies[0];
         if (nearestEnemy != null) {
             final float enemyRadius = nearestEnemy.getRadius();
             final Direction latestEnemyDir = bot.myLoc.directionTo(nearestEnemy.location);
@@ -484,7 +484,7 @@ public strictfp class Combat {
     public static boolean strikeEnemiesFromBehind(final BotLumberjack bot) throws GameActionException {
         // See if enemy within sensor range
         final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
-        RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
             final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);

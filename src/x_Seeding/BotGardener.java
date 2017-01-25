@@ -200,7 +200,8 @@ public strictfp class BotGardener extends BotBase {
                 if (mapEdges.isOffMap(loc)) {
                     continue;
                 }
-                final TreeInfo[] nearbyTrees = rc.senseNearbyTrees(loc, GameConstants.BULLET_TREE_RADIUS + 0.01f, null);
+                final TreeInfo[] nearbyTrees = rc.senseNearbyTrees(loc,
+                        GameConstants.BULLET_TREE_RADIUS + myType.bodyRadius * 2 + 0.01f, null);
                 if (nearbyTrees.length > 0) {
                     continue;
                 }
@@ -251,9 +252,13 @@ public strictfp class BotGardener extends BotBase {
         if (bestTree == null && onlyHighPriority) {
             final int numTrees = Messaging.getMyTrees(broadcastedMyTrees, broadcastedMyTreesHealth, this);
             for (int i = 0; i < numTrees; i++) {
+                final MapLocation treeLoc = broadcastedMyTrees[i];
+                if (myLoc.distanceTo(treeLoc) >= myType.sensorRadius * 1.5f) {
+                    continue;
+                }
                 final float score = broadcastedMyTreesHealth[i];
                 if (bestTree == null || score < bestScore) {
-                    bestTree = new TreeInfo(0, myTeam, broadcastedMyTrees[i], GameConstants.BULLET_TREE_RADIUS, score,
+                    bestTree = new TreeInfo(0, myTeam, treeLoc, GameConstants.BULLET_TREE_RADIUS, score,
                             0, null);
                     bestScore = score;
                 }

@@ -192,6 +192,15 @@ public strictfp class BotBase {
             return;
         }
 
+        final MapLocation enemyLoc = Messaging.getLastEnemyLocation(this);
+        if (enemyLoc != null) {
+            nav.setDestination(enemyLoc);
+            if (!tryMove(nav.getNextLocation())) {
+                randomlyJitter();
+            }
+            return;
+        }
+
         // Get centroid of our trees
         float x = 0, y = 0;
         for (final TreeInfo tree : myTrees) {
@@ -222,8 +231,9 @@ public strictfp class BotBase {
         } else {
             fleeLoc2 = fleeLoc;
         }
-        nav.setDestination(fleeLoc2);
-        if (!tryMove(nav.getNextLocation())) {
+        // nav.setDestination(fleeLoc2);
+        // TODO: flee should only look at trees?
+        if (!tryMove(fleeLoc2)) {
             randomlyJitter();
         }
     }

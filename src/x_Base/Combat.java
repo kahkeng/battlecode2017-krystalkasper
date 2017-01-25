@@ -246,7 +246,7 @@ public strictfp class Combat {
             return true;
         }
         // Else head towards closest known broadcasted enemies
-        return headTowardsBroadcastedEnemy(bot, 100.0f);
+        return headTowardsBroadcastedEnemy(bot, 50.0f);
     }
 
     public static final boolean seekAndAttackAndSurroundEnemy3(final BotBase bot) throws GameActionException {
@@ -260,15 +260,16 @@ public strictfp class Combat {
             // move first before attacking
             if (!bot.rc.hasMoved()) {
                 final MapLocation moveLoc;
-                if (worstEnemy.type == RobotType.GARDENER) {
-                    moveLoc = worstEnemy.location;
+                final Direction sideDir; // side dir depends on which side of enemy we are on
+                if (bot.nav.preferRight) {
+                    sideDir = enemyDir.rotateLeftDegrees(30.0f);
                 } else {
-                    final Direction sideDir; // side dir depends on which side of enemy we are on
-                    if (bot.nav.preferRight) {
-                        sideDir = enemyDir.rotateLeftDegrees(30.0f);
-                    } else {
-                        sideDir = enemyDir.rotateRightDegrees(30.0f);
-                    }
+                    sideDir = enemyDir.rotateRightDegrees(30.0f);
+                }
+                if (worstEnemy.type == RobotType.GARDENER) {
+                    moveLoc = worstEnemy.location.add(sideDir,
+                            enemyRadius + bot.myType.bodyRadius + EPS);
+                } else {
                     moveLoc = worstEnemy.location.add(sideDir,
                             enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - EPS);
                 }

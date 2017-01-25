@@ -9,6 +9,7 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 import battlecode.common.TreeInfo;
 
 public strictfp class TangentBugNavigator {
@@ -220,7 +221,8 @@ public strictfp class TangentBugNavigator {
             final ObstacleInfo[] obstacles) {
         int size = 0;
         final RobotInfo[] robots = rc.senseNearbyRobots(obstacle.location, senseRadius, null);
-        final TreeInfo[] trees = rc.senseNearbyTrees(obstacle.location, senseRadius, null);
+        final TreeInfo[] trees = bot.myType == RobotType.SCOUT ? new TreeInfo[0]
+                : rc.senseNearbyTrees(obstacle.location, senseRadius, null);
         for (final RobotInfo robot : robots) {
             if (robot.location.equals(obstacle.location)) {
                 continue;

@@ -366,7 +366,8 @@ public strictfp class Combat {
         while (centerDist <= endDist) {
             final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
             final RobotInfo[] robots = bot.rc.senseNearbyRobots(centerLoc, senseRadius, null);
-            final TreeInfo[] trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
+            final TreeInfo[] trees = bot.myType == RobotType.SCOUT ? new TreeInfo[0]
+                    : bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
             // pick nearest by collision edge
             ObstacleInfo nearestObstacle = null;
             float nearestEdgeDist = 0f;

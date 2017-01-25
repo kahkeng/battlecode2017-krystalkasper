@@ -148,7 +148,7 @@ public strictfp class Combat {
             // TODO: use soldier potential to surround
 
             final MapLocation moveLoc;
-            if (worstEnemy.type == RobotType.GARDENER) {
+            if (worstEnemy.type == RobotType.GARDENER || worstEnemy.type == RobotType.ARCHON) {
                 moveLoc = worstEnemy.location;
             } else {
                 final Direction sideDir; // side dir depends on which side of enemy we are on
@@ -266,7 +266,7 @@ public strictfp class Combat {
                 } else {
                     sideDir = enemyDir.rotateRightDegrees(30.0f);
                 }
-                if (worstEnemy.type == RobotType.GARDENER) {
+                if (worstEnemy.type == RobotType.GARDENER || worstEnemy.type == RobotType.ARCHON) {
                     moveLoc = worstEnemy.location.add(sideDir,
                             enemyRadius + bot.myType.bodyRadius + EPS);
                 } else {
@@ -834,7 +834,7 @@ public strictfp class Combat {
         if (worstEnemy != null) {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
             final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
-            if (worstEnemy.type != RobotType.GARDENER && enemyDistance > 4.0f) {
+            if (worstEnemy.type != RobotType.GARDENER && worstEnemy.type != RobotType.ARCHON && enemyDistance > 4.0f) {
                 final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(-1, bot.myTeam);
                 boolean hasSupport = false;
                 outer: for (final RobotInfo friendly : friendlies) {

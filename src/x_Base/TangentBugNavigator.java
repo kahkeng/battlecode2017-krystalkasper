@@ -15,6 +15,7 @@ import battlecode.common.TreeInfo;
 public strictfp class TangentBugNavigator {
 
     private static final boolean DEBUG = true;
+    private static final boolean DEBUG_WALLS = false;
     private static final int MAX_WALLS = 100;
     private static final float EPS = 0.04f; // buffer to add to not always exactly touch edges
     private static final float LEAVE_THRESHOLD = 0.0f; // distance improvement before we leave obstacle
@@ -147,25 +148,27 @@ public strictfp class TangentBugNavigator {
                 // Search through wall points in reverse order to find first one that has a greedy accurate path
                 // to get to the edge location of the wall
                 // TODO: do we need to go step by step in case we overshoot the goal?
-                Debug.debug_dot(bot, followWallPoint.obstacle.location, 0, 255, 0); // start: green
+                if (DEBUG_WALLS)
+                    Debug.debug_dot(bot, followWallPoint.obstacle.location, 0, 255, 0); // start: green
                 for (int i = pointsSize - 1; i >= 0; i--) {
                     if (Clock.getBytecodesLeft() < 3000) {
                         i = 0;
                     }
                     final FollowWallPoint candidate = pointsList[i];
                     final MapLocation edgeLoc = candidate.getEdgeLoc(currLoc, this);
-                    Debug.debug_line(bot, candidate.obstacle.location, edgeLoc, 0, 0, 255);
+                    if (DEBUG_WALLS)
+                        Debug.debug_line(bot, candidate.obstacle.location, edgeLoc, 0, 0, 255);
                     // System.out.println( i + "/" + pointsSize + " " + Clock.getBytecodesLeft() + " " + candidate + " "
                     // + edgeLoc);
                     boolean isClear = canPathTowardsLocation(edgeLoc);
-                    if (DEBUG) {
-                        // Debug.debug_print(bot, " candidate wp " + candidate + " isClear=" + isClear + " edgeLoc=" +
-                        // edgeLoc);
-                    }
+                    // if (DEBUG) {
+                    // Debug.debug_print(bot, " candidate wp " + candidate + " isClear=" + isClear + " edgeLoc=" +
+                    // edgeLoc);
+                    // }
                     if (isClear) {
-                        if (DEBUG) {
-                            // Debug.debug_print(bot, " changing wp from " + followWallPoint + " to " + candidate);
-                        }
+                        // if (DEBUG) {
+                        // Debug.debug_print(bot, " changing wp from " + followWallPoint + " to " + candidate);
+                        // }
                         followWallPoint = candidate;
                         break;
                     }
@@ -181,11 +184,13 @@ public strictfp class TangentBugNavigator {
                     reset();
                     continue;
                 }
-                Debug.debug_dot(bot, followWallPoint.obstacle.location, 255, 0, 0); // end: red
-                Debug.debug_dot(bot, edgeLoc, 255, 255, 0);
-                if (DEBUG) {
-                    // Debug.debug_print(bot, "returning2 " + edgeLoc + " followWallPoint=" + followWallPoint);
+                if (DEBUG_WALLS) {
+                    Debug.debug_dot(bot, followWallPoint.obstacle.location, 255, 0, 0); // end: red
+                    Debug.debug_dot(bot, edgeLoc, 255, 255, 0);
                 }
+                // if (DEBUG) {
+                // Debug.debug_print(bot, "returning2 " + edgeLoc + " followWallPoint=" + followWallPoint);
+                // }
                 return edgeLoc;
             }
             }
@@ -263,8 +268,10 @@ public strictfp class TangentBugNavigator {
         outer: while (found && Clock.getBytecodesLeft() >= 5000) {
             found = false;
             final float senseRadius = currObstacle.radius + bot.myType.bodyRadius * 2 + EPS;
-            Debug.debug_line(bot, currObstacle.location,
-                    currObstacle.location.add(currLoc.directionTo(currObstacle.location), senseRadius), 255, 0, 255);
+            if (DEBUG_WALLS)
+                Debug.debug_line(bot, currObstacle.location,
+                        currObstacle.location.add(currLoc.directionTo(currObstacle.location), senseRadius), 255, 0,
+                        255);
             first = false;
             ObstacleInfo nextObstacle = null;
             // if archon or tree obstacle, has issues, we will need to supplement with another method
@@ -310,9 +317,9 @@ public strictfp class TangentBugNavigator {
                         preferRight, false);
                 if (seen.contains(nextPoint)) {
                     // we've made a loop around an existing obstacle
-                    if (DEBUG) {
-                        // Debug.debug_print(bot, " made loop around");
-                    }
+                    // if (DEBUG) {
+                    // Debug.debug_print(bot, " made loop around");
+                    // }
                     madeLoop = true;
                     break outer;
                 }
@@ -328,12 +335,15 @@ public strictfp class TangentBugNavigator {
         }
 
         if (madeLoop || true) {
-            if (pointsSize > 0) {
-                Debug.debug_line(bot, startPoint.obstacle.location, pointsList[0].obstacle.location, 255, 255, 255);
-            }
-            for (int i = 0; i < pointsSize - 1; i++) {
-                Debug.debug_line(bot, pointsList[i].obstacle.location, pointsList[i + 1].obstacle.location, 255, 255,
-                        255);
+            if (DEBUG_WALLS) {
+                if (pointsSize > 0) {
+                    Debug.debug_line(bot, startPoint.obstacle.location, pointsList[0].obstacle.location, 255, 255, 255);
+                }
+                for (int i = 0; i < pointsSize - 1; i++) {
+                    Debug.debug_line(bot, pointsList[i].obstacle.location, pointsList[i + 1].obstacle.location, 255,
+                            255,
+                            255);
+                }
             }
             // Only take the list up to and including the furthest angle
             final Direction startObstacleDir = currLoc.directionTo(startPoint.obstacle.location);
@@ -362,20 +372,23 @@ public strictfp class TangentBugNavigator {
                     furthestIndex = i;
                 }
             }
-            if (DEBUG) {
-                /*
-                 * Debug.debug_print(bot, "  currLoc=" + currLoc + " furthestAngle=" + furthestAngle + " furthestIndex="
-                 * + furthestIndex); Debug.debug_print(bot, "  trimming return list size from " + pointsSize + " to " +
-                 * (furthestIndex + 1));
-                 */
-            }
+            // if (DEBUG) {
+            /*
+             * Debug.debug_print(bot, "  currLoc=" + currLoc + " furthestAngle=" + furthestAngle + " furthestIndex=" +
+             * furthestIndex); Debug.debug_print(bot, "  trimming return list size from " + pointsSize + " to " +
+             * (furthestIndex + 1));
+             */
+            // }
             pointsSize = furthestIndex + 1;
         }
-        if (pointsSize > 0) {
-            Debug.debug_line(bot, startPoint.obstacle.location, pointsList[0].obstacle.location, 255, 255, 0);
-        }
-        for (int i = 0; i < pointsSize - 1; i++) {
-            Debug.debug_line(bot, pointsList[i].obstacle.location, pointsList[i + 1].obstacle.location, 255, 255, 0);
+        if (DEBUG_WALLS) {
+            if (pointsSize > 0) {
+                Debug.debug_line(bot, startPoint.obstacle.location, pointsList[0].obstacle.location, 255, 255, 0);
+            }
+            for (int i = 0; i < pointsSize - 1; i++) {
+                Debug.debug_line(bot, pointsList[i].obstacle.location, pointsList[i + 1].obstacle.location, 255, 255,
+                        0);
+            }
         }
     }
 

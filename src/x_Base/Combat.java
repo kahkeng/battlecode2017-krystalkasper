@@ -336,7 +336,7 @@ public strictfp class Combat {
         // targetRadius);
         // System.out.println("myLoc " + bot.myLoc);
         // System.out.println("goto " + bot.myLoc.add(objectDir, totalDistance));
-        Debug.debug_dot(bot, bot.myLoc.add(objectDir, totalDistance), 0, 255, 0);
+        // Debug.debug_dot(bot, bot.myLoc.add(objectDir, totalDistance), 0, 255, 0);
         // System.out.println("apart " + bot.myLoc.add(objectDir, totalDistance).distanceTo(targetLoc));
         final float targetDist = bot.myLoc.distanceTo(targetLoc);
         // System.out.println("targetDist=" + targetDist);

@@ -17,7 +17,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
 
     /** Hire a gardener if none in this radius. */
     public static final float GARDENER_RADIUS = 10.0f;
-    public static final float ARCHON_WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH / 4;
+    public static final float ARCHON_WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH / 3;
     public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
 
     public BotArchon(final RobotController rc) {

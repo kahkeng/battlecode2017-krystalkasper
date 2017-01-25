@@ -92,7 +92,7 @@ public strictfp class Combat {
             return true;
         }
         // Else head towards closest known broadcasted enemies
-        return headTowardsBroadcastedEnemy(bot);
+        return headTowardsBroadcastedEnemy(bot, ENEMY_REACTION_RANGE);
     }
 
     public static final boolean seekAndAttackAndSurroundEnemy(final x_Arc.BotArcBase bot) throws GameActionException {
@@ -132,7 +132,7 @@ public strictfp class Combat {
             return true;
         }
         // Else head towards closest known broadcasted enemies
-        return headTowardsBroadcastedEnemy(bot);
+        return headTowardsBroadcastedEnemy(bot, ENEMY_REACTION_RANGE);
     }
 
     public static final boolean seekAndAttackAndSurroundEnemy2(final BotBase bot) throws GameActionException {
@@ -174,7 +174,7 @@ public strictfp class Combat {
             return true;
         }
         // Else head towards closest known broadcasted enemies
-        return headTowardsBroadcastedEnemy(bot);
+        return headTowardsBroadcastedEnemy(bot, 100.0f);
     }
 
     public static final RobotInfo prioritizedEnemy(final BotBase bot, final RobotInfo[] enemies) {
@@ -481,7 +481,7 @@ public strictfp class Combat {
             }
             return true;
         }
-        return headTowardsBroadcastedEnemy(bot);
+        return headTowardsBroadcastedEnemy(bot, ENEMY_REACTION_RANGE);
     }
 
     public static final boolean avoidEnemy(final BotBase bot) throws GameActionException {
@@ -512,7 +512,7 @@ public strictfp class Combat {
             }
             return true;
         }
-        return headTowardsBroadcastedEnemy(bot);
+        return headTowardsBroadcastedEnemy(bot, ENEMY_REACTION_RANGE);
     }
 
     public static final boolean stationaryAttackEnemy(final x_Arc.BotArcBase bot) throws GameActionException {
@@ -621,7 +621,7 @@ public strictfp class Combat {
             return true;
         }
         // Else head towards closest known broadcasted enemies
-        return headTowardsBroadcastedEnemy(bot);
+        return headTowardsBroadcastedEnemy(bot, ENEMY_REACTION_RANGE);
     }
 
     public static boolean strikeEnemiesFromBehind2(final BotBase bot) throws GameActionException {
@@ -688,8 +688,7 @@ public strictfp class Combat {
             }
             return true;
         }
-        // Else head towards closest known broadcasted enemies
-        return headTowardsBroadcastedEnemy(bot);
+        return false;
     }
 
     public static final int getNetLumberjackHits(final BotBase bot) {
@@ -706,7 +705,8 @@ public strictfp class Combat {
         return netHits;
     }
 
-    public static final boolean headTowardsBroadcastedEnemy(final BotBase bot) throws GameActionException {
+    public static final boolean headTowardsBroadcastedEnemy(final BotBase bot, final float reactionRange)
+            throws GameActionException {
         // Head towards closest known broadcasted enemies
         final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
         MapLocation nearestLoc = null;
@@ -719,7 +719,7 @@ public strictfp class Combat {
                 minDistance = distance;
             }
         }
-        if (nearestLoc != null && minDistance <= ENEMY_REACTION_RANGE) {
+        if (nearestLoc != null && minDistance <= reactionRange) {
             bot.nav.setDestination(nearestLoc);
             if (!bot.tryMove(bot.nav.getNextLocation())) {
                 bot.randomlyJitter();

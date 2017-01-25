@@ -12,6 +12,7 @@ import battlecode.common.Team;
 import battlecode.common.TreeInfo;
 import x_Base.BotBase;
 import x_Base.Combat;
+import x_Base.Messaging;
 
 public strictfp class BotLumberjack extends BotBase {
 
@@ -135,6 +136,11 @@ public strictfp class BotLumberjack extends BotBase {
             return;
         }
 
+        // Check for broadcasted trees
+        if (headTowardsBroadcastedTree()) {
+            return;
+        }
+
         // Otherwise, just hang around at some distance from centroid
         final MapLocation moveLoc = centroid.add(centroid.directionTo(myLoc), myType.sensorRadius - 1.0f);
         if (!tryMove(moveLoc)) {
@@ -143,6 +149,29 @@ public strictfp class BotLumberjack extends BotBase {
 
         // Check if can chop
         chopAnyNearbyUnownedTrees();
+    }
+
+    public final boolean headTowardsBroadcastedTree() throws GameActionException {
+        // Head towards closest known broadcasted trees
+        final int numTrees = Messaging.getNeutralTrees(broadcastedNeutralTrees, this);
+        MapLocation nearestLoc = null;
+        float minDistance = 0;
+        for (int i = 0; i < numTrees; i++) {
+            final MapLocation treeLoc = broadcastedNeutralTrees[i];
+            final float distance = treeLoc.distanceTo(myLoc);
+            if (nearestLoc == null || distance < minDistance) {
+                nearestLoc = treeLoc;
+                minDistance = distance;
+            }
+        }
+        if (nearestLoc != null) {
+            nav.setDestination(nearestLoc);
+            if (!tryMove(nav.getNextLocation())) {
+                randomlyJitter();
+            }
+            return true;
+        }
+        return false;
     }
 
     public final void clearSpecificNeutralTree(final TreeInfo tree) throws GameActionException {

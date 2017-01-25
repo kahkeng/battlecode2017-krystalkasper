@@ -5,6 +5,7 @@ import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import battlecode.common.TreeInfo;
 
 public strictfp class Messaging {
 
@@ -12,6 +13,7 @@ public strictfp class Messaging {
     public static final int FIELDS_ARCHON = 3;
     public static final int FIELDS_GARDENER = 1;
     public static final int FIELDS_ENEMY_ROBOTS = 3;
+    public static final int FIELDS_NEUTRAL_TREES = 3;
 
     // first 4 fields are for map edges
     public static final int OFFSET_MIN_X = 0;
@@ -28,6 +30,9 @@ public strictfp class Messaging {
     public static final int OFFSET_ENEMY_ROBOTS_START = OFFSET_GARDENER_END;
     public static final int OFFSET_ENEMY_ROBOTS_END = OFFSET_ENEMY_ROBOTS_START
             + BotBase.MAX_ENEMY_ROBOTS * FIELDS_ENEMY_ROBOTS;
+    public static final int OFFSET_NEUTRAL_TREES_START = OFFSET_ENEMY_ROBOTS_END;
+    public static final int OFFSET_NEUTRAL_TREES_END = OFFSET_NEUTRAL_TREES_START
+            + BotBase.MAX_NEUTRAL_TREES * FIELDS_NEUTRAL_TREES;
 
     public static final int BITSHIFT = 12; // larger than max rounds of 3000
     public static final int BITMASK = (1 << BITSHIFT) - 1;
@@ -38,6 +43,10 @@ public strictfp class Messaging {
 
     public static final int getRobotHeartbeat(final BotBase bot, final RobotInfo robot) {
         return (robot.ID << BITSHIFT) + bot.rc.getRoundNum();
+    }
+
+    public static final int getTreeHeartbeat(final BotBase bot, final TreeInfo tree) {
+        return (tree.ID << BITSHIFT) + bot.rc.getRoundNum();
     }
 
     public static final int getPotentialHeartbeat(final BotBase bot, final int futureRounds) {
@@ -57,47 +66,47 @@ public strictfp class Messaging {
     }
 
     public static final void broadcastMapMinX(final BotBase bot) throws GameActionException {
-        bot.rc.broadcast(OFFSET_MIN_X, (int) (bot.mapEdges.minX * 100) + 1);
+        bot.rc.broadcastFloat(OFFSET_MIN_X, bot.mapEdges.minX + 1);
     }
 
     public static final void broadcastMapMaxX(final BotBase bot) throws GameActionException {
-        bot.rc.broadcast(OFFSET_MAX_X, (int) (bot.mapEdges.maxX * 100) + 1);
+        bot.rc.broadcastFloat(OFFSET_MAX_X, bot.mapEdges.maxX + 1);
     }
 
     public static final void broadcastMapMinY(final BotBase bot) throws GameActionException {
-        bot.rc.broadcast(OFFSET_MIN_Y, (int) (bot.mapEdges.minY * 100) + 1);
+        bot.rc.broadcastFloat(OFFSET_MIN_Y, bot.mapEdges.minY + 1);
     }
 
     public static final void broadcastMapMaxY(final BotBase bot) throws GameActionException {
-        bot.rc.broadcast(OFFSET_MAX_Y, (int) (bot.mapEdges.maxY * 100) + 1);
+        bot.rc.broadcastFloat(OFFSET_MAX_Y, bot.mapEdges.maxY + 1);
     }
 
     public static final void processBroadcastedMapEdges(final BotBase bot) throws GameActionException {
         if (!bot.mapEdges.foundMinX) {
-            final int value = bot.rc.readBroadcast(OFFSET_MIN_X);
+            final float value = bot.rc.readBroadcastFloat(OFFSET_MIN_X);
             if (value > 0) {
-                bot.mapEdges.minX = (value - 1) * 0.01f;
+                bot.mapEdges.minX = (value - 1);
                 bot.mapEdges.foundMinX = true;
             }
         }
         if (!bot.mapEdges.foundMaxX) {
-            final int value = bot.rc.readBroadcast(OFFSET_MAX_X);
+            final float value = bot.rc.readBroadcastFloat(OFFSET_MAX_X);
             if (value > 0) {
-                bot.mapEdges.maxX = (value - 1) * 0.01f;
+                bot.mapEdges.maxX = (value - 1);
                 bot.mapEdges.foundMaxX = true;
             }
         }
         if (!bot.mapEdges.foundMinY) {
-            final int value = bot.rc.readBroadcast(OFFSET_MIN_Y);
+            final float value = bot.rc.readBroadcastFloat(OFFSET_MIN_Y);
             if (value > 0) {
-                bot.mapEdges.minY = (value - 1) * 0.01f;
+                bot.mapEdges.minY = (value - 1);
                 bot.mapEdges.foundMinY = true;
             }
         }
         if (!bot.mapEdges.foundMaxY) {
-            final int value = bot.rc.readBroadcast(OFFSET_MAX_Y);
+            final float value = bot.rc.readBroadcastFloat(OFFSET_MAX_Y);
             if (value > 0) {
-                bot.mapEdges.maxY = (value - 1) * 0.01f;
+                bot.mapEdges.maxY = (value - 1);
                 bot.mapEdges.foundMaxY = true;
             }
         }
@@ -108,8 +117,8 @@ public strictfp class Messaging {
         final MapLocation loc = bot.rc.getLocation();
         final int channel = OFFSET_ARCHON_START + bot.myArchonID * FIELDS_ARCHON;
         bot.rc.broadcast(channel, getHeartbeat(bot));
-        bot.rc.broadcast(channel + 1, (int) (loc.x * 100));
-        bot.rc.broadcast(channel + 2, (int) (loc.y * 100));
+        bot.rc.broadcastFloat(channel + 1, loc.x);
+        bot.rc.broadcastFloat(channel + 2, loc.y);
     }
 
     public static final MapLocation[] readArchonLocation(final BotBase bot)
@@ -128,8 +137,8 @@ public strictfp class Messaging {
             if (getRoundFromHeartbeat(heartbeat) < threshold) {
                 ret[i] = null; // archon is dead (or went over bytecode limit)
             } else {
-                ret[i] = new MapLocation(bot.rc.readBroadcast(channel + 1) * 0.01f,
-                        bot.rc.readBroadcast(channel + 2) * 0.01f);
+                ret[i] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
+                        bot.rc.readBroadcastFloat(channel + 2));
             }
         }
         return ret;
@@ -181,8 +190,8 @@ public strictfp class Messaging {
         }
         if (channel < OFFSET_ENEMY_ROBOTS_END) {
             bot.rc.broadcast(channel, getRobotHeartbeat(bot, enemyRobot));
-            bot.rc.broadcast(channel + 1, (int) (enemyRobot.location.x * 100));
-            bot.rc.broadcast(channel + 2, (int) (enemyRobot.location.y * 100));
+            bot.rc.broadcastFloat(channel + 1, enemyRobot.location.x);
+            bot.rc.broadcastFloat(channel + 2, enemyRobot.location.y);
         }
     }
 
@@ -195,9 +204,43 @@ public strictfp class Messaging {
             if (getRoundFromHeartbeat(heartbeat) < threshold) {
                 break;
             }
-            results[count++] = new MapLocation(bot.rc.readBroadcast(channel + 1) * 0.01f,
-                    bot.rc.readBroadcast(channel + 2) * 0.01f);
+            results[count++] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
+                    bot.rc.readBroadcastFloat(channel + 2));
             channel += FIELDS_ENEMY_ROBOTS;
+        }
+        return count;
+    }
+
+    public static final void broadcastNeutralTree(final BotBase bot, final TreeInfo neutralTree)
+            throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int channel = OFFSET_NEUTRAL_TREES_START;
+        while (channel < OFFSET_NEUTRAL_TREES_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getIDFromHeartbeat(heartbeat) == neutralTree.ID || getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            channel += FIELDS_NEUTRAL_TREES;
+        }
+        if (channel < OFFSET_NEUTRAL_TREES_END) {
+            bot.rc.broadcast(channel, getTreeHeartbeat(bot, neutralTree));
+            bot.rc.broadcastFloat(channel + 1, (int) neutralTree.location.x);
+            bot.rc.broadcastFloat(channel + 2, (int) neutralTree.location.y);
+        }
+    }
+
+    public static final int getNeutralTrees(final MapLocation[] results, final BotBase bot) throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int channel = OFFSET_NEUTRAL_TREES_START;
+        int count = 0;
+        while (channel < OFFSET_NEUTRAL_TREES_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            results[count++] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
+                    bot.rc.readBroadcastFloat(channel + 2));
+            channel += FIELDS_NEUTRAL_TREES;
         }
         return count;
     }

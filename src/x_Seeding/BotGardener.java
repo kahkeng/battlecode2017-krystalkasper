@@ -23,7 +23,7 @@ public strictfp class BotGardener extends BotBase {
     public static final float WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH - 10.0f;
     public static final int MAX_BUILD_PENALTY = 5;
     public static final float BUILD_PENALTY = 1.0f;
-    public static final float TREE_SPAWN_LUMBERJACK_RADIUS = 4.0f;
+    public static final float TREE_SPAWN_LUMBERJACK_RADIUS = -1;
 
     public static int buildCount = 0; // used to ensure other gardeners have their chance at building
     public static TreeInfo rememberedTree = null;
@@ -289,6 +289,9 @@ public strictfp class BotGardener extends BotBase {
         final TreeInfo[] trees = rc.senseNearbyTrees(TREE_SPAWN_LUMBERJACK_RADIUS, Team.NEUTRAL);
         if (trees.length == 0) {
             return;
+        } else {
+            // Broadcast one of the trees
+            Messaging.broadcastNeutralTree(this, trees[0]);
         }
 
         // But only if we don't have enough lumberjacks

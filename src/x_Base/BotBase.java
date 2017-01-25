@@ -15,6 +15,7 @@ public strictfp class BotBase {
 
     public static final float MAX_BULLET_STASH = 1000.0f;
     public static final int MAX_ENEMY_ROBOTS = 10; // in message broadcasts
+    public static final int MAX_NEUTRAL_TREES = 10; // in message broadcasts
     public static final float ARCHON_SHAKE_DISTANCE = 10.0f;
     public static final float FLEE_DISTANCE = 5.0f;
     public static boolean DEBUG = false;
@@ -35,6 +36,7 @@ public strictfp class BotBase {
     public static MapLocation homeArchon = null;
     public static MapLocation myLoc = null;
     public static final MapLocation[] broadcastedEnemies = new MapLocation[BotBase.MAX_ENEMY_ROBOTS + 1];
+    public static final MapLocation[] broadcastedNeutralTrees = new MapLocation[BotBase.MAX_NEUTRAL_TREES + 1];
     public static boolean preferRight = false;
     public static float lastRoundBullets;
     public static float bulletsDelta;

@@ -681,7 +681,10 @@ public strictfp class Combat {
             Debug.debug_dot(bot, worstEnemy.location, 0, 0, 0);
             final float enemyRadius = worstEnemy.getRadius();
             final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
-            final float minDistance = enemyDistance - enemyRadius - bot.myType.bodyRadius;
+            if (enemyDistance < AVOID_RANGE) {
+                bot.fleeFromEnemy(worstEnemy.location);
+                return true;
+            }
             final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
             final Direction rotateDir;
             final boolean rotated = true;

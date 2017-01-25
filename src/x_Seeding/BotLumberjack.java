@@ -1,5 +1,6 @@
 package x_Seeding;
 
+import battlecode.common.BulletInfo;
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -28,6 +29,11 @@ public strictfp class BotLumberjack extends BotBase {
         while (true) {
             try {
                 startLoop();
+                final BulletInfo[] bullets = rc.senseNearbyBullets();
+                final Direction dodgeDir = getDodgeDirection(bullets);
+                if (dodgeDir != null) {
+                    tryMove(myLoc.add(dodgeDir));
+                }
 
                 if (Combat.strikeEnemiesFromBehind2(this)) {
                     // Make space for movement

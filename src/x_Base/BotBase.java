@@ -408,4 +408,32 @@ public strictfp class BotBase {
 
         return ((float) Math.abs(bulletLocation.distanceTo(myLoc) * Math.sin(theta)) <= rc.getType().bodyRadius);
     }
+
+    public final Direction getDodgeDirection(final BulletInfo[] bullets) {
+        // Pick the nearest bullet that will collide with me
+        BulletInfo nearestBullet = null;
+        float nearestDist = 0;
+        for (final BulletInfo bullet : bullets) {
+            if (!willCollideWithMe(bullet)) {
+                continue;
+            }
+            final float dist = myLoc.distanceTo(bullet.location);
+            if (nearestBullet == null || dist < nearestDist) {
+                nearestBullet = bullet;
+                nearestDist = dist;
+                break; // bullets are in distance order
+            }
+        }
+        if (nearestBullet != null) {
+            final Direction bulletToMeDir = nearestBullet.location.directionTo(myLoc);
+            final Direction rotateDir;
+            if (bulletToMeDir.radiansBetween(nearestBullet.dir) > 0) {
+                rotateDir = bulletToMeDir.rotateRightDegrees(45.0f);
+            } else {
+                rotateDir = bulletToMeDir.rotateLeftDegrees(45.0f);
+            }
+            return rotateDir;
+        }
+        return null;
+    }
 }

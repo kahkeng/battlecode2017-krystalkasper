@@ -1,6 +1,8 @@
 package x_Seeding;
 
+import battlecode.common.BulletInfo;
 import battlecode.common.Clock;
+import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
 import x_Base.BotBase;
@@ -17,8 +19,12 @@ public strictfp class BotTank extends BotBase {
         while (true) {
             try {
                 startLoop();
-
-                if (!Combat.seekAndAttackAndSurroundEnemy2(this)) {
+                final BulletInfo[] bullets = rc.senseNearbyBullets();
+                final Direction dodgeDir = getDodgeDirection(bullets);
+                if (dodgeDir != null) {
+                    tryMove(myLoc.add(dodgeDir));
+                }
+                if (!Combat.seekAndAttackAndSurroundEnemy3(this)) {
                     moveTowardsTreeBorder();
                 }
 

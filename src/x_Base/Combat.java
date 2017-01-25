@@ -249,6 +249,118 @@ public strictfp class Combat {
         return headTowardsBroadcastedEnemy(bot, 100.0f);
     }
 
+    public static final boolean seekAndAttackAndSurroundEnemy3(final BotBase bot) throws GameActionException {
+        final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+        final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        if (worstEnemy != null) {
+            Messaging.broadcastEnemyRobot(bot, worstEnemy);
+            final float enemyRadius = worstEnemy.getRadius();
+            final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
+
+            // move first before attacking
+            if (!bot.rc.hasMoved()) {
+                final MapLocation moveLoc;
+                if (worstEnemy.type == RobotType.GARDENER) {
+                    moveLoc = worstEnemy.location;
+                } else {
+                    final Direction sideDir; // side dir depends on which side of enemy we are on
+                    if (bot.nav.preferRight) {
+                        sideDir = enemyDir.rotateLeftDegrees(30.0f);
+                    } else {
+                        sideDir = enemyDir.rotateRightDegrees(30.0f);
+                    }
+                    moveLoc = worstEnemy.location.add(sideDir,
+                            enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - EPS);
+                }
+                bot.nav.setDestination(moveLoc);
+                bot.tryMove(bot.nav.getNextLocation());
+            }
+            final Direction latestEnemyDir = bot.myLoc.directionTo(worstEnemy.location);
+
+            final float latestEnemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            final float minDistance = latestEnemyDistance - enemyRadius - bot.myType.bodyRadius;
+            boolean distanceAttack = false;
+            final float distanceAttackRange;
+            if (worstEnemy.type == RobotType.SCOUT) {
+                distanceAttackRange = 3.0f;
+            } else {
+                distanceAttackRange = DISTANCE_ATTACK_RANGE;
+            }
+            if (minDistance <= distanceAttackRange) {
+                if (!willBulletCollideWithFriendlies(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)
+                        && !willBulletCollideWithTrees(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)) {
+                    distanceAttack = true;
+                }
+            }
+            // Check if should do triad/pentad shots
+            if (distanceAttack || minDistance < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
+                final float theta = (float) Math.asin(enemyRadius / latestEnemyDistance);
+                boolean fired = false;
+                if (bot.rc.canFirePentadShot()
+                        && (theta * 2 >= PENTAD_RADIANS || worstEnemy.type == RobotType.SCOUT || minDistance <= 4.0f)) {
+                    final Direction dirL2 = latestEnemyDir.rotateLeftRads(PENTAD_RADIANS);
+                    final Direction dirL1 = latestEnemyDir.rotateLeftRads(PENTAD_RADIANS / 2);
+                    final Direction dirR2 = latestEnemyDir.rotateRightRads(PENTAD_RADIANS);
+                    final Direction dirR1 = latestEnemyDir.rotateRightRads(PENTAD_RADIANS / 2);
+                    boolean ok = true;
+                    if (willBulletCollideWithFriendlies(bot, dirL2, latestEnemyDistance, 0) ||
+                            willBulletCollideWithFriendlies(bot, dirL1, latestEnemyDistance, 0) ||
+                            willBulletCollideWithFriendlies(bot, dirR2, latestEnemyDistance, 0) ||
+                            willBulletCollideWithFriendlies(bot, dirR1, latestEnemyDistance, 0)) {
+                        ok = false;
+                    } else {
+                        int count = 0;
+                        if (!willBulletCollideWithTrees(bot, dirL2, latestEnemyDistance, 0))
+                            count++;
+                        if (!willBulletCollideWithTrees(bot, dirL1, latestEnemyDistance, 0))
+                            count++;
+                        if (!willBulletCollideWithTrees(bot, dirR2, latestEnemyDistance, 0))
+                            count++;
+                        if (!willBulletCollideWithTrees(bot, dirR1, latestEnemyDistance, 0))
+                            count++;
+                        if (count < 2)
+                            ok = false;
+                    }
+                    if (ok) {
+                        bot.rc.firePentadShot(latestEnemyDir);
+                        fired = true;
+                    }
+                }
+                if (!fired && bot.rc.canFireTriadShot()
+                        && (theta * 2 >= TRIAD_RADIANS || worstEnemy.type == RobotType.SCOUT || minDistance <= 6.0f)) {
+                    final Direction dirL1 = latestEnemyDir.rotateLeftRads(TRIAD_RADIANS);
+                    final Direction dirR1 = latestEnemyDir.rotateRightRads(TRIAD_RADIANS);
+                    boolean ok = true;
+                    if (willBulletCollideWithFriendlies(bot, dirL1, latestEnemyDistance, 0) ||
+
+                            willBulletCollideWithFriendlies(bot, dirR1, latestEnemyDistance, 0)) {
+                        ok = false;
+                    } else {
+                        int count = 0;
+
+                        if (!willBulletCollideWithTrees(bot, dirL1, latestEnemyDistance, 0))
+                            count++;
+
+                        if (!willBulletCollideWithTrees(bot, dirR1, latestEnemyDistance, 0))
+                            count++;
+                        if (count < 1)
+                            ok = false;
+                    }
+                    if (ok) {
+                        bot.rc.fireTriadShot(latestEnemyDir);
+                        fired = true;
+                    }
+                }
+                if (!fired && bot.rc.canFireSingleShot()) {
+                    bot.rc.fireSingleShot(latestEnemyDir);
+                }
+            }
+            return true;
+        }
+        // Else head towards closest known broadcasted enemies
+        return headTowardsBroadcastedEnemy(bot, 100.0f);
+    }
+
     public static final RobotInfo prioritizedEnemy(final BotBase bot, final RobotInfo[] enemies) {
         // Choose units in lethal order
         RobotInfo worstEnemy = null;
@@ -708,6 +820,24 @@ public strictfp class Combat {
         if (worstEnemy != null) {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
             final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            if (worstEnemy.type != RobotType.GARDENER && enemyDistance > 4.0f) {
+                final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(-1, bot.myTeam);
+                boolean hasSupport = false;
+                outer: for (final RobotInfo friendly : friendlies) {
+                    switch (friendly.type) {
+                    case SOLDIER:
+                    case TANK:
+                        hasSupport = true;
+                        break outer;
+                    default:
+                        break;
+                    }
+                }
+                if (!hasSupport) {
+                    bot.fleeFromEnemy(worstEnemy.location);
+                    return true;
+                }
+            }
             final float enemyRadius = worstEnemy.getRadius();
             final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(worstEnemy.location,
                     enemyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS, bot.myTeam);

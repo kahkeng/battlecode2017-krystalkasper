@@ -16,8 +16,10 @@ public strictfp class BotBase {
     public static final float MAX_BULLET_STASH = 1000.0f;
     public static final int MAX_ENEMY_ROBOTS = 10; // in message broadcasts
     public static final int MAX_NEUTRAL_TREES = 10; // in message broadcasts
+    public static final int MAX_MY_TREES = 20; // in message broadcasts
     public static final float ARCHON_SHAKE_DISTANCE = 10.0f;
     public static final float FLEE_DISTANCE = 5.0f;
+    public static final float BROADCAST_WATER_TREE_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH - 20.0f;
     public static boolean DEBUG = false;
 
     public final RobotController rc;
@@ -37,6 +39,8 @@ public strictfp class BotBase {
     public static MapLocation myLoc = null;
     public static final MapLocation[] broadcastedEnemies = new MapLocation[BotBase.MAX_ENEMY_ROBOTS + 1];
     public static final MapLocation[] broadcastedNeutralTrees = new MapLocation[BotBase.MAX_NEUTRAL_TREES + 1];
+    public static final MapLocation[] broadcastedMyTrees = new MapLocation[BotBase.MAX_MY_TREES + 1];
+    public static final float[] broadcastedMyTreesHealth = new float[BotBase.MAX_MY_TREES + 1];
     public static boolean preferRight = false;
     public static float lastRoundBullets;
     public static float bulletsDelta;
@@ -138,6 +142,15 @@ public strictfp class BotBase {
                 rc.shake(tree.ID);
                 return;
             }
+        }
+    }
+
+    public final void broadcastMyTrees(final TreeInfo[] trees) throws GameActionException {
+        for (final TreeInfo tree : trees) {
+            if (tree.health >= BROADCAST_WATER_TREE_THRESHOLD) {
+                continue;
+            }
+            Messaging.broadcastMyTree(this, tree);
         }
     }
 

@@ -14,6 +14,7 @@ public strictfp class Messaging {
     public static final int FIELDS_GARDENER = 1;
     public static final int FIELDS_ENEMY_ROBOTS = 3;
     public static final int FIELDS_NEUTRAL_TREES = 3;
+    public static final int FIELDS_MY_TREES = 4;
 
     // first 4 fields are for map edges
     public static final int OFFSET_MIN_X = 0;
@@ -33,6 +34,9 @@ public strictfp class Messaging {
     public static final int OFFSET_NEUTRAL_TREES_START = OFFSET_ENEMY_ROBOTS_END;
     public static final int OFFSET_NEUTRAL_TREES_END = OFFSET_NEUTRAL_TREES_START
             + BotBase.MAX_NEUTRAL_TREES * FIELDS_NEUTRAL_TREES;
+    public static final int OFFSET_MY_TREES_START = OFFSET_NEUTRAL_TREES_END;
+    public static final int OFFSET_MY_TREES_END = OFFSET_MY_TREES_START
+            + BotBase.MAX_MY_TREES * FIELDS_MY_TREES;
 
     public static final int BITSHIFT = 12; // larger than max rounds of 3000
     public static final int BITMASK = (1 << BITSHIFT) - 1;
@@ -224,8 +228,8 @@ public strictfp class Messaging {
         }
         if (channel < OFFSET_NEUTRAL_TREES_END) {
             bot.rc.broadcast(channel, getTreeHeartbeat(bot, neutralTree));
-            bot.rc.broadcastFloat(channel + 1, (int) neutralTree.location.x);
-            bot.rc.broadcastFloat(channel + 2, (int) neutralTree.location.y);
+            bot.rc.broadcastFloat(channel + 1, neutralTree.location.x);
+            bot.rc.broadcastFloat(channel + 2, neutralTree.location.y);
         }
     }
 
@@ -241,6 +245,44 @@ public strictfp class Messaging {
             results[count++] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
                     bot.rc.readBroadcastFloat(channel + 2));
             channel += FIELDS_NEUTRAL_TREES;
+        }
+        return count;
+    }
+
+    public static final void broadcastMyTree(final BotBase bot, final TreeInfo myTree)
+            throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int channel = OFFSET_MY_TREES_START;
+        while (channel < OFFSET_MY_TREES_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getIDFromHeartbeat(heartbeat) == myTree.ID || getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            channel += FIELDS_MY_TREES;
+        }
+        if (channel < OFFSET_MY_TREES_END) {
+            bot.rc.broadcast(channel, getTreeHeartbeat(bot, myTree));
+            bot.rc.broadcastFloat(channel + 1, myTree.location.x);
+            bot.rc.broadcastFloat(channel + 2, myTree.location.y);
+            bot.rc.broadcastFloat(channel + 3, myTree.health);
+        }
+    }
+
+    public static final int getMyTrees(final MapLocation[] results, final float[] healths, final BotBase bot)
+            throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int channel = OFFSET_MY_TREES_START;
+        int count = 0;
+        while (channel < OFFSET_MY_TREES_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            results[count] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
+                    bot.rc.readBroadcastFloat(channel + 2));
+            healths[count] = bot.rc.readBroadcastFloat(channel + 3);
+            count++;
+            channel += FIELDS_MY_TREES;
         }
         return count;
     }

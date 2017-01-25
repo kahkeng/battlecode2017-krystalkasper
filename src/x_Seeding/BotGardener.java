@@ -74,7 +74,9 @@ public strictfp class BotGardener extends BotBase {
                     }
                 }
                 if (!fleeing) {
-                    final TreeInfo treeToWater = findTreeToWater(true);
+                    final TreeInfo[] nearbyTrees = rc.senseNearbyTrees(-1, myTeam);
+                    broadcastMyTrees(nearbyTrees);
+                    final TreeInfo treeToWater = findTreeToWater(nearbyTrees, true);
                     if (treeToWater != null) {
                         rememberedTree = treeToWater;
                         if (myLoc.distanceTo(treeToWater.location) > myType.bodyRadius
@@ -90,7 +92,7 @@ public strictfp class BotGardener extends BotBase {
                             rememberedPlantLoc = plantLoc;
                             plantTreeAtLocation(plantLoc);
                         } else {
-                            final TreeInfo treeToWater2 = findTreeToWater(false);
+                            final TreeInfo treeToWater2 = findTreeToWater(nearbyTrees, false);
                             if (treeToWater2 != null) {
                                 rememberedTree = treeToWater2;
                                 if (myLoc.distanceTo(treeToWater2.location) > myType.bodyRadius
@@ -215,8 +217,7 @@ public strictfp class BotGardener extends BotBase {
         return bestLoc;
     }
 
-    public final TreeInfo findTreeToWater(boolean useThreshold) {
-        final TreeInfo[] trees = rc.senseNearbyTrees(-1, myTeam);
+    public final TreeInfo findTreeToWater(final TreeInfo[] trees, boolean onlyHighPriority) throws GameActionException {
         // Prioritized by health/distance traveled
         TreeInfo bestTree = null;
         float bestScore = 0;
@@ -225,7 +226,7 @@ public strictfp class BotGardener extends BotBase {
                     myLoc.distanceTo(rememberedTree.location) >= myType.sensorRadius * 1.5f) {
                 rememberedTree = null;
             } else {
-                if (useThreshold && rememberedTree.health >= WATER_THRESHOLD) {
+                if (onlyHighPriority && rememberedTree.health >= WATER_THRESHOLD) {
                 } else {
                     bestTree = rememberedTree;
                     bestScore = rememberedTree.health;
@@ -237,12 +238,23 @@ public strictfp class BotGardener extends BotBase {
                                             * - GameConstants.BULLET_TREE_DECAY_RATE * myLoc.distanceTo(tree.location) /
                                             * myType.strideRadius / 1.2f
                                             */;
-            if (useThreshold && score >= WATER_THRESHOLD) {
+            if (onlyHighPriority && score >= WATER_THRESHOLD) {
                 continue;
             }
             if (bestTree == null || score < bestScore) {
                 bestTree = tree;
                 bestScore = score;
+            }
+        }
+        if (bestTree == null && onlyHighPriority) {
+            final int numTrees = Messaging.getMyTrees(broadcastedMyTrees, broadcastedMyTreesHealth, this);
+            for (int i = 0; i < numTrees; i++) {
+                final float score = broadcastedMyTreesHealth[i];
+                if (bestTree == null || score < bestScore) {
+                    bestTree = new TreeInfo(0, myTeam, broadcastedMyTrees[i], GameConstants.BULLET_TREE_RADIUS, score,
+                            0, null);
+                    bestScore = score;
+                }
             }
         }
         return bestTree;

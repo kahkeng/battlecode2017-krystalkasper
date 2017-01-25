@@ -83,6 +83,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
         TreeInfo bestTree = null;
         float bestScore = 0f;
         final TreeInfo[] trees = rc.senseNearbyTrees(-1, myTeam);
+        broadcastMyTrees(trees);
         for (final TreeInfo tree : trees) {
             // Check if this is a new tree
             Integer round = seenTreeIDs.get(tree.ID);

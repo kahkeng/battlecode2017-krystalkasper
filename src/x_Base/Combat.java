@@ -171,7 +171,7 @@ public strictfp class Combat {
             boolean distanceAttack = false;
             final float distanceAttackRange;
             if (worstEnemy.type == RobotType.SCOUT) {
-                distanceAttackRange = 2.0f;
+                distanceAttackRange = 3.0f;
             } else {
                 distanceAttackRange = DISTANCE_ATTACK_RANGE;
             }

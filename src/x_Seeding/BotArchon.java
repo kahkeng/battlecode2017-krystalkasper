@@ -47,7 +47,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
                     fleeing = true;
                 }
                 if (!shouldSpawnGardeners && (rc.getRoundNum() > 55
-                        || rc.getRoundNum() <= 5 && rc.getRobotCount() == numInitialArchons)) {
+                        || rc.getRoundNum() >= 2 && rc.getRoundNum() <= 5 && rc.getRobotCount() == numInitialArchons)) {
                     shouldSpawnGardeners = true;
                 }
                 if (shouldSpawnGardeners) {

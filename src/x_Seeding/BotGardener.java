@@ -10,16 +10,22 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
+import x_Base.BotBase;
 import x_Base.Combat;
 import x_Base.Debug;
 import x_Base.Messaging;
 import x_Base.Meta.TerrainType;
 
-public strictfp class BotGardener extends x_Duck16.BotGardener {
+public strictfp class BotGardener extends BotBase {
 
     public static final float TRIANGLE_DX = 4.1f;
     public static final float TRIANGLE_DY = (float) (TRIANGLE_DX / 2 * Math.sqrt(3));
     public static final float WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH - 10.0f;
+    public static final int MAX_BUILD_PENALTY = 5;
+    public static final float BUILD_PENALTY = 1.0f;
+    public static final float TREE_SPAWN_LUMBERJACK_RADIUS = 4.0f;
+
+    public static int buildCount = 0; // used to ensure other gardeners have their chance at building
     public static TreeInfo rememberedTree = null;
     public static MapLocation rememberedPlantLoc = null;
 
@@ -59,6 +65,7 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
                 boolean fleeing = false;
                 if (enemyLoc != null) {
                     if (enemyLoc.distanceTo(myLoc) < FLEE_DISTANCE * 2) {
+                        Debug.debug_line(this, myLoc, enemyLoc, 255, 0, 0);
                         fleeFromEnemy(enemyLoc);
                         fleeing = true;
                     }
@@ -115,6 +122,26 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
                 System.out.println("Gardener Exception");
                 e.printStackTrace();
             }
+        }
+    }
+
+    public final void waterTrees() throws GameActionException {
+        // water lowest health tree
+        final TreeInfo[] trees = rc.senseNearbyTrees(
+                myType.bodyRadius + GameConstants.INTERACTION_DIST_FROM_EDGE + 0.01f,
+                myTeam);
+        TreeInfo lowestTree = null;
+        float lowestHealth = 0;
+        for (final TreeInfo tree : trees) {
+            if (rc.canWater(tree.ID) && tree.health < tree.maxHealth) {
+                if (lowestTree == null || tree.health < lowestHealth) {
+                    lowestTree = tree;
+                    lowestHealth = tree.health;
+                }
+            }
+        }
+        if (lowestTree != null) {
+            rc.water(lowestTree.ID);
         }
     }
 
@@ -260,12 +287,12 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
 
         // Build this if we have neutral trees within some radius, or were blocked recently
         final TreeInfo[] trees = rc.senseNearbyTrees(TREE_SPAWN_LUMBERJACK_RADIUS, Team.NEUTRAL);
-        if (roundBlockedByNeutralTree < rc.getRoundNum() - 15 && trees.length == 0) {
+        if (trees.length == 0) {
             return;
         }
 
         // But only if we don't have enough lumberjacks
-        final RobotInfo[] robots = rc.senseNearbyRobots(TREE_SPAWN_LUMBERJACK_RADIUS, myTeam);
+        final RobotInfo[] robots = rc.senseNearbyRobots(-1, myTeam);
         int numLumberjacks = 0;
         for (final RobotInfo robot : robots) {
             if (robot.type == RobotType.LUMBERJACK) {

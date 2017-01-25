@@ -384,16 +384,20 @@ public strictfp class BotGardener extends BotBase {
         Direction dir = Direction.NORTH;
         for (int i = 0; i < 12; i++) {
             final MapLocation loc = myLoc.add(dir, myType.bodyRadius * 2);
-            final float density = meta.getTerrainDensity(loc);
-            if (density < lowestDensity) {
-                lowestDensity = density;
-                lowestLoc = loc;
+            if (!mapEdges.isOffMap(loc)) {
+                final float density = meta.getTerrainDensity(loc);
+                if (density < lowestDensity) {
+                    lowestDensity = density;
+                    lowestLoc = loc;
+                }
             }
             dir = dir.rotateLeftDegrees(30.0f);
         }
         while (myLoc.distanceTo(lowestLoc) > 0.01f) {
             startLoop();
-            tryMove(lowestLoc);
+            if (!tryMove(lowestLoc)) {
+                break;
+            }
             Clock.yield();
         }
     }

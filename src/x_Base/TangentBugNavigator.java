@@ -79,7 +79,9 @@ public strictfp class TangentBugNavigator {
         final float destDist = currLoc.distanceTo(destLoc);
         if (destDist < bot.myType.strideRadius) {
             return destLoc;
-        } else if (bot.myType != RobotType.GARDENER && bot.myType != RobotType.SCOUT && destDist < EFFECTIVE_DISTANCE) {
+        } else if (bot.myType != RobotType.GARDENER && bot.myType != RobotType.SCOUT
+                && bot.myType != RobotType.LUMBERJACK && destDist < EFFECTIVE_DISTANCE) {
+            // Soldiers and tanks are not effective using bug if too close to target
             return currLoc.add(currLoc.directionTo(destLoc), bot.myType.strideRadius);
         }
 
@@ -229,8 +231,18 @@ public strictfp class TangentBugNavigator {
             final ObstacleInfo[] obstacles) {
         int size = 0;
         final RobotInfo[] robots = rc.senseNearbyRobots(obstacle.location, senseRadius, null);
-        final TreeInfo[] trees = bot.myType == RobotType.SCOUT ? new TreeInfo[0]
-                : rc.senseNearbyTrees(obstacle.location, senseRadius, null);
+        final TreeInfo[] trees;
+        switch (bot.myType) {
+        case SCOUT: // scouts aren't blocked by trees
+            trees = new TreeInfo[0];
+            break;
+        case LUMBERJACK: // lumberjacks should ignore neutral/enemy trees
+            trees = rc.senseNearbyTrees(obstacle.location, senseRadius, bot.myTeam);
+            break;
+        default:
+            trees = rc.senseNearbyTrees(obstacle.location, senseRadius, null);
+            break;
+        }
         for (final RobotInfo robot : robots) {
             if (robot.location.equals(obstacle.location)) {
                 continue;

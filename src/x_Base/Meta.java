@@ -51,7 +51,7 @@ public strictfp class Meta {
         int blocked = 0;
         for (int i = 0; i < count; i++) {
             final MapLocation adjLoc = loc.add(dir, bot.myType.bodyRadius + 1.0f);
-            if (bot.rc.senseNearbyTrees(adjLoc, 1.0f, Team.NEUTRAL).length > 0) {
+            if (bot.rc.senseNearbyTrees(adjLoc, 1.0f, Team.NEUTRAL).length > 0 || bot.mapEdges.isOffMap(adjLoc)) {
                 blocked++;
             }
             dir = dir.rotateLeftDegrees(increment);

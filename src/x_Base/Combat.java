@@ -18,6 +18,8 @@ public strictfp class Combat {
     public static final float AVOID_RANGE = 6.0f; // range for avoiding
     public static final float EPS = 0.0001f;
     public static final float MAX_ROBOT_RADIUS = 2.0f;
+    public static final float TRIAD_RADIANS = (float) Math.toRadians(20.0f);
+    public static final float PENTAD_RADIANS = (float) Math.toRadians(30.0f);
 
     public static final MapLocation senseNearbyEnemies(final BotBase bot) throws GameActionException {
         final RobotInfo[] enemyRobots = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
@@ -145,31 +147,101 @@ public strictfp class Combat {
 
             // TODO: use soldier potential to surround
 
-            final Direction sideDir; // side dir depends on which side of enemy we are on
-            if (bot.nav.preferRight) {
-                sideDir = enemyDir.rotateLeftDegrees(90.0f);
+            final MapLocation moveLoc;
+            if (worstEnemy.type == RobotType.GARDENER) {
+                moveLoc = worstEnemy.location;
             } else {
-                sideDir = enemyDir.rotateRightDegrees(90.0f);
+                final Direction sideDir; // side dir depends on which side of enemy we are on
+                if (bot.nav.preferRight) {
+                    sideDir = enemyDir.rotateLeftDegrees(90.0f);
+                } else {
+                    sideDir = enemyDir.rotateRightDegrees(90.0f);
+                }
+                moveLoc = worstEnemy.location.add(sideDir,
+                        enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - EPS);
             }
-            final MapLocation moveLoc = worstEnemy.location.add(sideDir,
-                    enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - EPS);
 
             // move first before attacking
             bot.nav.setDestination(moveLoc);
             bot.tryMove(bot.nav.getNextLocation());
             final Direction latestEnemyDir = bot.myLoc.directionTo(worstEnemy.location);
 
-            final float minDistance = worstEnemy.location.distanceTo(bot.myLoc) - enemyRadius - bot.myType.bodyRadius;
+            final float latestEnemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            final float minDistance = latestEnemyDistance - enemyRadius - bot.myType.bodyRadius;
             boolean distanceAttack = false;
-            if (minDistance <= DISTANCE_ATTACK_RANGE) {
-                final float latestEnemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            final float distanceAttackRange;
+            if (worstEnemy.type == RobotType.SCOUT) {
+                distanceAttackRange = 2.0f;
+            } else {
+                distanceAttackRange = DISTANCE_ATTACK_RANGE;
+            }
+            if (minDistance <= distanceAttackRange) {
                 if (!willBulletCollideWithFriendlies(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)
                         && !willBulletCollideWithTrees(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)) {
                     distanceAttack = true;
                 }
             }
-            if (bot.rc.canFireSingleShot() && (distanceAttack || minDistance < bot.myType.bodyRadius)) {
-                bot.rc.fireSingleShot(latestEnemyDir);
+            // Check if should do triad/pentad shots
+            if (distanceAttack || minDistance < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
+                final float theta = (float) Math.asin(enemyRadius / latestEnemyDistance);
+                boolean fired = false;
+                if (bot.rc.canFirePentadShot() && (theta >= PENTAD_RADIANS || worstEnemy.type == RobotType.SCOUT)) {
+                    final Direction dirL2 = latestEnemyDir.rotateLeftRads(PENTAD_RADIANS);
+                    final Direction dirL1 = latestEnemyDir.rotateLeftRads(PENTAD_RADIANS / 2);
+                    final Direction dirR2 = latestEnemyDir.rotateRightRads(PENTAD_RADIANS);
+                    final Direction dirR1 = latestEnemyDir.rotateRightRads(PENTAD_RADIANS / 2);
+                    boolean ok = true;
+                    if (willBulletCollideWithFriendlies(bot, dirL2, latestEnemyDistance, 0) ||
+                            willBulletCollideWithFriendlies(bot, dirL1, latestEnemyDistance, 0) ||
+                            willBulletCollideWithFriendlies(bot, dirR2, latestEnemyDistance, 0) ||
+                            willBulletCollideWithFriendlies(bot, dirR1, latestEnemyDistance, 0)) {
+                        ok = false;
+                    } else {
+                        int count = 0;
+                        if (!willBulletCollideWithTrees(bot, dirL2, latestEnemyDistance, 0))
+                            count++;
+                        if (!willBulletCollideWithTrees(bot, dirL1, latestEnemyDistance, 0))
+                            count++;
+                        if (!willBulletCollideWithTrees(bot, dirR2, latestEnemyDistance, 0))
+                            count++;
+                        if (!willBulletCollideWithTrees(bot, dirR1, latestEnemyDistance, 0))
+                            count++;
+                        if (count < 2)
+                            ok = false;
+                    }
+                    if (ok) {
+                        bot.rc.firePentadShot(latestEnemyDir);
+                        fired = true;
+                    }
+                }
+                if (!fired && bot.rc.canFireTriadShot()
+                        && (theta >= TRIAD_RADIANS || worstEnemy.type == RobotType.SCOUT)) {
+                    final Direction dirL1 = latestEnemyDir.rotateLeftRads(TRIAD_RADIANS);
+                    final Direction dirR1 = latestEnemyDir.rotateRightRads(TRIAD_RADIANS);
+                    boolean ok = true;
+                    if (willBulletCollideWithFriendlies(bot, dirL1, latestEnemyDistance, 0) ||
+
+                            willBulletCollideWithFriendlies(bot, dirR1, latestEnemyDistance, 0)) {
+                        ok = false;
+                    } else {
+                        int count = 0;
+
+                        if (!willBulletCollideWithTrees(bot, dirL1, latestEnemyDistance, 0))
+                            count++;
+
+                        if (!willBulletCollideWithTrees(bot, dirR1, latestEnemyDistance, 0))
+                            count++;
+                        if (count < 1)
+                            ok = false;
+                    }
+                    if (ok) {
+                        bot.rc.fireTriadShot(latestEnemyDir);
+                        fired = true;
+                    }
+                }
+                if (!fired && bot.rc.canFireSingleShot()) {
+                    bot.rc.fireSingleShot(latestEnemyDir);
+                }
             }
             return true;
         }
@@ -185,8 +257,10 @@ public strictfp class Combat {
             final float typeScore;
             switch (enemy.type) {
             case SOLDIER:
-            case TANK:
                 typeScore = 200;
+                break;
+            case TANK:
+                typeScore = 300;
                 break;
             case LUMBERJACK:
             case SCOUT:
@@ -196,12 +270,15 @@ public strictfp class Combat {
                 typeScore = 100;
                 break;
             case ARCHON:
-                if (bot.rc.getRoundNum() < 1000 && bot.myType != RobotType.LUMBERJACK) {
-                    // we don't want to attack archons that early since it is a waste of bullets
-                    continue;
-                } else {
+                final boolean shouldAttackArchon = bot.rc.getRoundNum() >= 1000 || bot.myType == RobotType.LUMBERJACK
+                        || ((bot.myType == RobotType.SOLDIER || bot.myType == RobotType.TANK)
+                                && bot.rc.getTreeCount() >= 5);
+                if (shouldAttackArchon) {
                     typeScore = -100;
                     break;
+                } else {
+                    // we don't want to attack archons that early since it is a waste of bullets
+                    continue;
                 }
             default:
                 typeScore = 0;

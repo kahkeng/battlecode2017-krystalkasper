@@ -18,6 +18,7 @@ public strictfp class TangentBugNavigator {
     private static final int MAX_WALLS = 100;
     private static final float EPS = 0.04f; // buffer to add to not always exactly touch edges
     private static final float LEAVE_THRESHOLD = 0.0f; // distance improvement before we leave obstacle
+    public static final float EFFECTIVE_DISTANCE = 5.0f;
 
     boolean preferRight;
 
@@ -74,8 +75,11 @@ public strictfp class TangentBugNavigator {
         final MapLocation currLoc = rc.getLocation();
         final MapLocation destLoc = destination;
         Debug.debug_line(bot, currLoc, destLoc, 255, 255, 255);
-        if (currLoc.distanceTo(destLoc) < bot.myType.strideRadius) {
-            return null;
+        final float destDist = currLoc.distanceTo(destLoc);
+        if (destDist < bot.myType.strideRadius) {
+            return destLoc;
+        } else if (bot.myType != RobotType.GARDENER && bot.myType != RobotType.SCOUT && destDist < EFFECTIVE_DISTANCE) {
+            return currLoc.add(currLoc.directionTo(destLoc), bot.myType.strideRadius);
         }
 
         // Bug 2 algorithm: https://www.cs.cmu.edu/~motionplanning/lecture/Chap2-Bug-Alg_howie.pdf
@@ -117,7 +121,6 @@ public strictfp class TangentBugNavigator {
                 }
                 // TODO: should we check that we reached the m-line first?
                 // TODO: also check that way to goal is unimpeded?
-                final float destDist = currLoc.distanceTo(destLoc);
                 if (destDist < Math.max(lastMetObstacleDist - LEAVE_THRESHOLD, EPS)) {
                     if (DEBUG) {
                         // Debug.debug_print(bot, "leaving obstacle at " + currLoc + " followWallPoint=" +

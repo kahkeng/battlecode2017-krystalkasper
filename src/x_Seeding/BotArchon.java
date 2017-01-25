@@ -105,7 +105,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
             }
         }
         if (bestTree != null) {
-            tryHireGardener(myLoc.directionTo(bestTree.location));
+            tryHireGardenerWithSpace(myLoc.directionTo(bestTree.location));
         }
     }
 

@@ -63,12 +63,14 @@ public strictfp class BotLumberjack extends BotBase {
         final Direction touchDir = nearestTree.location.directionTo(myLoc);
         final MapLocation touchLoc = nearestTree.location.add(touchDir,
                 nearestTree.radius + myType.bodyRadius + myType.strideRadius - 0.01f);
-        if (tryMove(touchLoc)) {
-            if (rc.canChop(nearestTree.ID)) {
-                rc.chop(nearestTree.ID);
-            }
+        boolean moved = tryMove(touchLoc);
+        if (rc.canChop(nearestTree.ID)) {
+            rc.chop(nearestTree.ID);
         } else {
             chopAnyNearbyUnownedTrees();
+        }
+        if (!moved) {
+            randomlyJitter();
         }
         return true;
     }
@@ -110,6 +112,7 @@ public strictfp class BotLumberjack extends BotBase {
             if (!tryMove(nav.getNextLocation())) {
                 randomlyJitter();
             }
+            chopAnyNearbyUnownedTrees();
             return;
         }
 
@@ -138,6 +141,7 @@ public strictfp class BotLumberjack extends BotBase {
 
         // Check for broadcasted trees
         if (headTowardsBroadcastedTree()) {
+            chopAnyNearbyUnownedTrees();
             return;
         }
 

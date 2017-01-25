@@ -333,12 +333,12 @@ public strictfp class BotGardener extends BotBase {
         if (rc.getRoundNum() > 10) {
             return;
         }
-        while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
-            startLoop();
-            earlyFleeFromEnemy();
-            Clock.yield();
-        }
         if (meta.isLongGame()) {
+            while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
+                startLoop();
+                earlyFleeFromEnemy();
+                Clock.yield();
+            }
             while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
                 startLoop();
                 earlyFleeFromEnemy();
@@ -346,6 +346,11 @@ public strictfp class BotGardener extends BotBase {
             }
         } else {
             while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
+                startLoop();
+                earlyFleeFromEnemy();
+                Clock.yield();
+            }
+            while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
                 startLoop();
                 earlyFleeFromEnemy();
                 Clock.yield();

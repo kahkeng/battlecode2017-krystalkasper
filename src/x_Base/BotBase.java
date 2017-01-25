@@ -260,7 +260,7 @@ public strictfp class BotBase {
                 for (int j = 0; j < 6; j++) {
                     final MapLocation buildLoc = gardenerLoc.add(dir2,
                             RobotType.GARDENER.bodyRadius + buildRadius + 0.01f);
-                    if (rc.senseNearbyRobots(buildLoc, buildRadius, null).length == 0
+                    if (!mapEdges.isOffMap(buildLoc) && rc.senseNearbyRobots(buildLoc, buildRadius, null).length == 0
                             && rc.senseNearbyTrees(buildLoc, buildRadius, null).length == 0) {
                         canBuild += 1;
                         break;

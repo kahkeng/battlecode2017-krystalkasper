@@ -34,7 +34,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
         while (true) {
             try {
                 startLoop();
-                // Messaging.broadcastArchonLocation(this);
+                Messaging.broadcastArchonLocation(this);
 
                 // TODO: prioritized enemies
                 final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);

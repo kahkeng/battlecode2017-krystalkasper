@@ -129,13 +129,67 @@ public strictfp class BotBase {
     }
 
     public final void shakeTrees() throws GameActionException {
-        final TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+        final TreeInfo[] trees = rc
+                .senseNearbyTrees(myType.bodyRadius + GameConstants.INTERACTION_DIST_FROM_EDGE + 0.01f, Team.NEUTRAL);
         for (final TreeInfo tree : trees) {
             if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
                 rc.shake(tree.ID);
                 return;
             }
         }
+    }
+
+    public final MapLocation getNearestArchon() throws GameActionException {
+        final MapLocation[] myArchons = Messaging.readArchonLocation(this);
+        MapLocation nearestArchon = null;
+        float nearestDist = 0;
+        for (final MapLocation myArchon : myArchons) {
+            if (myArchon == null) {
+                continue;
+            }
+            final float dist = myArchon.distanceTo(myLoc);
+            if (nearestArchon == null || dist < nearestDist) {
+                nearestArchon = myArchon;
+                nearestDist = dist;
+            }
+        }
+        if (nearestArchon == null) {
+            for (final MapLocation myArchon : myInitialArchonLocs) {
+                final float dist = myArchon.distanceTo(myLoc);
+                if (nearestArchon == null || dist < nearestDist) {
+                    nearestArchon = myArchon;
+                    nearestDist = dist;
+                }
+            }
+        }
+        return nearestArchon;
+    }
+
+    public final void moveTowardsTreeBorder() throws GameActionException {
+        // If I don't see any of my own bullet trees, head towards nearest archon
+        final TreeInfo[] myTrees = rc.senseNearbyTrees(-1, myTeam);
+        final MapLocation nearestArchon = getNearestArchon();
+        if (myTrees.length == 0) {
+            nav.setDestination(nearestArchon);
+            if (!tryMove(nav.getNextLocation())) {
+                randomlyJitter();
+            }
+            return;
+        }
+
+        // Get centroid of our trees
+        float x = 0, y = 0;
+        for (final TreeInfo tree : myTrees) {
+            x += tree.location.x;
+            y += tree.location.y;
+        }
+        final MapLocation centroid = new MapLocation(x / myTrees.length, y / myTrees.length);
+
+        final MapLocation moveLoc = centroid.add(nearestArchon.directionTo(centroid), myType.sensorRadius - 1.0f);
+        if (!tryMove(moveLoc)) {
+            randomlyJitter();
+        }
+
     }
 
     public final void fleeFromEnemy(final MapLocation enemyLoc) throws GameActionException {

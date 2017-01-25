@@ -62,7 +62,9 @@ public strictfp class BotGardener extends BotArcBase {
 
     public final void waterTrees() throws GameActionException {
         // water lowest health tree
-        final TreeInfo[] trees = rc.senseNearbyTrees(myType.bodyRadius + myType.strideRadius, myTeam);
+        final TreeInfo[] trees = rc.senseNearbyTrees(
+                myType.bodyRadius + GameConstants.INTERACTION_DIST_FROM_EDGE + 0.01f,
+                myTeam);
         TreeInfo lowestTree = null;
         float lowestHealth = 0;
         for (final TreeInfo tree : trees) {

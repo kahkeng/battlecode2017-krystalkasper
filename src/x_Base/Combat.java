@@ -14,7 +14,8 @@ public strictfp class Combat {
     public static final float DISTANCE_ATTACK_RANGE = 5.0f;
     public static final float SURROUND_RANGE = 1.0f;
     public static final float ENEMY_REACTION_RANGE = 30.0f;
-    public static final float HARRASS_RANGE = 3.0f; // range for harrassing
+    public static final float HARRASS_RANGE = 3.0f; // range for harassing
+    public static final float AVOID_RANGE = 6.0f; // range for avoiding
     public static final float EPS = 0.0001f;
     public static final float MAX_ROBOT_RADIUS = 2.0f;
 
@@ -108,6 +109,47 @@ public strictfp class Combat {
                 sideDir = bot.arcDirection.opposite();
             } else {
                 sideDir = bot.arcDirection;
+            }
+            final MapLocation moveLoc = worstEnemy.location.add(sideDir,
+                    enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - EPS);
+
+            // move first before attacking
+            bot.tryMove(moveLoc);
+            final Direction latestEnemyDir = bot.myLoc.directionTo(worstEnemy.location);
+
+            final float minDistance = worstEnemy.location.distanceTo(bot.myLoc) - enemyRadius - bot.myType.bodyRadius;
+            boolean distanceAttack = false;
+            if (minDistance <= DISTANCE_ATTACK_RANGE) {
+                final float latestEnemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+                if (!willBulletCollideWithFriendlies(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)
+                        && !willBulletCollideWithTrees(bot, latestEnemyDir, latestEnemyDistance, enemyRadius)) {
+                    distanceAttack = true;
+                }
+            }
+            if (bot.rc.canFireSingleShot() && (distanceAttack || minDistance < bot.myType.bodyRadius)) {
+                bot.rc.fireSingleShot(latestEnemyDir);
+            }
+            return true;
+        }
+        // Else head towards closest known broadcasted enemies
+        return headTowardsBroadcastedEnemy(bot);
+    }
+
+    public static final boolean seekAndAttackAndSurroundEnemy2(final BotBase bot) throws GameActionException {
+        final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+        final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        if (worstEnemy != null) {
+            Messaging.broadcastEnemyRobot(bot, worstEnemy);
+            final float enemyRadius = worstEnemy.getRadius();
+            final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
+
+            // TODO: use soldier potential to surround
+
+            final Direction sideDir; // side dir depends on which side of enemy we are on
+            if (bot.nav.preferRight) {
+                sideDir = enemyDir.rotateLeftDegrees(90.0f);
+            } else {
+                sideDir = enemyDir.rotateRightDegrees(90.0f);
             }
             final MapLocation moveLoc = worstEnemy.location.add(sideDir,
                     enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - EPS);
@@ -434,6 +476,43 @@ public strictfp class Combat {
             }
             if (bot.rc.canFireSingleShot() && (distanceAttack || minDistance < bot.myType.bodyRadius)) {
                 bot.rc.fireSingleShot(latestEnemyDir);
+            }
+            return true;
+        }
+        return headTowardsBroadcastedEnemy(bot);
+    }
+
+    public static final boolean avoidEnemy(final BotBase bot) throws GameActionException {
+        final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+        final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        if (worstEnemy != null) {
+            Messaging.broadcastEnemyRobot(bot, worstEnemy);
+            Debug.debug_dot(bot, worstEnemy.location, 0, 0, 0);
+            final float enemyRadius = worstEnemy.getRadius();
+            final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            final float minDistance = enemyDistance - enemyRadius - bot.myType.bodyRadius;
+            final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
+            final Direction rotateDir;
+            final boolean rotated;
+            if (minDistance <= AVOID_RANGE - 1.0f) {
+                if (bot.preferRight) {
+                    rotateDir = enemyDir.opposite()
+                            .rotateRightRads(bot.myType.strideRadius / enemyDistance);
+                } else {
+                    rotateDir = enemyDir.opposite()
+                            .rotateLeftRads(bot.myType.strideRadius / enemyDistance);
+                }
+                rotated = true;
+            } else {
+                rotateDir = enemyDir.opposite();
+                rotated = false;
+            }
+            final MapLocation moveLoc = worstEnemy.location.add(rotateDir,
+                    AVOID_RANGE + enemyRadius + bot.myType.bodyRadius);
+            if (!bot.tryMove(moveLoc)) {
+                if (rotated) {
+                    bot.preferRight = !bot.preferRight;
+                }
             }
             return true;
         }

@@ -60,10 +60,11 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
                     if (enemyLoc.distanceTo(myLoc) < FLEE_DISTANCE * 2) {
                         fleeFromEnemy(enemyLoc);
                     }
-                    buildSoldiers(myLoc.directionTo(enemyLoc));
+                    if (worstEnemy != null || rc.getRobotCount() < rc.getTreeCount()) {
+                        buildSoldiers(myLoc.directionTo(enemyLoc));
+                    }
                 } else {
                     final TreeInfo treeToWater = findTreeToWater(true);
-                    System.out.println("t1 " + treeToWater);
                     if (treeToWater != null) {
                         rememberedTree = treeToWater;
                         if (myLoc.distanceTo(treeToWater.location) > myType.bodyRadius
@@ -75,13 +76,11 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
                         }
                     } else {
                         final MapLocation plantLoc = findIdealPlantLocation();
-                        System.out.println("p " + plantLoc);
                         if (plantLoc != null) {
                             rememberedPlantLoc = plantLoc;
                             plantTreeAtLocation(plantLoc);
                         } else {
                             final TreeInfo treeToWater2 = findTreeToWater(false);
-                            System.out.println("t2 " + treeToWater2);
                             if (treeToWater2 != null) {
                                 rememberedTree = treeToWater2;
                                 if (myLoc.distanceTo(treeToWater2.location) > myType.bodyRadius
@@ -99,8 +98,13 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
                 }
                 if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
                     buildLumberjacksForFarming();
+                    if (rc.getRobotCount() < rc.getTreeCount()) {
+                        buildSoldiers(formation.baseDir);
+                    }
                 } else {
-                    // TODO:
+                    if (rc.getRobotCount() * 1.5 < rc.getTreeCount()) {
+                        buildTanks(formation.baseDir);
+                    }
                 }
 
                 Clock.yield();
@@ -138,7 +142,7 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
         float bestDist = 0;
         if (rememberedPlantLoc != null) {
             final float dist = myLoc.distanceTo(rememberedPlantLoc);
-            if (dist <= myType.sensorRadius - GameConstants.BULLET_TREE_RADIUS) {
+            if (dist <= myType.sensorRadius - GameConstants.BULLET_TREE_RADIUS || dist >= myType.sensorRadius * 1.5f) {
                 rememberedPlantLoc = null;
             } else {
                 bestLoc = rememberedPlantLoc;
@@ -182,19 +186,20 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
     }
 
     public final TreeInfo findTreeToWater(boolean useThreshold) {
-        if (rememberedTree != null
-                && rc.canSensePartOfCircle(rememberedTree.location, GameConstants.BULLET_TREE_RADIUS)) {
-            rememberedTree = null;
-        }
         final TreeInfo[] trees = rc.senseNearbyTrees(-1, myTeam);
         // Prioritized by health/distance traveled
         TreeInfo bestTree = null;
         float bestScore = 0;
         if (rememberedTree != null) {
-            if (useThreshold && rememberedTree.health >= WATER_THRESHOLD) {
+            if (rc.canSensePartOfCircle(rememberedTree.location, GameConstants.BULLET_TREE_RADIUS) ||
+                    myLoc.distanceTo(rememberedTree.location) >= myType.sensorRadius * 1.5f) {
+                rememberedTree = null;
             } else {
-                bestTree = rememberedTree;
-                bestScore = rememberedTree.health;
+                if (useThreshold && rememberedTree.health >= WATER_THRESHOLD) {
+                } else {
+                    bestTree = rememberedTree;
+                    bestScore = rememberedTree.health;
+                }
             }
         }
         for (final TreeInfo tree : trees) {
@@ -218,6 +223,20 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
             return;
         }
         final RobotType buildType = RobotType.SOLDIER;
+        if (rc.getTeamBullets() < buildType.bulletCost + buildCount * BUILD_PENALTY) {
+            return;
+        }
+
+        if (tryBuildRobot(buildType, buildDir)) {
+            buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+        }
+    }
+
+    public final void buildTanks(final Direction buildDir) throws GameActionException {
+        if (!rc.isBuildReady()) {
+            return;
+        }
+        final RobotType buildType = RobotType.TANK;
         if (rc.getTeamBullets() < buildType.bulletCost + buildCount * BUILD_PENALTY) {
             return;
         }

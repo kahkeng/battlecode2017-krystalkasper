@@ -50,7 +50,7 @@ public strictfp class TangentBugNavigator {
         }
     }
 
-    private void reset() {
+    public void reset() {
         lastMetObstacleLoc = null;
         lastMetObstacleDist = 0;
         followWallPoint = null;
@@ -69,7 +69,7 @@ public strictfp class TangentBugNavigator {
         final MapLocation currLoc = rc.getLocation();
         final MapLocation destLoc = destination;
         Debug.debug_line(bot, currLoc, destLoc, 255, 255, 255);
-        if (currLoc.equals(destLoc)) { // TODO: threshold for distance
+        if (currLoc.distanceTo(destLoc) < bot.myType.strideRadius) {
             return null;
         }
 
@@ -112,7 +112,9 @@ public strictfp class TangentBugNavigator {
                 }
                 // TODO: should we check that we reached the m-line first?
                 // TODO: also check that way to goal is unimpeded?
-                if (currLoc.distanceTo(destLoc) < Math.max(lastMetObstacleDist - LEAVE_THRESHOLD, EPS)) {
+                final float destDist = currLoc.distanceTo(destLoc);
+                if (destDist < Math.max(lastMetObstacleDist - LEAVE_THRESHOLD, EPS)
+                        || destDist > lastMetObstacleDist * 4) {
                     if (DEBUG) {
                         // Debug.debug_print(bot, "leaving obstacle at " + currLoc + " followWallPoint=" +
                         // followWallPoint);

@@ -24,7 +24,7 @@ public strictfp class BotScout extends x_Base.BotBase {
             try {
                 startLoop();
 
-                if (Combat.harrassEnemy(this)) {
+                if (Combat.avoidEnemy(this)) {
                     lastSawEnemy = rc.getRoundNum();
                 } else {
                     final TreeInfo tree = scoutFindTreesToShake();

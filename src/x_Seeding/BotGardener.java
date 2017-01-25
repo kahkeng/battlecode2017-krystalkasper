@@ -356,7 +356,17 @@ public strictfp class BotGardener extends BotBase {
                 earlyFleeFromEnemy();
                 Clock.yield();
             }
+            while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
+                startLoop();
+                earlyFleeFromEnemy();
+                Clock.yield();
+            }
         } else {
+            while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
+                startLoop();
+                earlyFleeFromEnemy();
+                Clock.yield();
+            }
             while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
                 startLoop();
                 earlyFleeFromEnemy();

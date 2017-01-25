@@ -155,7 +155,8 @@ public strictfp class Combat {
                     enemyRadius + SURROUND_RANGE + bot.myType.bodyRadius - EPS);
 
             // move first before attacking
-            bot.tryMove(moveLoc);
+            bot.nav.setDestination(moveLoc);
+            bot.tryMove(bot.nav.getNextLocation());
             final Direction latestEnemyDir = bot.myLoc.directionTo(worstEnemy.location);
 
             final float minDistance = worstEnemy.location.distanceTo(bot.myLoc) - enemyRadius - bot.myType.bodyRadius;
@@ -493,19 +494,13 @@ public strictfp class Combat {
             final float minDistance = enemyDistance - enemyRadius - bot.myType.bodyRadius;
             final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
             final Direction rotateDir;
-            final boolean rotated;
-            if (minDistance <= AVOID_RANGE - 1.0f) {
-                if (bot.preferRight) {
-                    rotateDir = enemyDir.opposite()
-                            .rotateRightRads(bot.myType.strideRadius / enemyDistance);
-                } else {
-                    rotateDir = enemyDir.opposite()
-                            .rotateLeftRads(bot.myType.strideRadius / enemyDistance);
-                }
-                rotated = true;
+            final boolean rotated = true;
+            if (bot.preferRight) {
+                rotateDir = enemyDir.opposite()
+                        .rotateRightRads(bot.myType.strideRadius / enemyDistance);
             } else {
-                rotateDir = enemyDir.opposite();
-                rotated = false;
+                rotateDir = enemyDir.opposite()
+                        .rotateLeftRads(bot.myType.strideRadius / enemyDistance);
             }
             final MapLocation moveLoc = worstEnemy.location.add(rotateDir,
                     AVOID_RANGE + enemyRadius + bot.myType.bodyRadius);
@@ -628,6 +623,74 @@ public strictfp class Combat {
         return headTowardsBroadcastedEnemy(bot);
     }
 
+    public static boolean strikeEnemiesFromBehind2(final BotBase bot) throws GameActionException {
+        // See if enemy within sensor range
+        final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+        final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
+        if (worstEnemy != null) {
+            Messaging.broadcastEnemyRobot(bot, worstEnemy);
+            final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+            final float enemyRadius = worstEnemy.getRadius();
+            final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(worstEnemy.location,
+                    enemyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS, bot.myTeam);
+            boolean isNearest = true;
+            for (final RobotInfo friendly : friendlies) {
+                if (friendly.type != RobotType.LUMBERJACK) {
+                    continue;
+                }
+                if (worstEnemy.location.distanceTo(friendly.location) < enemyDistance) {
+                    isNearest = false;
+                    break;
+                }
+            }
+            final MapLocation moveLoc;
+            final Direction backDir = bot.formation.baseDir;
+            if (isNearest) {
+                // If I'm nearest lumberjack, or if there's no other lumberjack already striking distance,
+                // then I'm going to try to get exactly behind enemy to strike them
+                moveLoc = worstEnemy.location.add(backDir,
+                        enemyRadius + bot.myType.bodyRadius + EPS);
+                Debug.debug_dot(bot, moveLoc, 127, 127, 127);
+            } else {
+                // Otherwise, there's another lumberjack that can strike it. I will keep close, and
+                // strike if enemy damage outweighs self damage
+                final Direction enemyDir = worstEnemy.location.directionTo(bot.myLoc);
+                final Direction sideDir; // side dir depends on which side of enemy we are on
+                if (backDir.radiansBetween(enemyDir) < 0) {
+                    sideDir = backDir.rotateRightDegrees(90.0f);
+                } else {
+                    sideDir = backDir.rotateLeftDegrees(90.0f);
+                }
+                moveLoc = worstEnemy.location.add(sideDir,
+                        enemyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS - EPS);
+                Debug.debug_dot(bot, moveLoc, 255, 127, 0);
+            }
+            // Try to move first before attacking
+            final float enemyDistance2;
+            if (bot.tryMove(moveLoc)) {
+                enemyDistance2 = worstEnemy.location.distanceTo(bot.myLoc);
+            } else {
+                enemyDistance2 = enemyDistance;
+            }
+            // Now check amount of damage dealt
+            if (bot.rc.canStrike() && enemyDistance2 <= bot.myType.bodyRadius + bot.myType.strideRadius
+                    + enemyRadius) {
+                if (isNearest || getNetLumberjackHits(bot) >= 0) {
+                    bot.rc.strike();
+                }
+            } else if (bot.rc.canStrike()) {
+                // Consider the case where we are stuck and unable to get to worstEnemy.
+                // We still might want to strike if netHits is positive.
+                if (getNetLumberjackHits(bot) >= 1) {
+                    bot.rc.strike();
+                }
+            }
+            return true;
+        }
+        // Else head towards closest known broadcasted enemies
+        return headTowardsBroadcastedEnemy(bot);
+    }
+
     public static final int getNetLumberjackHits(final BotBase bot) {
         int netHits = 0;
         final RobotInfo[] robots = bot.rc
@@ -656,8 +719,10 @@ public strictfp class Combat {
             }
         }
         if (nearestLoc != null && minDistance <= ENEMY_REACTION_RANGE) {
-            final Direction enemyDir = bot.myLoc.directionTo(nearestLoc);
-            bot.tryMove(enemyDir);
+            bot.nav.setDestination(nearestLoc);
+            if (!bot.tryMove(bot.nav.getNextLocation())) {
+                bot.randomlyJitter();
+            }
             return true;
         }
         return false;

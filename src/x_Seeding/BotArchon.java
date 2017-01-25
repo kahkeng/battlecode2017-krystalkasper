@@ -22,6 +22,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
 
     public BotArchon(final RobotController rc) {
         super(rc);
+        DEBUG = true;
     }
 
     public void run() throws GameActionException {
@@ -39,9 +40,11 @@ public strictfp class BotArchon extends x_Base.BotArchon {
                 // TODO: prioritized enemies
                 final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
                 final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);
+                boolean fleeing = false;
                 if (worstEnemy != null) {
                     Messaging.broadcastEnemyRobot(this, worstEnemy);
                     fleeFromEnemy(worstEnemy.location);
+                    fleeing = true;
                 }
                 if (!shouldSpawnGardeners && (rc.getRoundNum() > 55
                         || rc.getRoundNum() <= 5 && rc.getRobotCount() == numInitialArchons)) {
@@ -54,15 +57,16 @@ public strictfp class BotArchon extends x_Base.BotArchon {
                     }
                 }
 
-                final TreeInfo tree = archonFindTreesToShake();
-                if (tree != null) {
-                    if (!tryMove(tree.location)) {
+                if (!fleeing) {
+                    final TreeInfo tree = archonFindTreesToShake();
+                    if (tree != null) {
+                        if (!tryMove(tree.location)) {
+                            randomlyJitter();
+                        }
+                    } else {
                         randomlyJitter();
                     }
-                } else {
-                    randomlyJitter();
                 }
-                // moveCloserToArc();
 
                 Clock.yield();
 

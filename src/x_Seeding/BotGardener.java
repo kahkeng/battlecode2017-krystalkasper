@@ -56,14 +56,17 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
                         enemyLoc = null;
                     }
                 }
+                boolean fleeing = false;
                 if (enemyLoc != null) {
                     if (enemyLoc.distanceTo(myLoc) < FLEE_DISTANCE * 2) {
                         fleeFromEnemy(enemyLoc);
+                        fleeing = true;
                     }
                     if (worstEnemy != null || rc.getRobotCount() < rc.getTreeCount()) {
                         buildSoldiers(myLoc.directionTo(enemyLoc));
                     }
-                } else {
+                }
+                if (!fleeing) {
                     final TreeInfo treeToWater = findTreeToWater(true);
                     if (treeToWater != null) {
                         rememberedTree = treeToWater;
@@ -276,17 +279,45 @@ public strictfp class BotGardener extends x_Duck16.BotGardener {
         }
     }
 
+    public final void earlyFleeFromEnemy() throws GameActionException {
+        final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
+        final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);
+        final MapLocation enemyLoc;
+        if (worstEnemy != null) {
+            Messaging.broadcastEnemyRobot(this, worstEnemy);
+            enemyLoc = worstEnemy.location;
+        } else {
+            final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
+            if (numEnemies > 0) {
+                enemyLoc = broadcastedEnemies[0];
+            } else {
+                enemyLoc = null;
+            }
+        }
+        if (enemyLoc != null) {
+            fleeFromEnemy(enemyLoc);
+        }
+    }
+
     public final void earlyGameSeeding() throws GameActionException {
         if (rc.getRoundNum() > 10) {
             return;
         }
         while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
             startLoop();
+            earlyFleeFromEnemy();
             Clock.yield();
         }
         if (meta.isLongGame()) {
             while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
                 startLoop();
+                earlyFleeFromEnemy();
+                Clock.yield();
+            }
+        } else {
+            while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
+                startLoop();
+                earlyFleeFromEnemy();
                 Clock.yield();
             }
         }

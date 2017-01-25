@@ -62,6 +62,10 @@ public strictfp class TangentBugNavigator {
         final float destDistance = Math.min(currLoc.distanceTo(destLoc), maxDist);
         final ObstacleInfo obstacle = Combat.whichRobotOrTreeWillObjectCollideWith(bot, currLoc.directionTo(destLoc),
                 destDistance, bot.myType.bodyRadius);
+        // If our destination is inside the returned obstacle, then don't count it as one
+        if (obstacle != null && destLoc.distanceTo(obstacle.location) <= obstacle.radius) {
+            return null;
+        }
         return obstacle;
     }
 
@@ -113,8 +117,7 @@ public strictfp class TangentBugNavigator {
                 // TODO: should we check that we reached the m-line first?
                 // TODO: also check that way to goal is unimpeded?
                 final float destDist = currLoc.distanceTo(destLoc);
-                if (destDist < Math.max(lastMetObstacleDist - LEAVE_THRESHOLD, EPS)
-                        || destDist > lastMetObstacleDist * 4) {
+                if (destDist < Math.max(lastMetObstacleDist - LEAVE_THRESHOLD, EPS)) {
                     if (DEBUG) {
                         // Debug.debug_print(bot, "leaving obstacle at " + currLoc + " followWallPoint=" +
                         // followWallPoint);

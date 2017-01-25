@@ -28,7 +28,7 @@ public strictfp class BotLumberjack extends BotBase {
             try {
                 startLoop();
 
-                if (Combat.avoidEnemy(this)) {
+                if (Combat.strikeEnemiesFromBehind2(this)) {
                     // Make space for movement
                     chopAnyNearbyUnownedTrees();
                 } else {

@@ -80,7 +80,8 @@ public strictfp class TangentBugNavigator {
         if (destDist < bot.myType.strideRadius) {
             return destLoc;
         } else if (bot.myType != RobotType.GARDENER && bot.myType != RobotType.SCOUT
-                && bot.myType != RobotType.LUMBERJACK && destDist < EFFECTIVE_DISTANCE) {
+                && bot.myType != RobotType.LUMBERJACK && destDist < EFFECTIVE_DISTANCE
+                && bot.rc.senseNearbyTrees(-1, bot.myTeam).length > 0) {
             // Soldiers and tanks are not effective using bug if too close to target
             return currLoc.add(currLoc.directionTo(destLoc), bot.myType.strideRadius);
         }

@@ -69,9 +69,7 @@ public strictfp class BotGardener extends BotBase {
                         fleeFromEnemy(enemyLoc);
                         fleeing = true;
                     }
-                    if (worstEnemy != null || rc.getRobotCount() < rc.getTreeCount()) {
-                        buildSoldiers(myLoc.directionTo(enemyLoc));
-                    }
+                    buildRobotsInWar(worstEnemy, enemyLoc);
                 }
                 if (!fleeing) {
                     final TreeInfo[] nearbyTrees = rc.senseNearbyTrees(-1, myTeam);
@@ -108,23 +106,34 @@ public strictfp class BotGardener extends BotBase {
                         }
                     }
                 }
-                if (Messaging.getNumScouts(this) < 1) {
-                    buildScouts(formation.baseDir);
-                } else if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
-                    buildLumberjacksForFarming();
-                    if (rc.getRobotCount() < rc.getTreeCount()) {
-                        buildSoldiers(formation.baseDir);
-                    }
-                } else {
-                    if (rc.getRobotCount() * 1.5 < rc.getTreeCount()) {
-                        buildTanks(formation.baseDir);
-                    }
-                }
+                buildRobotsInPeace();
 
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Gardener Exception");
                 e.printStackTrace();
+            }
+        }
+    }
+
+    public final void buildRobotsInWar(final RobotInfo worstEnemy, final MapLocation enemyLoc)
+            throws GameActionException {
+        if (worstEnemy != null || rc.getRobotCount() < rc.getTreeCount()) {
+            buildSoldiers(myLoc.directionTo(enemyLoc));
+        }
+    }
+
+    public final void buildRobotsInPeace() throws GameActionException {
+        if (Messaging.getNumScouts(this) < 1) {
+            buildScouts(formation.baseDir);
+        } else if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
+            buildLumberjacksForFarming();
+            if (rc.getRobotCount() < rc.getTreeCount()) {
+                buildSoldiers(formation.baseDir);
+            }
+        } else {
+            if (rc.getRobotCount() * 1.5 < rc.getTreeCount()) {
+                buildTanks(formation.baseDir);
             }
         }
     }

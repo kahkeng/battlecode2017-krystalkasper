@@ -5,6 +5,7 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import x_Base.Combat;
+import x_Base.Debug;
 
 public strictfp class BotArchon extends x_Duck16.BotArchon {
 
@@ -24,7 +25,7 @@ public strictfp class BotArchon extends x_Duck16.BotArchon {
 
                 final MapLocation enemyLoc = Combat.senseNearbyEnemies(this);
                 if (enemyLoc != null) {
-                    fleeFromEnemyAlongArc(enemyLoc);
+                    // fleeFromEnemyAlongArc(enemyLoc);
                 }
                 if (!shouldSpawnGardeners && (rc.getRoundNum() > 55)) {
                     shouldSpawnGardeners = true;
@@ -35,8 +36,10 @@ public strictfp class BotArchon extends x_Duck16.BotArchon {
                 // moveCloserToArc();
                 nav.setDestination(enemyInitialArchonLocs[0]);
                 final MapLocation nextLoc = nav.getNextLocation();
+                Debug.debug_line(this, myLoc, nextLoc, 0, 255, 0);
                 if (!tryMove(nextLoc)) {
                     System.out.println("can't move to nextLoc " + nextLoc);
+
                 }
 
                 Clock.yield();

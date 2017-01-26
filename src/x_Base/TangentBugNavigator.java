@@ -161,7 +161,7 @@ public strictfp class TangentBugNavigator {
                     final MapLocation edgeLoc = candidate.getEdgeLoc(currLoc, this);
                     if (DEBUG_WALLS)
                         Debug.debug_line(bot, candidate.obstacle.location, edgeLoc, 0, 0, 255);
-                    // System.out.println( i + "/" + pointsSize + " " + Clock.getBytecodesLeft() + " " + candidate + " "
+                    // System.out.println(i + "/" + pointsSize + " " + Clock.getBytecodesLeft() + " " + candidate + " "
                     // + edgeLoc);
                     boolean isClear = canPathTowardsLocation(edgeLoc);
                     // if (DEBUG) {
@@ -182,7 +182,7 @@ public strictfp class TangentBugNavigator {
                 final MapLocation edgeLoc = followWallPoint.getEdgeLoc(currLoc, this);
                 // Check if one stride towards edgeLoc is off map, if so, we reverse direction
                 if (bot.mapEdges.isOffMap(bot.myLoc.add(bot.myLoc.directionTo(edgeLoc), bot.myType.strideRadius))) {
-                    // Debug.debug_print(bot, "reversing");
+                    Debug.debug_print(bot, "reversing");
                     preferRight = !preferRight;
                     reset();
                     continue;
@@ -273,10 +273,8 @@ public strictfp class TangentBugNavigator {
         final Set<FollowWallPoint> seen = new HashSet<FollowWallPoint>();
         seen.add(startPoint);
         ObstacleInfo currObstacle = startPoint.obstacle;
-        Direction previousDir = null;
-        Direction obstacleDir = startPoint.previousObstacle.location.directionTo(currObstacle.location);
+        Direction obstacleDir = currLoc.directionTo(currObstacle.location);
         boolean found = true;
-        boolean first = true; // always process start point at least once
         boolean madeLoop = false;
         outer: while (found && Clock.getBytecodesLeft() >= 5000) {
             found = false;
@@ -285,7 +283,6 @@ public strictfp class TangentBugNavigator {
                 Debug.debug_line(bot, currObstacle.location,
                         currObstacle.location.add(currLoc.directionTo(currObstacle.location), senseRadius), 255, 0,
                         255);
-            first = false;
             ObstacleInfo nextObstacle = null;
             // if archon or tree obstacle, has issues, we will need to supplement with another method
             final int size = getObstaclesAroundObstacle(currObstacle, senseRadius, sensedObstacles);
@@ -316,15 +313,15 @@ public strictfp class TangentBugNavigator {
                 }
             }
             if (nextObstacle != null) {
-                previousDir = obstacleDir;
-                obstacleDir = currObstacle.location.directionTo(nextObstacle.location);
                 // reject and stop if we are no longer in sensor range and the angle has turned away from us
                 if (bot.myLoc.distanceTo(nextObstacle.location) + senseRadius > bot.myType.sensorRadius) {
-                    final float radBetween = currLoc.directionTo(currObstacle.location).radiansBetween(obstacleDir);
+                    final Direction currToNextObstacleDir = currObstacle.location.directionTo(nextObstacle.location);
+                    final float radBetween = obstacleDir.radiansBetween(currToNextObstacleDir);
                     if (preferRight && radBetween > 0 || !preferRight && radBetween < 0) {
                         break outer;
                     }
                 }
+                obstacleDir = currLoc.directionTo(nextObstacle.location);
 
                 final FollowWallPoint nextPoint = new FollowWallPoint(destination, currObstacle, nextObstacle,
                         preferRight, false);
@@ -461,7 +458,7 @@ public strictfp class TangentBugNavigator {
                         : obstacle.location.directionTo(currLoc).rotateRightRads(alpha);
             } else if (firstTime) {
                 // If first time, we don't have any info about previous obstacle. Go to tangent point.
-                final float cosine = radiiSum / obsDist;
+                final float cosine = (radiiSum + EPS * 2) / obsDist;
                 final float theta = (float) Math.acos(cosine);
                 dir = preferRight ? obstacle.location.directionTo(currLoc).rotateLeftRads(theta)
                         : obstacle.location.directionTo(currLoc).rotateRightRads(theta);

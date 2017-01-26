@@ -1,4 +1,4 @@
-package x_Combat;
+package x_Combat2;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
@@ -6,9 +6,9 @@ import battlecode.common.RobotController;
 import x_Base.BotBase;
 import x_Base.Combat;
 
-public strictfp class BotTank extends BotBase {
+public strictfp class BotSoldier extends BotBase {
 
-    public BotTank(final RobotController rc) {
+    public BotSoldier(final RobotController rc) {
         super(rc);
         DEBUG = true;
     }
@@ -22,13 +22,13 @@ public strictfp class BotTank extends BotBase {
                 // if (dodgeDir != null) {
                 // tryMove(myLoc.add(dodgeDir));
                 // }
-                if (!Combat.seekAndAttackAndSurroundEnemy4(this)) {
+                if (!Combat.seekAndAttackAndSurroundEnemy5(this)) {
                     moveTowardsTreeBorder();
                 }
 
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Tank Exception");
+                System.out.println("Soldier Exception");
                 e.printStackTrace();
             }
         }

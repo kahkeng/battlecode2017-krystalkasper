@@ -1,4 +1,4 @@
-package x_Combat;
+package x_Combat2;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;

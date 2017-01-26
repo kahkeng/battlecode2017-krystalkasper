@@ -1,8 +1,6 @@
 package x_Combat;
 
-import battlecode.common.BulletInfo;
 import battlecode.common.Clock;
-import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
 import x_Base.BotBase;
@@ -19,12 +17,12 @@ public strictfp class BotSoldier extends BotBase {
         while (true) {
             try {
                 startLoop();
-                final BulletInfo[] bullets = rc.senseNearbyBullets();
-                final Direction dodgeDir = getDodgeDirection(bullets);
-                if (dodgeDir != null) {
-                    tryMove(myLoc.add(dodgeDir));
-                }
-                if (!Combat.seekAndAttackAndSurroundEnemy3(this)) {
+                // final BulletInfo[] bullets = rc.senseNearbyBullets();
+                // final Direction dodgeDir = getDodgeDirection(bullets);
+                // if (dodgeDir != null) {
+                // tryMove(myLoc.add(dodgeDir));
+                // }
+                if (!Combat.seekAndAttackAndSurroundEnemy4(this)) {
                     moveTowardsTreeBorder();
                 }
 

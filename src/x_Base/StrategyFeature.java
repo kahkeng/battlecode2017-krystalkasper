@@ -5,7 +5,7 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 
 public strictfp enum StrategyFeature {
-    SCOUT_DISTANCE_ATTACK("scout_distance_attack");
+    SCOUT_DISTANCE_ATTACK("scout_distance_attack"), GARDENER_PLANT_NEAR_ARCHON("gardener_plant_near_archon");
 
     public final String codename;
     private boolean enabled, emitted;

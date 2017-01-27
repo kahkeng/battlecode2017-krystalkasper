@@ -250,6 +250,7 @@ public strictfp class Combat {
     }
 
     public static final boolean seekAndAttackAndSurroundEnemy3(final BotBase bot) throws GameActionException {
+        // This might have a bug with the 30 degree angle
         final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
         final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {

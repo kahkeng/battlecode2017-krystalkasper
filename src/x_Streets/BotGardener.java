@@ -1,5 +1,7 @@
 package x_Streets;
 
+import java.util.HashMap;
+
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -15,6 +17,7 @@ import x_Base.Combat;
 import x_Base.Debug;
 import x_Base.Messaging;
 import x_Base.Meta.TerrainType;
+import x_Base.StrategyFeature;
 import x_Base.Util;
 
 public strictfp class BotGardener extends BotBase {
@@ -25,13 +28,16 @@ public strictfp class BotGardener extends BotBase {
     public static final int MAX_BUILD_PENALTY = 5;
     public static final float BUILD_PENALTY = 1.0f;
     public static final float TREE_SPAWN_LUMBERJACK_RADIUS = -1;
+    public static final float PLANT_DIST = RobotType.GARDENER.bodyRadius + GameConstants.BULLET_TREE_RADIUS + 0.01f;
 
     public static int buildCount = 0; // used to ensure other gardeners have their chance at building
     public static TreeInfo rememberedTree = null;
     public static MapLocation rememberedPlantLoc = null;
+    public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
 
     public BotGardener(final RobotController rc) {
         super(rc);
+        StrategyFeature.initialize(rc);
         DEBUG = true;
     }
 
@@ -79,6 +85,7 @@ public strictfp class BotGardener extends BotBase {
                     broadcastMyTrees(nearbyTrees);
                     final TreeInfo treeToWater = findTreeToWater(nearbyTrees, true);
                     if (treeToWater != null) {
+                        // Debug.debug_print(this, "found tree to water1");
                         rememberedTree = treeToWater;
                         if (myLoc.distanceTo(treeToWater.location) > myType.bodyRadius
                                 + GameConstants.INTERACTION_DIST_FROM_EDGE) {
@@ -88,13 +95,15 @@ public strictfp class BotGardener extends BotBase {
                             }
                         }
                     } else {
-                        final MapLocation plantLoc = findIdealPlantLocation();
+                        final MapLocation plantLoc = findIdealPlantLocation2();
                         if (plantLoc != null) {
+                            // Debug.debug_print(this, "found place to plant");
                             rememberedPlantLoc = plantLoc;
                             plantTreeAtLocation(plantLoc);
                         } else {
                             final TreeInfo treeToWater2 = findTreeToWater(nearbyTrees, false);
                             if (treeToWater2 != null) {
+                                // Debug.debug_print(this, "found tree to water2");
                                 rememberedTree = treeToWater2;
                                 if (myLoc.distanceTo(treeToWater2.location) > myType.bodyRadius
                                         + GameConstants.INTERACTION_DIST_FROM_EDGE) {
@@ -104,6 +113,7 @@ public strictfp class BotGardener extends BotBase {
                                     }
                                 }
                             } else {
+                                // Debug.debug_print(this, "random jitter");
                                 randomlyJitter();
                             }
                         }
@@ -166,15 +176,16 @@ public strictfp class BotGardener extends BotBase {
     }
 
     public final void plantTreeAtLocation(final MapLocation plantLoc) throws GameActionException {
-        final float plantDist = myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS + 0.01f;
-        if (myLoc.distanceTo(plantLoc) > plantDist + myType.strideRadius) {
+        if (myLoc.distanceTo(plantLoc) > PLANT_DIST + myType.strideRadius) {
+            // Debug.debug_print(this, "navigating towards plant loc");
             nav.setDestination(plantLoc);
             if (!tryMove(nav.getNextLocation())) {
                 randomlyJitter();
             }
         } else {
+            // Debug.debug_print(this, "getting into plant position");
             final Direction plantDir = myLoc.directionTo(plantLoc);
-            final MapLocation fromLoc = plantLoc.add(plantDir.opposite(), plantDist);
+            final MapLocation fromLoc = plantLoc.add(plantDir.opposite(), PLANT_DIST);
             if (myLoc.distanceTo(fromLoc) > 0.01f) {
                 if (!tryMove(fromLoc)) {
                     randomlyJitter();
@@ -196,7 +207,7 @@ public strictfp class BotGardener extends BotBase {
                 rememberedPlantLoc = null;
             } else {
                 bestLoc = rememberedPlantLoc;
-                bestDist = dist;
+                bestDist = distanceHeuristicPlantLocation(bestLoc);
             }
         }
 
@@ -233,7 +244,7 @@ public strictfp class BotGardener extends BotBase {
                 final float yf = y * TRIANGLE_DY / 2;
                 final MapLocation loc = new MapLocation(xf, yf);
                 if (feasiblePlantLocation(loc)) {
-                    final float dist = loc.distanceTo(homeArchon != null ? homeArchon : myLoc);
+                    final float dist = distanceHeuristicPlantLocation(loc);
 
                     Debug.debug_dot(this, loc, 255, 255, 255);
                     if (bestLoc == null || dist < bestDist) {
@@ -255,7 +266,7 @@ public strictfp class BotGardener extends BotBase {
                 rememberedPlantLoc = null;
             } else {
                 bestLoc = rememberedPlantLoc;
-                bestDist = dist;
+                bestDist = distanceHeuristicPlantLocation(bestLoc);
             }
         }
 
@@ -280,7 +291,7 @@ public strictfp class BotGardener extends BotBase {
             final float yf = y * TRIANGLE_DY / 2;
             final MapLocation loc = new MapLocation(xf, yf);
             if (feasiblePlantLocation(loc)) {
-                final float dist = loc.distanceTo(homeArchon != null ? homeArchon : myLoc);
+                final float dist = distanceHeuristicPlantLocation(loc);
 
                 Debug.debug_dot(this, loc, 255, 255, 255);
                 if (bestLoc == null || dist < bestDist) {
@@ -289,7 +300,33 @@ public strictfp class BotGardener extends BotBase {
                 }
             }
         }
+        if (bestLoc != null)
+            Debug.debug_dot(this, bestLoc, 0, 128, 0);
         return bestLoc;
+    }
+
+    public final float distanceHeuristicPlantLocation(final MapLocation loc) {
+        if (StrategyFeature.GARDENER_PLANT_NEAR_ARCHON.enabled() && homeArchon != null) {
+            final float archonDist = (int) (loc.distanceTo(homeArchon) / 4) * 10; // smooth ties
+            final float dist = loc.distanceTo(myLoc);
+            if (dist <= PLANT_DIST + myType.strideRadius) {
+                final Direction plantDir = myLoc.directionTo(loc);
+                final MapLocation fromLoc = loc.add(plantDir.opposite(), PLANT_DIST);
+                return archonDist + fromLoc.distanceTo(myLoc);
+            } else {
+                return archonDist + dist;
+            }
+        } else {
+            final float dist = loc.distanceTo(myLoc);
+            if (dist <= PLANT_DIST + myType.strideRadius) {
+                final Direction plantDir = myLoc.directionTo(loc);
+                final MapLocation fromLoc = loc.add(plantDir.opposite(), PLANT_DIST);
+                return fromLoc.distanceTo(myLoc);
+            } else {
+                return dist;
+            }
+        }
+
     }
 
     public final boolean feasiblePlantLocation(final MapLocation loc) {

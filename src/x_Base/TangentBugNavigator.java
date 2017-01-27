@@ -192,7 +192,8 @@ public strictfp class TangentBugNavigator {
                     Debug.debug_dot(bot, edgeLoc, 255, 255, 0);
                 }
                 // if (DEBUG) {
-                // Debug.debug_print(bot, "returning2 " + edgeLoc + " followWallPoint=" + followWallPoint);
+                // Debug.debug_print(bot, "returning2 " + edgeLoc + " followWallPoint=" + followWallPoint
+                // + " preferRight=" + preferRight);
                 // }
                 return edgeLoc;
             }
@@ -276,7 +277,9 @@ public strictfp class TangentBugNavigator {
         Direction obstacleDir = currLoc.directionTo(currObstacle.location);
         boolean found = true;
         boolean madeLoop = false;
-        outer: while (found && Clock.getBytecodesLeft() >= 5000) {
+        outer: while (found
+                && (Clock.getBytecodesLeft() >= 5000 || currLoc.distanceTo(currObstacle.location) < currObstacle.radius
+                        + bot.myType.bodyRadius + bot.myType.strideRadius)) {
             found = false;
             final float senseRadius = currObstacle.radius + bot.myType.bodyRadius * 2 + EPS;
             if (DEBUG_WALLS)

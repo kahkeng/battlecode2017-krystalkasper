@@ -5,14 +5,16 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 
 public strictfp enum StrategyFeature {
-    SCOUT_DISTANCE_ATTACK("scout_distance_attack"), GARDENER_PLANT_NEAR_ARCHON("gardener_plant_near_archon");
+    SCOUT_DISTANCE_ATTACK("scout_distance_attack", false), GARDENER_PLANT_NEAR_ARCHON("gardener_plant_near_archon",
+            false);
 
     public final String codename;
     private boolean enabled, emitted;
 
-    private StrategyFeature(final String codename) {
+    private StrategyFeature(final String codename, final boolean enabledByDefault) {
         this.codename = codename;
         this.emitted = false;
+        this.enabled = enabledByDefault;
     }
 
     public static final void initialize(RobotController rc) {

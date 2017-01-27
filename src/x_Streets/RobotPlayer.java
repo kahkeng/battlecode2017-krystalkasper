@@ -22,10 +22,10 @@ public strictfp class RobotPlayer {
             new x_Seeding.BotScout(rc).run();
             break;
         case TANK:
-            new x_Seeding.BotTank(rc).run();
+            new BotTank(rc).run();
             break;
         case SOLDIER:
-            new x_Seeding.BotSoldier(rc).run();
+            new BotSoldier(rc).run();
             break;
         case LUMBERJACK:
             new x_Seeding.BotLumberjack(rc).run();

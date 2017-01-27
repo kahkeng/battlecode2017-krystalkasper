@@ -6,7 +6,7 @@ import battlecode.common.Team;
 
 public strictfp enum StrategyFeature {
     SCOUT_DISTANCE_ATTACK("scout_distance_attack", false), GARDENER_PLANT_NEAR_ARCHON("gardener_plant_near_archon",
-            false);
+            false), IMPROVED_COMBAT1("improved_combat1", true);
 
     public final String codename;
     private boolean enabled, emitted;

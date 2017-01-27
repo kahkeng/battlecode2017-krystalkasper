@@ -488,8 +488,11 @@ public strictfp class Combat {
                 } else {
                     sideDir = enemyDir.rotateRightDegrees(150.0f);
                 }
-                if (worstEnemy.type == RobotType.GARDENER || worstEnemy.type == RobotType.ARCHON
-                        || bot.rc.getHealth() > bot.myType.maxHealth / 2) {
+                if (worstEnemy.type == RobotType.GARDENER || worstEnemy.type == RobotType.ARCHON) {
+                    moveLoc = worstEnemy.location.subtract(enemyDir,
+                            enemyRadius + bot.myType.bodyRadius + EPS);
+                    Debug.debug_dot(bot, moveLoc, 0, 128, 0);
+                } else if (bot.rc.getHealth() > bot.myType.maxHealth / 2) {
                     moveLoc = worstEnemy.location.add(sideDir,
                             enemyRadius + bot.myType.bodyRadius + EPS);
                     Debug.debug_dot(bot, moveLoc, 0, 128, 0);

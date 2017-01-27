@@ -1,4 +1,4 @@
-package x_Combat2;
+package x_Streets;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;

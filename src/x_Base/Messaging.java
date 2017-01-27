@@ -151,7 +151,27 @@ public strictfp class Messaging {
         return ret;
     }
 
-    public static final void broadcastGardener(final BotGardener bot) throws GameActionException {
+    public static final int getNumSurvivingArchons(final BotBase bot) throws GameActionException {
+        int count = 0;
+        final int threshold;
+        if (bot.myType == RobotType.ARCHON) {
+            threshold = bot.rc.getRoundNum() - 2; // additional -1 in case bytecode limit exceeded
+        } else { // robots execute in spawn order, so other robots definitely go after the archons have gone
+            threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        }
+        // we could make these broadcasts less frequent later.
+        for (int i = bot.myInitialArchonLocs.length - 1; i >= 0; i--) {
+            final int channel = OFFSET_ARCHON_START + i * FIELDS_ARCHON;
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getRoundFromHeartbeat(heartbeat) < threshold) {
+                continue;
+            }
+            count += 1;
+        }
+        return count;
+    }
+
+    public static final void broadcastGardener(final BotBase bot) throws GameActionException {
         final int threshold = bot.rc.getRoundNum();
         int channel = OFFSET_GARDENER_START;
         while (channel < OFFSET_GARDENER_END && getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {

@@ -73,6 +73,10 @@ public strictfp class BotBase {
         } else if (bullets > MAX_BULLET_STASH) {
             rc.donate((int) ((bullets - MAX_BULLET_STASH) / rc.getVictoryPointCost())
                     * rc.getVictoryPointCost());
+        } else if (rc.getRoundNum() >= 500 && Messaging.getNumSurvivingArchons(this) == 0
+                && rc.getTreeCount() == 0 && bullets > 50) {
+            rc.donate((int) (bullets / rc.getVictoryPointCost())
+                    * rc.getVictoryPointCost());
         }
         bulletsDelta = bullets - lastRoundBullets;
         lastRoundBullets = rc.getTeamBullets(); // use current figure in case we donated above

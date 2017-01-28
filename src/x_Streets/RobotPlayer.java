@@ -28,7 +28,7 @@ public strictfp class RobotPlayer {
             new BotSoldier(rc).run();
             break;
         case LUMBERJACK:
-            new x_Seeding.BotLumberjack(rc).run();
+            new BotLumberjack(rc).run();
             break;
         }
     }

@@ -14,6 +14,7 @@ import x_Base.StrategyFeature;
 public strictfp class BotSoldier extends BotBase {
 
     public static final int ENEMY_GARDENER_EXPIRY = 300;
+    public static final float SNIPE_DISTANCE = 15.0f;
     public static MapLocation enemyGardenerLoc = null;
     public static int enemyGardenerRound = 0;
 
@@ -52,24 +53,43 @@ public strictfp class BotSoldier extends BotBase {
 
     public final void macroCombatStrategy() throws GameActionException {
         if (StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
-            final MapLocation loc;
-            if (enemyGardenerLoc != null && enemyGardenerRound >= rc.getRoundNum() - ENEMY_GARDENER_EXPIRY) {
-                loc = enemyGardenerLoc;
-            } else {
-                final int numEnemyGardeners = Messaging.getEnemyGardeners(broadcastedEnemyGardeners, this);
-                if (numEnemyGardeners > 0) {
-                    // Pick nearest one and commit to it
-                    enemyGardenerLoc = null;
-                    float nearestDist = 0;
-                    for (int i = 0; i < numEnemyGardeners; i++) {
-                        final MapLocation gardenerLoc = broadcastedEnemyGardeners[i];
-                        final float dist = myLoc.distanceTo(gardenerLoc);
-                        if (enemyGardenerLoc == null || dist < nearestDist) {
-                            enemyGardenerLoc = gardenerLoc;
-                            nearestDist = dist;
-                        }
+            // Check if previously committed location is still reported, if so, refresh timer
+            final int clock = rc.getRoundNum();
+            final int numEnemyGardeners = Messaging.getEnemyGardeners(broadcastedEnemyGardeners, this);
+            MapLocation nearestLoc = null;
+            float nearestDist = 0;
+            if (numEnemyGardeners > 0) {
+                // Otherwise, pick nearest one and commit to it
+                for (int i = 0; i < numEnemyGardeners; i++) {
+                    final MapLocation gardenerLoc = broadcastedEnemyGardeners[i];
+                    if (enemyGardenerLoc != null && gardenerLoc.equals(enemyGardenerLoc)) {
+                        enemyGardenerRound = clock;
+                    }
+                    final float dist = myLoc.distanceTo(gardenerLoc);
+                    if (nearestLoc == null || dist < nearestDist) {
+                        nearestLoc = gardenerLoc;
+                        nearestDist = dist;
                     }
                 }
+            }
+            if (enemyGardenerLoc == null || enemyGardenerRound < clock - ENEMY_GARDENER_EXPIRY) {
+                enemyGardenerLoc = nearestLoc;
+                enemyGardenerRound = clock;
+            }
+            if (enemyGardenerLoc != null) {
+                // move towards gardener loc, but set up sniping position once close enough
+                if (myLoc.distanceTo(enemyGardenerLoc) <= SNIPE_DISTANCE) {
+                    if (rc.canFireSingleShot()) {
+                        final Direction enemyDir = myLoc.directionTo(enemyGardenerLoc);
+                        rc.fireSingleShot(enemyDir);
+                    }
+                } else {
+                    nav.setDestination(enemyGardenerLoc);
+                    if (!tryMove(nav.getNextLocation())) {
+                        randomlyJitter();
+                    }
+                }
+            } else {
                 moveTowardsTreeBorder();
             }
         } else {

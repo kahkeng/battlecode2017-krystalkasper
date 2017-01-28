@@ -63,7 +63,7 @@ public strictfp class TangentBugNavigator {
     private final ObstacleInfo hasObstacleToward(final MapLocation currLoc, final MapLocation destLoc,
             final float maxDist) {
         final float destDistance = Math.min(currLoc.distanceTo(destLoc), maxDist);
-        final ObstacleInfo obstacle = Combat.whichRobotOrTreeWillObjectCollideWith(bot, currLoc.directionTo(destLoc),
+        final ObstacleInfo obstacle = whichRobotOrTreeWillObjectCollideWith(bot, currLoc.directionTo(destLoc),
                 destDistance, bot.myType.bodyRadius);
         // If our destination is inside the returned obstacle, then don't count it as one
         if (obstacle != null && destLoc.distanceTo(obstacle.location) <= obstacle.radius) {
@@ -229,22 +229,91 @@ public strictfp class TangentBugNavigator {
         return true;
     }
 
+    public static final RobotInfo[] getRobotObstacles(final BotBase bot, final MapLocation centerLoc,
+            final float senseRadius) {
+        switch (bot.myType) {
+        case SOLDIER:
+        case TANK:
+        case LUMBERJACK:
+        case SCOUT:
+            // should not consider enemy units as obstacles to navigate around
+            return bot.rc.senseNearbyRobots(centerLoc, senseRadius, bot.myTeam);
+        default:
+            return bot.rc.senseNearbyRobots(centerLoc, senseRadius, null);
+        }
+    }
+
+    public static final TreeInfo[] getTreeObstacles(final BotBase bot, final MapLocation centerLoc,
+            final float senseRadius) {
+        switch (bot.myType) {
+        case SCOUT:
+            // scouts aren't blocked by trees
+            return new TreeInfo[0];
+        case LUMBERJACK:
+        case TANK:
+            // should ignore neutral/enemy trees since can chop/mow them down
+            return bot.rc.senseNearbyTrees(centerLoc, senseRadius, bot.myTeam);
+        case SOLDIER:
+        case ARCHON:
+        case GARDENER:
+        default:
+            return bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
+        }
+    }
+
+    public static final ObstacleInfo whichRobotOrTreeWillObjectCollideWith(final BotBase bot, final Direction objectDir,
+            final float totalDistance, final float objectRadius) {
+        // we use overlapping circles that cover a rectangular box with robot width and length of travel
+        // to find potential obstacles.
+        final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
+        final float startDist = boxRadius; // start point of the centers of circles
+        final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
+                                                         // further than this
+        final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
+        final MapLocation currLoc = bot.myLoc;
+        float centerDist = startDist;
+        while (centerDist <= endDist) {
+            final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
+            final RobotInfo[] robots = getRobotObstacles(bot, centerLoc, senseRadius);
+            final TreeInfo[] trees = getTreeObstacles(bot, centerLoc, senseRadius);
+            // pick nearest by collision edge
+            ObstacleInfo nearestObstacle = null;
+            float nearestEdgeDist = 0f;
+            for (final RobotInfo robot : robots) {
+                final float robotRadius = robot.getRadius();
+                if (Combat.willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, robot.location,
+                        robotRadius, /* isTargetRobot= */true)) {
+                    final float edgeDist = currLoc.distanceTo(robot.location) - robotRadius;
+                    if (nearestObstacle == null || edgeDist < nearestEdgeDist) {
+                        nearestObstacle = new ObstacleInfo(robot.location, robotRadius, true, robot.ID);
+                        nearestEdgeDist = edgeDist;
+                    }
+                }
+            }
+            for (final TreeInfo tree : trees) {
+                final float treeRadius = tree.getRadius();
+                if (Combat.willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, tree.location,
+                        treeRadius, /* isTargetRobot= */false)) {
+                    final float edgeDist = currLoc.distanceTo(tree.location) - treeRadius;
+                    if (nearestObstacle == null || edgeDist < nearestEdgeDist) {
+                        nearestObstacle = new ObstacleInfo(tree.location, treeRadius, false, tree.ID);
+                        nearestEdgeDist = edgeDist;
+                    }
+                }
+            }
+            if (nearestObstacle != null) {
+                return nearestObstacle;
+            }
+            centerDist += 2 * boxRadius;
+        }
+        return null;
+    }
+
     private final int getObstaclesAroundObstacle(final ObstacleInfo obstacle, final float senseRadius,
             final ObstacleInfo[] obstacles) {
         int size = 0;
-        final RobotInfo[] robots = rc.senseNearbyRobots(obstacle.location, senseRadius, null);
-        final TreeInfo[] trees;
-        switch (bot.myType) {
-        case SCOUT: // scouts aren't blocked by trees
-            trees = new TreeInfo[0];
-            break;
-        case LUMBERJACK: // lumberjacks should ignore neutral/enemy trees
-            trees = rc.senseNearbyTrees(obstacle.location, senseRadius, bot.myTeam);
-            break;
-        default:
-            trees = rc.senseNearbyTrees(obstacle.location, senseRadius, null);
-            break;
-        }
+        final RobotInfo[] robots = getRobotObstacles(bot, obstacle.location, senseRadius);
+        final TreeInfo[] trees = getTreeObstacles(bot, obstacle.location, senseRadius);
         for (final RobotInfo robot : robots) {
             if (robot.location.equals(obstacle.location)) {
                 continue;

@@ -7,7 +7,6 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.TreeInfo;
-import x_Base.TangentBugNavigator.ObstacleInfo;
 
 public strictfp class Combat {
 
@@ -646,65 +645,6 @@ public strictfp class Combat {
             centerDist += 2 * boxRadius;
         }
         return false;
-    }
-
-    public static final ObstacleInfo whichRobotOrTreeWillObjectCollideWith(final BotBase bot, final Direction objectDir,
-            final float totalDistance, final float objectRadius) {
-        // we use overlapping circles that cover a rectangular box with robot width and length of travel
-        // to find potential obstacles.
-        final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
-        final float startDist = boxRadius; // start point of the centers of circles
-        final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
-                                                         // further than this
-        final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
-        final MapLocation currLoc = bot.myLoc;
-        float centerDist = startDist;
-        while (centerDist <= endDist) {
-            final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
-            final RobotInfo[] robots = bot.rc.senseNearbyRobots(centerLoc, senseRadius, null);
-            final TreeInfo[] trees;
-            switch (bot.myType) {
-            case SCOUT:
-                trees = new TreeInfo[0];
-                break;
-            case LUMBERJACK:
-                trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, bot.myTeam);
-                break;
-            default:
-                trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
-                break;
-            }
-            // pick nearest by collision edge
-            ObstacleInfo nearestObstacle = null;
-            float nearestEdgeDist = 0f;
-            for (final RobotInfo robot : robots) {
-                final float robotRadius = robot.getRadius();
-                if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, robot.location,
-                        robotRadius, /* isTargetRobot= */true)) {
-                    final float edgeDist = currLoc.distanceTo(robot.location) - robotRadius;
-                    if (nearestObstacle == null || edgeDist < nearestEdgeDist) {
-                        nearestObstacle = new ObstacleInfo(robot.location, robotRadius, true, robot.ID);
-                        nearestEdgeDist = edgeDist;
-                    }
-                }
-            }
-            for (final TreeInfo tree : trees) {
-                final float treeRadius = tree.getRadius();
-                if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, tree.location,
-                        treeRadius, /* isTargetRobot= */false)) {
-                    final float edgeDist = currLoc.distanceTo(tree.location) - treeRadius;
-                    if (nearestObstacle == null || edgeDist < nearestEdgeDist) {
-                        nearestObstacle = new ObstacleInfo(tree.location, treeRadius, false, tree.ID);
-                        nearestEdgeDist = edgeDist;
-                    }
-                }
-            }
-            if (nearestObstacle != null) {
-                return nearestObstacle;
-            }
-            centerDist += 2 * boxRadius;
-        }
-        return null;
     }
 
     public static final boolean harrassEnemy(final BotBase bot) throws GameActionException {

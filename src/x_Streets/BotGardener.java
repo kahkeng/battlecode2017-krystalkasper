@@ -515,11 +515,19 @@ public strictfp class BotGardener extends BotBase {
                 earlyFleeFromEnemy();
                 Clock.yield();
             }
-            while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
-                startLoop();
-                Messaging.broadcastPotentialScout(this);
-                earlyFleeFromEnemy();
-                Clock.yield();
+            if (meta.getTerrainDensity(myLoc) >= 0.5) {
+                while (!tryBuildRobot(RobotType.LUMBERJACK, formation.baseDir)) {
+                    startLoop();
+                    earlyFleeFromEnemy();
+                    Clock.yield();
+                }
+            } else {
+                while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
+                    startLoop();
+                    Messaging.broadcastPotentialScout(this);
+                    earlyFleeFromEnemy();
+                    Clock.yield();
+                }
             }
             while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
                 startLoop();
@@ -527,10 +535,18 @@ public strictfp class BotGardener extends BotBase {
                 Clock.yield();
             }
         } else {
-            while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
-                startLoop();
-                earlyFleeFromEnemy();
-                Clock.yield();
+            if (meta.getTerrainDensity(myLoc) >= 0.5) {
+                while (!tryBuildRobot(RobotType.LUMBERJACK, formation.baseDir)) {
+                    startLoop();
+                    earlyFleeFromEnemy();
+                    Clock.yield();
+                }
+            } else {
+                while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
+                    startLoop();
+                    earlyFleeFromEnemy();
+                    Clock.yield();
+                }
             }
             while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
                 startLoop();

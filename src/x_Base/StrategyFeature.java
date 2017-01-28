@@ -21,13 +21,17 @@ public strictfp enum StrategyFeature {
     public static final void initialize(RobotController rc) {
         final Team team = rc.getTeam();
         final String property = System.getProperty("bc.testing.strategy-features-" + team.name().toLowerCase());
-        if (property != null) {
+        if (property != null && property.length() > 0) {
             if (rc.getRoundNum() == 1 && rc.getType() == RobotType.ARCHON) {
                 // rc.addMatchObservation(team + ":" + property);
                 System.out.println("StrategyFeature: team-" + team + "=" + property);
             }
             for (final StrategyFeature feature : StrategyFeature.values()) {
-                feature.enabled = property.indexOf("," + feature.codename) >= 0;
+                if (property.indexOf("," + feature.codename) >= 0) {
+                    feature.enabled = true;
+                } else if (property.indexOf(",!" + feature.codename) >= 0) {
+                    feature.enabled = false;
+                }
             }
         }
     }

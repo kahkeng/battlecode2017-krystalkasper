@@ -12,6 +12,7 @@ import battlecode.common.TreeInfo;
 import x_Base.Combat;
 import x_Base.Debug;
 import x_Base.Messaging;
+import x_Base.StrategyFeature;
 
 public strictfp class BotArchon extends x_Base.BotArchon {
 
@@ -23,6 +24,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
 
     public BotArchon(final RobotController rc) {
         super(rc);
+        StrategyFeature.initialize(rc);
         DEBUG = true;
     }
 

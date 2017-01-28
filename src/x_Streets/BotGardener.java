@@ -119,7 +119,9 @@ public strictfp class BotGardener extends BotBase {
                         }
                     }
                 }
-                buildRobotsInPeace();
+                if (enemyLoc == null) {
+                    buildRobotsInPeace();
+                }
 
                 Clock.yield();
             } catch (Exception e) {
@@ -131,13 +133,16 @@ public strictfp class BotGardener extends BotBase {
 
     public final void buildRobotsInWar(final RobotInfo worstEnemy, final MapLocation enemyLoc)
             throws GameActionException {
-        if (rc.getRobotCount() * 1.5 < rc.getTreeCount()) {
-            buildTanks(formation.baseDir);
+        if (worstEnemy != null) {
+            buildSoldiers(myLoc.directionTo(enemyLoc));
+        } else {
+            if (rc.getRobotCount() * 1.5 < rc.getTreeCount()) {
+                buildTanks(formation.baseDir);
+            }
+            if (rc.getRobotCount() < rc.getTreeCount()) {
+                buildSoldiers(formation.baseDir);
+            }
         }
-        if (rc.getRobotCount() < rc.getTreeCount()) {
-            buildSoldiers(formation.baseDir);
-        }
-        return;
     }
 
     public final void buildRobotsInPeace() throws GameActionException {

@@ -106,7 +106,9 @@ public strictfp class BotGardener extends BotBase {
                         }
                     }
                 }
-                buildRobotsInPeace();
+                if (enemyLoc == null) {
+                    buildRobotsInPeace();
+                }
 
                 Clock.yield();
             } catch (Exception e) {

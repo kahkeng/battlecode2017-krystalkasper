@@ -218,11 +218,11 @@ public strictfp class TangentBugNavigator {
             return bot.canMove(destLoc);
         }
         final Direction destDir = currLoc.directionTo(destLoc);
-        if (Combat.willObjectCollideWithRobots2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
+        if (Combat.willRobotCollideWithRobotsNavi(bot, destDir, destDistance, bot.myType.bodyRadius)) {
             // System.out.println("will collide with robot");
             return false;
         }
-        if (Combat.willObjectCollideWithTrees2(bot, destDir, destDistance, bot.myType.bodyRadius)) {
+        if (Combat.willRobotCollideWithTreesNavi(bot, destDir, destDistance, bot.myType.bodyRadius)) {
             // System.out.println("will collide with tree");
             return false;
         }

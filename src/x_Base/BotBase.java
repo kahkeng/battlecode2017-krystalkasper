@@ -107,7 +107,7 @@ public strictfp class BotBase {
         float nearestDist = 0;
         Direction dir = Direction.NORTH;
         for (int i = 0; i < 12; i++) {
-            final ObstacleInfo obstacle = Combat.whichRobotOrTreeWillObjectCollideWith(this,
+            final ObstacleInfo obstacle = TangentBugNavigator.whichRobotOrTreeWillObjectCollideWith(this,
                     dir, ARCHON_SHAKE_DISTANCE, myType.bodyRadius);
             if (obstacle != null && !obstacle.isRobot) {
                 final TreeInfo tree = rc.senseTree(obstacle.id);

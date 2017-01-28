@@ -6,6 +6,7 @@ import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import battlecode.common.Team;
 import battlecode.common.TreeInfo;
 
 public strictfp class Combat {
@@ -19,6 +20,7 @@ public strictfp class Combat {
     public static final float MAX_ROBOT_RADIUS = 2.0f;
     public static final float TRIAD_RADIANS = (float) Math.toRadians(20.0f);
     public static final float PENTAD_RADIANS = (float) Math.toRadians(30.0f);
+    public static final int PROCESS_OBJECT_LIMIT = 15;
 
     public static final MapLocation senseNearbyEnemies(final BotBase bot) throws GameActionException {
         final RobotInfo[] enemyRobots = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
@@ -523,14 +525,15 @@ public strictfp class Combat {
     public static final boolean willBulletCollideWithFriendlies(final BotBase bot, final Direction bulletDir,
             final float enemyDistance, final float enemyRadius)
             throws GameActionException {
-        // Note: this needs to detect friendlies, so we can't just use willObjectCollideWithRobot2
+        // Note: this needs to detect friendlies, so we can't just use the navi version of this
+        // Also, we don't expect too many friendlies so this is more optimized
         final RobotInfo[] friendlies = bot.rc.senseNearbyRobots(enemyDistance, bot.myTeam);
-        return willObjectCollideWithRobots(bot, bulletDir, enemyDistance - enemyRadius, 0.0f, friendlies);
+        return willObjectCollideWithSpecifiedRobots(bot, bulletDir, enemyDistance - enemyRadius, 0.0f, friendlies);
     }
 
-    public static final boolean willObjectCollideWithRobots(final BotBase bot, final Direction objectDir,
+    public static final boolean willObjectCollideWithSpecifiedRobots(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius, final RobotInfo[] robots) {
-        // Note: trees array might have distance in sorted order from specified center location,
+        // Note: robots array might have distance in sorted order from specified center location,
         // not necessarily from bot.myLoc
         for (final RobotInfo robot : robots) {
             if (willObjectCollideWithTreeOrRobot(bot, objectDir, totalDistance, objectRadius, robot.location,
@@ -544,7 +547,48 @@ public strictfp class Combat {
 
     public static final boolean willBulletCollideWithTrees(final BotBase bot, final Direction bulletDir,
             final float enemyDistance, final float enemyRadius) {
-        return willObjectCollideWithTrees2(bot, bulletDir, enemyDistance - enemyRadius, 0.0f);
+        // This is similar to willRobotCollideWithTreesNavi, but doesn't include enemy trees.
+        final float totalDistance = enemyDistance - enemyRadius;
+        final Direction objectDir = bulletDir;
+        final float objectRadius = 0.0f;
+
+        // Also, we only optimize this if needed.
+        final TreeInfo[] neutralTrees0 = bot.rc.senseNearbyTrees(totalDistance, Team.NEUTRAL);
+        final TreeInfo[] myTrees0 = bot.rc.senseNearbyTrees(totalDistance, bot.myTeam);
+        if (neutralTrees0.length + myTrees0.length > PROCESS_OBJECT_LIMIT) {
+            // we use overlapping circles that cover a rectangular box with robot width and length of travel
+            // to find potential obstacles.
+            final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
+            final float startDist = boxRadius; // start point of the centers of circles
+            final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
+                                                             // further than this
+            final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
+            final MapLocation currLoc = bot.myLoc;
+            float centerDist = startDist;
+            while (centerDist <= endDist) {
+                final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
+                final TreeInfo[] neutralTrees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, Team.NEUTRAL);
+                if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
+                        neutralTrees)) {
+                    return true;
+                }
+                final TreeInfo[] myTrees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, bot.myTeam);
+                if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
+                        myTrees)) {
+                    return true;
+                }
+                centerDist += 2 * boxRadius;
+            }
+        } else {
+            if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
+                    neutralTrees0)) {
+                return true;
+            }
+            if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius, myTrees0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static final boolean willObjectCollideWithTreeOrRobot(final BotBase bot, final Direction objectDir,
@@ -588,7 +632,7 @@ public strictfp class Combat {
         return false;
     }
 
-    public static final boolean willObjectCollideWithTrees(final BotBase bot, final Direction objectDir,
+    public static final boolean willObjectCollideWithSpecifiedTrees(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius, final TreeInfo[] trees) {
         // Note: trees array might have distance in sorted order from specified center location,
         // not necessarily from bot.myLoc
@@ -603,46 +647,60 @@ public strictfp class Combat {
         return false;
     }
 
-    public static final boolean willObjectCollideWithTrees2(final BotBase bot, final Direction objectDir,
+    public static final boolean willRobotCollideWithTreesNavi(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius) {
-        // we use overlapping circles that cover a rectangular box with robot width and length of travel
-        // to find potential obstacles.
-        final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
-        final float startDist = boxRadius; // start point of the centers of circles
-        final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
-                                                         // further than this
-        final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
-        final MapLocation currLoc = bot.myLoc;
-        float centerDist = startDist;
-        while (centerDist <= endDist) {
-            final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
-            final TreeInfo[] trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
-            if (Combat.willObjectCollideWithTrees(bot, objectDir, totalDistance, objectRadius, trees)) {
+        final TreeInfo[] trees0 = TangentBugNavigator.getTreeObstacles(bot, bot.myLoc, totalDistance);
+        if (trees0.length > PROCESS_OBJECT_LIMIT) {
+            // we use overlapping circles that cover a rectangular box with robot width and length of travel
+            // to find potential obstacles.
+            final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
+            final float startDist = boxRadius; // start point of the centers of circles
+            final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
+                                                             // further than this
+            final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
+            final MapLocation currLoc = bot.myLoc;
+            float centerDist = startDist;
+            while (centerDist <= endDist) {
+                final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
+                final TreeInfo[] trees = TangentBugNavigator.getTreeObstacles(bot, centerLoc, senseRadius);
+                if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius, trees)) {
+                    return true;
+                }
+                centerDist += 2 * boxRadius;
+            }
+        } else {
+            if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius, trees0)) {
                 return true;
             }
-            centerDist += 2 * boxRadius;
         }
         return false;
     }
 
-    public static final boolean willObjectCollideWithRobots2(final BotBase bot, final Direction objectDir,
+    public static final boolean willRobotCollideWithRobotsNavi(final BotBase bot, final Direction objectDir,
             final float totalDistance, final float objectRadius) {
-        // we use overlapping circles that cover a rectangular box with robot width and length of travel
-        // to find potential obstacles.
-        final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
-        final float startDist = boxRadius; // start point of the centers of circles
-        final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
-                                                         // further than this
-        final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
-        final MapLocation currLoc = bot.myLoc;
-        float centerDist = startDist;
-        while (centerDist <= endDist) {
-            final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
-            final RobotInfo[] robots = bot.rc.senseNearbyRobots(centerLoc, senseRadius, null);
-            if (Combat.willObjectCollideWithRobots(bot, objectDir, totalDistance, objectRadius, robots)) {
+        final RobotInfo[] robots0 = TangentBugNavigator.getRobotObstacles(bot, bot.myLoc, totalDistance);
+        if (robots0.length > PROCESS_OBJECT_LIMIT) {
+            // we use overlapping circles that cover a rectangular box with robot width and length of travel
+            // to find potential obstacles.
+            final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
+            final float startDist = boxRadius; // start point of the centers of circles
+            final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
+                                                             // further than this
+            final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
+            final MapLocation currLoc = bot.myLoc;
+            float centerDist = startDist;
+            while (centerDist <= endDist) {
+                final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
+                final RobotInfo[] robots = TangentBugNavigator.getRobotObstacles(bot, centerLoc, senseRadius);
+                if (Combat.willObjectCollideWithSpecifiedRobots(bot, objectDir, totalDistance, objectRadius, robots)) {
+                    return true;
+                }
+                centerDist += 2 * boxRadius;
+            }
+        } else {
+            if (Combat.willObjectCollideWithSpecifiedRobots(bot, objectDir, totalDistance, objectRadius, robots0)) {
                 return true;
             }
-            centerDist += 2 * boxRadius;
         }
         return false;
     }

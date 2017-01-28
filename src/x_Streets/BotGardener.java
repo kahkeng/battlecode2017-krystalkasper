@@ -25,12 +25,17 @@ public strictfp class BotGardener extends BotBase {
     public static final float TRIANGLE_DY = 4.2f;
     public static final float TRIANGLE_DX = (float) (TRIANGLE_DY / Math.sqrt(3) * 2);
     public static final float WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH - 10.0f;
+
+    public static final float WAR_THRESHOLD_DISTANCE = 20.0f;
+    public static final int FLEE_EXPIRY_ROUNDS = 50;
+
     public static final int MAX_BUILD_PENALTY = 5;
     public static final float BUILD_PENALTY = 1.0f;
     public static final float TREE_SPAWN_LUMBERJACK_RADIUS = -1;
     public static final float PLANT_DIST = RobotType.GARDENER.bodyRadius + GameConstants.BULLET_TREE_RADIUS + 0.01f;
 
     public static int buildCount = 0; // used to ensure other gardeners have their chance at building
+    public static int lastFleeRound = -FLEE_EXPIRY_ROUNDS; // last time we fleed
     public static TreeInfo rememberedTree = null;
     public static MapLocation rememberedPlantLoc = null;
     public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
@@ -71,16 +76,20 @@ public strictfp class BotGardener extends BotBase {
                         enemyLoc = null;
                     }
                 }
-                boolean fleeing = false;
+                final int clock = rc.getRoundNum();
                 if (enemyLoc != null) {
                     if (enemyLoc.distanceTo(myLoc) < FLEE_DISTANCE * 2) {
                         Debug.debug_line(this, myLoc, enemyLoc, 255, 0, 0);
                         fleeFromEnemy(enemyLoc);
-                        fleeing = true;
+                        lastFleeRound = clock;
                     }
-                    buildRobotsInWar(worstEnemy, enemyLoc);
                 }
-                if (!fleeing) {
+                if (enemyLoc != null || lastFleeRound >= clock - FLEE_EXPIRY_ROUNDS) {
+                    buildRobotsInWar(worstEnemy, enemyLoc);
+                } else {
+                    buildRobotsInPeace();
+                }
+                if (lastFleeRound < clock) { // if didn't just flee
                     final TreeInfo[] nearbyTrees = rc.senseNearbyTrees(-1, myTeam);
                     broadcastMyTrees(nearbyTrees);
                     final TreeInfo treeToWater = findTreeToWater(nearbyTrees, true);
@@ -119,9 +128,6 @@ public strictfp class BotGardener extends BotBase {
                         }
                     }
                 }
-                if (enemyLoc == null) {
-                    buildRobotsInPeace();
-                }
 
                 Clock.yield();
             } catch (Exception e) {
@@ -135,7 +141,7 @@ public strictfp class BotGardener extends BotBase {
             throws GameActionException {
         if (worstEnemy != null) {
             buildSoldiers(myLoc.directionTo(enemyLoc));
-        } else {
+        } else if (myLoc.distanceTo(enemyLoc) <= WAR_THRESHOLD_DISTANCE) {
             if (rc.getRobotCount() * 1.5 < rc.getTreeCount()) {
                 buildTanks(formation.baseDir);
             }
@@ -146,7 +152,7 @@ public strictfp class BotGardener extends BotBase {
     }
 
     public final void buildRobotsInPeace() throws GameActionException {
-        if (Messaging.getNumScouts(this) < 1) {
+        if (Messaging.getNumScouts(this) < 1 && lastFleeRound < rc.getRoundNum() - FLEE_EXPIRY_ROUNDS) {
             buildScouts(formation.baseDir);
         } else if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
             buildLumberjacksForFarming();

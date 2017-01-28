@@ -8,12 +8,13 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import x_Base.BotBase;
 import x_Base.Combat;
+import x_Base.Debug;
 import x_Base.Messaging;
 import x_Base.StrategyFeature;
 
 public strictfp class BotSoldier extends BotBase {
 
-    public static final int ENEMY_GARDENER_EXPIRY = 300;
+    public static final int ENEMY_GARDENER_EXPIRY = 100;
     public static final float SNIPE_DISTANCE = 15.0f;
     public static MapLocation enemyGardenerLoc = null;
     public static int enemyGardenerRound = 0;
@@ -77,6 +78,7 @@ public strictfp class BotSoldier extends BotBase {
                 enemyGardenerRound = clock;
             }
             if (enemyGardenerLoc != null) {
+                Debug.debug_dot(this, enemyGardenerLoc, 0, 255, 255);
                 // move towards gardener loc, but set up sniping position once close enough
                 if (myLoc.distanceTo(enemyGardenerLoc) <= SNIPE_DISTANCE) {
                     if (rc.canFireSingleShot()) {

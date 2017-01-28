@@ -586,8 +586,12 @@ public strictfp class Combat {
             }
             return true;
         }
-        // Else head towards closest known broadcasted enemies
-        return headTowardsBroadcastedEnemy(bot, 100.0f);
+        if (!StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
+            // Else head towards closest known broadcasted enemies
+            return headTowardsBroadcastedEnemy(bot, 100.0f);
+        } else {
+            return false;
+        }
     }
 
     public static final RobotInfo prioritizedEnemy(final BotBase bot, final RobotInfo[] enemies) {

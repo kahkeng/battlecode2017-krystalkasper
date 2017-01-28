@@ -20,12 +20,14 @@ public strictfp enum StrategyFeature {
     public static final void initialize(RobotController rc) {
         final Team team = rc.getTeam();
         final String property = System.getProperty("bc.testing.strategy-features-" + team.name().toLowerCase());
-        if (rc.getRoundNum() == 1 && rc.getType() == RobotType.ARCHON) {
-            // rc.addMatchObservation(team + ":" + property);
-            System.out.println("StrategyFeature: team-" + team + "=" + property);
-        }
-        for (final StrategyFeature feature : StrategyFeature.values()) {
-            feature.enabled = property != null && property.indexOf("," + feature.codename) >= 0;
+        if (property != null) {
+            if (rc.getRoundNum() == 1 && rc.getType() == RobotType.ARCHON) {
+                // rc.addMatchObservation(team + ":" + property);
+                System.out.println("StrategyFeature: team-" + team + "=" + property);
+            }
+            for (final StrategyFeature feature : StrategyFeature.values()) {
+                feature.enabled = property.indexOf("," + feature.codename) >= 0;
+            }
         }
     }
 

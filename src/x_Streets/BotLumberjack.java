@@ -15,6 +15,7 @@ import x_Base.BotBase;
 import x_Base.Combat;
 import x_Base.Debug;
 import x_Base.Messaging;
+import x_Base.StrategyFeature;
 
 public strictfp class BotLumberjack extends BotBase {
 
@@ -24,6 +25,7 @@ public strictfp class BotLumberjack extends BotBase {
 
     public BotLumberjack(final RobotController rc) {
         super(rc);
+        StrategyFeature.initialize(rc);
         DEBUG = true;
     }
 
@@ -214,6 +216,9 @@ public strictfp class BotLumberjack extends BotBase {
     }
 
     public final boolean clearChosenTree() throws GameActionException {
+        if (!StrategyFeature.LUMBERJACK_FOCUS.enabled()) {
+            return false;
+        }
         if (chosenTree == null) {
             return false;
         }

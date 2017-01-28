@@ -17,6 +17,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
 
     /** Hire a gardener if none in this radius. */
     public static final float GARDENER_RADIUS = 10.0f;
+    public static final int MAX_GARDENERS_AROUND = 5;
     public static final float ARCHON_WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH / 3;
     public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
 
@@ -51,8 +52,10 @@ public strictfp class BotArchon extends x_Base.BotArchon {
                     shouldSpawnGardeners = true;
                 }
                 if (shouldSpawnGardeners) {
-                    hireGardenersIfNoneAroundWithSpace();
-                    if (worstEnemy == null) {
+                    final int numGardeners = numGardenersAround();
+                    if (numGardeners == 0) {
+                        tryHireGardenerWithSpace(formation.baseDir);
+                    } else if (numGardeners < MAX_GARDENERS_AROUND && worstEnemy == null) {
                         hireGardenersIfNeedWatering();
                     }
                 }
@@ -110,20 +113,15 @@ public strictfp class BotArchon extends x_Base.BotArchon {
         }
     }
 
-    public final void hireGardenersIfNoneAroundWithSpace() throws GameActionException {
-        // Only hire if gardener has space to spawn
+    public final int numGardenersAround() throws GameActionException {
         final RobotInfo[] robots = rc.senseNearbyRobots(GARDENER_RADIUS, myTeam);
-        boolean found = false;
+        int count = 0;
         for (final RobotInfo robot : robots) {
             if (robot.type != RobotType.GARDENER) {
                 continue;
             }
-            found = true;
-            break;
+            count++;
         }
-        // Debug.debug_print(this, "hire gardener " + found);
-        if (!found) {
-            tryHireGardenerWithSpace(formation.baseDir);
-        }
+        return count;
     }
 }

@@ -117,7 +117,12 @@ public strictfp class BotGardener extends BotBase {
                             }
                         }
                     } else {
-                        final MapLocation plantLoc = findIdealPlantLocation2();
+                        final MapLocation plantLoc;
+                        if (StrategyFeature.GARDENER_FARM_TRIANGLE.enabled()) {
+                            plantLoc = findIdealPlantLocation2();
+                        } else {
+                            plantLoc = findIdealPlantLocation0();
+                        }
                         if (plantLoc != null) {
                             // Debug.debug_print(this, "found place to plant");
                             rememberedPlantLoc = plantLoc;
@@ -222,7 +227,56 @@ public strictfp class BotGardener extends BotBase {
         }
     }
 
-    public final MapLocation findIdealPlantLocation() {
+    public final MapLocation findIdealPlantLocation0() {
+        MapLocation bestLoc = null;
+        float bestDist = 0;
+        if (rememberedPlantLoc != null) {
+            final float dist = myLoc.distanceTo(rememberedPlantLoc);
+            if (dist <= myType.sensorRadius - GameConstants.BULLET_TREE_RADIUS || dist >= myType.sensorRadius * 1.5f) {
+                rememberedPlantLoc = null;
+            } else {
+                bestLoc = rememberedPlantLoc;
+                bestDist = distanceHeuristicPlantLocation(bestLoc);
+            }
+        }
+
+        final int xi = (int) (myLoc.x / TRIANGLE_DX);
+        final int yi = (int) (myLoc.y / TRIANGLE_DY);
+        for (int i = -2; i <= 2; i++) {
+            for (int j = -2; j <= 2; j++) {
+                final int x = xi + i;
+                final int y = yi + j;
+                final float xf = x * TRIANGLE_DX + (y & 1) * TRIANGLE_DX / 2;
+                final float yf = y * TRIANGLE_DY;
+                final MapLocation loc = new MapLocation(xf, yf);
+                final float dist = myLoc.distanceTo(loc);
+                if (dist > myType.sensorRadius - GameConstants.BULLET_TREE_RADIUS) {
+                    continue;
+                }
+                if (mapEdges.isOffMap(loc)) {
+                    continue;
+                }
+                final TreeInfo[] nearbyTrees = rc.senseNearbyTrees(loc,
+                        GameConstants.BULLET_TREE_RADIUS + myType.bodyRadius * 2 + 0.01f, null);
+                if (nearbyTrees.length > 0) {
+                    continue;
+                }
+                final RobotInfo[] nearbyRobots = rc.senseNearbyRobots(loc, GameConstants.BULLET_TREE_RADIUS + 0.01f,
+                        null);
+                if (nearbyRobots.length > 0) {
+                    continue;
+                }
+                Debug.debug_dot(this, loc, 255, 255, 255);
+                if (bestLoc == null || dist < bestDist) {
+                    bestLoc = loc;
+                    bestDist = dist;
+                }
+            }
+        }
+        return bestLoc;
+    }
+
+    public final MapLocation findIdealPlantLocation1() {
         MapLocation bestLoc = null;
         float bestDist = 0;
         if (rememberedPlantLoc != null) {

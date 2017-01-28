@@ -308,6 +308,28 @@ public strictfp class BotBase {
         return false;
     }
 
+    public final boolean canMove(final Direction dir) {
+        if (myType == RobotType.TANK && rc.senseNearbyTrees(myLoc.add(dir), myType.bodyRadius, myTeam).length > 0) {
+            return false;
+        }
+        return rc.canMove(dir);
+    }
+
+    public final boolean canMove(final Direction dir, final float distance) {
+        if (myType == RobotType.TANK
+                && rc.senseNearbyTrees(myLoc.add(dir, distance), myType.bodyRadius, myTeam).length > 0) {
+            return false;
+        }
+        return rc.canMove(dir, distance);
+    }
+
+    public final boolean canMove(final MapLocation loc) {
+        if (myType == RobotType.TANK && rc.senseNearbyTrees(loc, myType.bodyRadius, myTeam).length > 0) {
+            return false;
+        }
+        return rc.canMove(loc);
+    }
+
     public final boolean tryMove(final MapLocation loc) throws GameActionException {
         return tryMove(loc, myType.strideRadius);
     }
@@ -318,7 +340,7 @@ public strictfp class BotBase {
         }
         // First, try intended direction
         final float locDistance = myLoc.distanceTo(loc);
-        if (locDistance <= moveDistance && rc.canMove(loc)) {
+        if (locDistance <= moveDistance && canMove(loc)) {
             rc.move(loc);
             startLoop();
             return true;
@@ -363,7 +385,7 @@ public strictfp class BotBase {
         }
 
         // First, try intended direction
-        if (rc.canMove(dir, moveDistance)) {
+        if (canMove(dir, moveDistance)) {
             rc.move(dir, moveDistance);
             startLoop();
             return true;
@@ -376,14 +398,14 @@ public strictfp class BotBase {
             // Try the offset of the left side
             final float offset = degreeOffset * currentCheck;
             final Direction leftDir = dir.rotateLeftDegrees(offset);
-            if (rc.canMove(leftDir, moveDistance)) {
+            if (canMove(leftDir, moveDistance)) {
                 rc.move(leftDir, moveDistance);
                 startLoop();
                 return true;
             }
             // Try the offset on the right side
             final Direction rightDir = dir.rotateRightDegrees(offset);
-            if (rc.canMove(rightDir, moveDistance)) {
+            if (canMove(rightDir, moveDistance)) {
                 rc.move(rightDir, moveDistance);
                 startLoop();
                 return true;

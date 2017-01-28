@@ -215,7 +215,7 @@ public strictfp class TangentBugNavigator {
             return false;
         }
         if (destDistance <= bot.myType.strideRadius) {
-            return rc.canMove(destLoc);
+            return bot.canMove(destLoc);
         }
         final Direction destDir = currLoc.directionTo(destLoc);
         if (Combat.willObjectCollideWithRobots2(bot, destDir, destDistance, bot.myType.bodyRadius)) {

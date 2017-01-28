@@ -82,7 +82,10 @@ public strictfp class BotSoldier extends BotBase {
             if (enemyGardenerLoc != null) {
                 Debug.debug_dot(this, enemyGardenerLoc, 0, 255, 255);
                 // move towards gardener loc, but set up sniping position once close enough
-                if (myLoc.distanceTo(enemyGardenerLoc) <= SNIPE_DISTANCE) {
+                final float enemyGardenerDist = myLoc.distanceTo(enemyGardenerLoc);
+                if (enemyGardenerDist <= myType.sensorRadius) {
+                    enemyGardenerLoc = null; // don't need to snipe any more
+                } else if (enemyGardenerDist <= SNIPE_DISTANCE) {
                     if (rc.canFireSingleShot()) {
                         final Direction enemyDir = myLoc.directionTo(enemyGardenerLoc);
                         rc.fireSingleShot(enemyDir);

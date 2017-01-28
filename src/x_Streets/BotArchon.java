@@ -45,9 +45,19 @@ public strictfp class BotArchon extends x_Base.BotArchon {
                 final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);
                 boolean fleeing = false;
                 if (worstEnemy != null) {
-                    Messaging.broadcastEnemyRobot(this, worstEnemy);
-                    fleeFromEnemy(worstEnemy.location);
-                    fleeing = true;
+                    switch (worstEnemy.type) {
+                    case SOLDIER:
+                    case TANK:
+                    case LUMBERJACK:
+                    case SCOUT:
+                        Messaging.broadcastPriorityEnemyRobot(this, worstEnemy);
+                        fleeFromEnemy(worstEnemy.location);
+                        fleeing = true;
+                        break;
+                    default:
+                        Messaging.broadcastEnemyRobot(this, worstEnemy);
+                        break;
+                    }
                 }
                 if (!shouldSpawnGardeners && (rc.getRoundNum() > 55
                         || rc.getRoundNum() >= 2 && rc.getRoundNum() <= 5 && rc.getRobotCount() == numInitialArchons)) {

@@ -65,20 +65,33 @@ public strictfp class BotGardener extends BotBase {
                 final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
                 final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);
                 final MapLocation enemyLoc;
+                boolean shouldFlee = false;
                 if (worstEnemy != null) {
-                    Messaging.broadcastEnemyRobot(this, worstEnemy);
+                    switch (worstEnemy.type) {
+                    case SOLDIER:
+                    case TANK:
+                    case LUMBERJACK:
+                    case SCOUT:
+                        Messaging.broadcastPriorityEnemyRobot(this, worstEnemy);
+                        shouldFlee = true;
+                        break;
+                    default:
+                        Messaging.broadcastEnemyRobot(this, worstEnemy);
+                        break;
+                    }
                     enemyLoc = worstEnemy.location;
                 } else {
                     final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
                     if (numEnemies > 0) {
                         enemyLoc = broadcastedEnemies[0];
+                        shouldFlee = true; // can't tell if dangerous but just in case
                     } else {
                         enemyLoc = null;
                     }
                 }
                 final int clock = rc.getRoundNum();
                 if (enemyLoc != null) {
-                    if (enemyLoc.distanceTo(myLoc) < FLEE_DISTANCE * 2) {
+                    if (shouldFlee && enemyLoc.distanceTo(myLoc) < FLEE_DISTANCE * 2) {
                         Debug.debug_line(this, myLoc, enemyLoc, 255, 0, 0);
                         fleeFromEnemy(enemyLoc);
                         lastFleeRound = clock;

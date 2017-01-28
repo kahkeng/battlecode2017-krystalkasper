@@ -33,20 +33,23 @@ public strictfp class BotLumberjack extends BotBase {
         while (true) {
             try {
                 startLoop();
-                final BulletInfo[] bullets = rc.senseNearbyBullets();
-                final Direction dodgeDir = getDodgeDirection(bullets);
-                if (dodgeDir != null) {
-                    tryMove(myLoc.add(dodgeDir));
-                }
 
-                if (Combat.strikeEnemiesFromBehind2(this)) {
-                    // Make space for movement
-                    chopAnyNearbyUnownedTrees();
-                } else {
-                    if (!clearChosenTree()) {
-                        if (!clearObstructedArchonsAndGardeners()) {
-                            if (!clearEnemyTrees()) {
-                                clearNeutralTreesNearBase();
+                if (!Combat.attackPriorityEnemies(this)) {
+                    final BulletInfo[] bullets = rc.senseNearbyBullets();
+                    final Direction dodgeDir = getDodgeDirection(bullets);
+                    if (dodgeDir != null) {
+                        tryMove(myLoc.add(dodgeDir));
+                    }
+
+                    if (Combat.strikeEnemiesFromBehind2(this)) {
+                        // Make space for movement
+                        chopAnyNearbyUnownedTrees();
+                    } else {
+                        if (!clearChosenTree()) {
+                            if (!clearObstructedArchonsAndGardeners()) {
+                                if (!clearEnemyTrees()) {
+                                    clearNeutralTreesNearBase();
+                                }
                             }
                         }
                     }

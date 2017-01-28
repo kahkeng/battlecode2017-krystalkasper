@@ -29,18 +29,20 @@ public strictfp class BotSoldier extends BotBase {
         while (true) {
             try {
                 startLoop();
-                if (StrategyFeature.IMPROVED_COMBAT1.enabled()) {
-                    if (!Combat.seekAndAttackAndSurroundEnemy5(this)) {
-                        macroCombatStrategy();
-                    }
-                } else {
-                    final BulletInfo[] bullets = rc.senseNearbyBullets();
-                    final Direction dodgeDir = getDodgeDirection(bullets);
-                    if (dodgeDir != null) {
-                        tryMove(myLoc.add(dodgeDir));
-                    }
-                    if (!Combat.seekAndAttackAndSurroundEnemy3(this)) {
-                        macroCombatStrategy();
+                if (!Combat.attackPriorityEnemies(this)) {
+                    if (StrategyFeature.IMPROVED_COMBAT1.enabled()) {
+                        if (!Combat.seekAndAttackAndSurroundEnemy5(this)) {
+                            macroCombatStrategy();
+                        }
+                    } else {
+                        final BulletInfo[] bullets = rc.senseNearbyBullets();
+                        final Direction dodgeDir = getDodgeDirection(bullets);
+                        if (dodgeDir != null) {
+                            tryMove(myLoc.add(dodgeDir));
+                        }
+                        if (!Combat.seekAndAttackAndSurroundEnemy3(this)) {
+                            macroCombatStrategy();
+                        }
                     }
                 }
 

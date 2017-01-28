@@ -10,6 +10,7 @@ import battlecode.common.TreeInfo;
 public strictfp class Messaging {
 
     // max number of items, used for declaring arrays in BotBase
+    public static final int MAX_PRIORITY_ENEMY_ROBOTS = 10;
     public static final int MAX_ENEMY_ROBOTS = 10;
     public static final int MAX_ENEMY_GARDENERS = 10;
     public static final int MAX_NEUTRAL_TREES = 10;
@@ -19,6 +20,7 @@ public strictfp class Messaging {
     public static final int FIELDS_ARCHON = 3;
     public static final int FIELDS_GARDENER = 1;
     public static final int FIELDS_SCOUT = 1;
+    public static final int FIELDS_PRIORITY_ENEMY_ROBOTS = 3;
     public static final int FIELDS_ENEMY_ROBOTS = 3;
     public static final int FIELDS_ENEMY_GARDENERS = 3;
     public static final int FIELDS_NEUTRAL_TREES = 3;
@@ -38,7 +40,10 @@ public strictfp class Messaging {
     public static final int OFFSET_GARDENER_END = OFFSET_GARDENER_START + BotArchon.MAX_GARDENERS * FIELDS_GARDENER;
     public static final int OFFSET_SCOUT_START = OFFSET_GARDENER_END;
     public static final int OFFSET_SCOUT_END = OFFSET_SCOUT_START + BotArchon.MAX_SCOUTS * FIELDS_SCOUT;
-    public static final int OFFSET_ENEMY_ROBOTS_START = OFFSET_SCOUT_END;
+    public static final int OFFSET_PRIORITY_ENEMY_ROBOTS_START = OFFSET_SCOUT_END;
+    public static final int OFFSET_PRIORITY_ENEMY_ROBOTS_END = OFFSET_PRIORITY_ENEMY_ROBOTS_START
+            + MAX_ENEMY_ROBOTS * FIELDS_ENEMY_ROBOTS;
+    public static final int OFFSET_ENEMY_ROBOTS_START = OFFSET_PRIORITY_ENEMY_ROBOTS_END;
     public static final int OFFSET_ENEMY_ROBOTS_END = OFFSET_ENEMY_ROBOTS_START
             + MAX_ENEMY_ROBOTS * FIELDS_ENEMY_ROBOTS;
     public static final int OFFSET_ENEMY_GARDENERS_START = OFFSET_ENEMY_ROBOTS_END;
@@ -277,6 +282,41 @@ public strictfp class Messaging {
             results[count++] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
                     bot.rc.readBroadcastFloat(channel + 2));
             channel += FIELDS_ENEMY_ROBOTS;
+        }
+        return count;
+    }
+
+    public static final void broadcastPriorityEnemyRobot(final BotBase bot, final RobotInfo enemyRobot)
+            throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int channel = OFFSET_PRIORITY_ENEMY_ROBOTS_START;
+        while (channel < OFFSET_PRIORITY_ENEMY_ROBOTS_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getIDFromHeartbeat(heartbeat) == enemyRobot.ID || getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            channel += FIELDS_PRIORITY_ENEMY_ROBOTS;
+        }
+        if (channel < OFFSET_PRIORITY_ENEMY_ROBOTS_END) {
+            bot.rc.broadcast(channel, getRobotHeartbeat(bot, enemyRobot));
+            bot.rc.broadcastFloat(channel + 1, enemyRobot.location.x);
+            bot.rc.broadcastFloat(channel + 2, enemyRobot.location.y);
+        }
+    }
+
+    public static final int getPriorityEnemyRobots(final MapLocation[] results, final BotBase bot)
+            throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int channel = OFFSET_PRIORITY_ENEMY_ROBOTS_START;
+        int count = 0;
+        while (channel < OFFSET_PRIORITY_ENEMY_ROBOTS_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            results[count++] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
+                    bot.rc.readBroadcastFloat(channel + 2));
+            channel += FIELDS_PRIORITY_ENEMY_ROBOTS;
         }
         return count;
     }

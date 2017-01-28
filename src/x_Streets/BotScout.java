@@ -44,22 +44,24 @@ public strictfp class BotScout extends x_Base.BotBase {
                     }
                 }
 
-                if (Combat.avoidEnemy(this)) {
-                    lastSawEnemy = rc.getRoundNum();
-                } else {
-                    final TreeInfo tree = scoutFindTreesToShake();
-                    if (tree != null) {
-                        if (!tryMove(tree.location)) {
-                            randomlyJitter();
-                        }
-                    } else if (randomTarget != null) {
-                        if (myLoc.distanceTo(randomTarget) <= 6.0f) {
-                            randomTarget = null;
-                        } else {
-                            tryMove(randomTarget);
-                        }
+                if (!Combat.attackPriorityEnemies(this)) {
+                    if (Combat.avoidEnemy(this)) {
+                        lastSawEnemy = rc.getRoundNum();
                     } else {
-                        patrolEnemyArchonLocs(0);
+                        final TreeInfo tree = scoutFindTreesToShake();
+                        if (tree != null) {
+                            if (!tryMove(tree.location)) {
+                                randomlyJitter();
+                            }
+                        } else if (randomTarget != null) {
+                            if (myLoc.distanceTo(randomTarget) <= 6.0f) {
+                                randomTarget = null;
+                            } else {
+                                tryMove(randomTarget);
+                            }
+                        } else {
+                            patrolEnemyArchonLocs(0);
+                        }
                     }
                 }
 

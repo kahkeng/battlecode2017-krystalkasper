@@ -72,7 +72,8 @@ public strictfp class BotBase {
             rc.donate((int) ((bullets - MAX_BULLET_STASH) / rc.getVictoryPointCost())
                     * rc.getVictoryPointCost());
         } else if (rc.getRoundNum() >= 500 && Messaging.getNumSurvivingArchons(this) == 0
-                && rc.getTreeCount() == 0 && bullets > 50) {
+                && rc.getTreeCount() == 0 && bullets > GameConstants.BULLET_TREE_COST + 10.0f) {
+            // no gardener or unable to spawn tree
             rc.donate((int) (bullets / rc.getVictoryPointCost())
                     * rc.getVictoryPointCost());
         }

@@ -316,7 +316,7 @@ public strictfp class Combat {
                     moveLoc = worstEnemy.location.subtract(enemyDir,
                             enemyRadius + bot.myType.bodyRadius + EPS);
                     Debug.debug_dot(bot, moveLoc, 0, 128, 0);
-                } else if (bot.rc.getHealth() > bot.myType.maxHealth / 2) {
+                } else if (bot.rc.getHealth() > bot.myType.maxHealth / 2 && worstEnemy.type != RobotType.LUMBERJACK) {
                     moveLoc = worstEnemy.location.add(sideDir,
                             enemyRadius + bot.myType.bodyRadius + EPS);
                     Debug.debug_dot(bot, moveLoc, 0, 128, 0);

@@ -19,7 +19,7 @@ public strictfp class RobotPlayer {
             new BotGardener(rc).run();
             break;
         case SCOUT:
-            new x_Seeding.BotScout(rc).run();
+            new BotScout(rc).run();
             break;
         case TANK:
             new BotTank(rc).run();

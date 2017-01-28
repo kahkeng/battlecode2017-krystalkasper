@@ -14,9 +14,6 @@ import x_Base.TangentBugNavigator.ObstacleInfo;
 public strictfp class BotBase {
 
     public static final float MAX_BULLET_STASH = 1000.0f;
-    public static final int MAX_ENEMY_ROBOTS = 10; // in message broadcasts
-    public static final int MAX_NEUTRAL_TREES = 10; // in message broadcasts
-    public static final int MAX_MY_TREES = 20; // in message broadcasts
     public static final float ARCHON_SHAKE_DISTANCE = 10.0f;
     public static final float FLEE_DISTANCE = 5.0f;
     public static final float BROADCAST_WATER_TREE_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH - 20.0f;
@@ -37,10 +34,11 @@ public strictfp class BotBase {
 
     public static MapLocation homeArchon = null;
     public static MapLocation myLoc = null;
-    public static final MapLocation[] broadcastedEnemies = new MapLocation[BotBase.MAX_ENEMY_ROBOTS + 1];
-    public static final MapLocation[] broadcastedNeutralTrees = new MapLocation[BotBase.MAX_NEUTRAL_TREES + 1];
-    public static final MapLocation[] broadcastedMyTrees = new MapLocation[BotBase.MAX_MY_TREES + 1];
-    public static final float[] broadcastedMyTreesHealth = new float[BotBase.MAX_MY_TREES + 1];
+    public static final MapLocation[] broadcastedEnemies = new MapLocation[Messaging.MAX_ENEMY_ROBOTS + 1];
+    public static final MapLocation[] broadcastedEnemyGardeners = new MapLocation[Messaging.MAX_ENEMY_GARDENERS + 1];
+    public static final MapLocation[] broadcastedNeutralTrees = new MapLocation[Messaging.MAX_NEUTRAL_TREES + 1];
+    public static final MapLocation[] broadcastedMyTrees = new MapLocation[Messaging.MAX_MY_TREES + 1];
+    public static final float[] broadcastedMyTreesHealth = new float[Messaging.MAX_MY_TREES + 1];
     public static boolean preferRight = false;
     public static float lastRoundBullets;
     public static float bulletsDelta;

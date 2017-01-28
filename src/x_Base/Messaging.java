@@ -9,11 +9,18 @@ import battlecode.common.TreeInfo;
 
 public strictfp class Messaging {
 
+    // max number of items, used for declaring arrays in BotBase
+    public static final int MAX_ENEMY_ROBOTS = 10;
+    public static final int MAX_ENEMY_GARDENERS = 10;
+    public static final int MAX_NEUTRAL_TREES = 10;
+    public static final int MAX_MY_TREES = 20;
+
     /** Number of fields for archon data. */
     public static final int FIELDS_ARCHON = 3;
     public static final int FIELDS_GARDENER = 1;
     public static final int FIELDS_SCOUT = 1;
     public static final int FIELDS_ENEMY_ROBOTS = 3;
+    public static final int FIELDS_ENEMY_GARDENERS = 3;
     public static final int FIELDS_NEUTRAL_TREES = 3;
     public static final int FIELDS_MY_TREES = 4;
 
@@ -33,13 +40,16 @@ public strictfp class Messaging {
     public static final int OFFSET_SCOUT_END = OFFSET_SCOUT_START + BotArchon.MAX_SCOUTS * FIELDS_SCOUT;
     public static final int OFFSET_ENEMY_ROBOTS_START = OFFSET_SCOUT_END;
     public static final int OFFSET_ENEMY_ROBOTS_END = OFFSET_ENEMY_ROBOTS_START
-            + BotBase.MAX_ENEMY_ROBOTS * FIELDS_ENEMY_ROBOTS;
-    public static final int OFFSET_NEUTRAL_TREES_START = OFFSET_ENEMY_ROBOTS_END;
+            + MAX_ENEMY_ROBOTS * FIELDS_ENEMY_ROBOTS;
+    public static final int OFFSET_ENEMY_GARDENERS_START = OFFSET_ENEMY_ROBOTS_END;
+    public static final int OFFSET_ENEMY_GARDENERS_END = OFFSET_ENEMY_GARDENERS_START
+            + MAX_ENEMY_GARDENERS * FIELDS_ENEMY_GARDENERS;
+    public static final int OFFSET_NEUTRAL_TREES_START = OFFSET_ENEMY_GARDENERS_END;
     public static final int OFFSET_NEUTRAL_TREES_END = OFFSET_NEUTRAL_TREES_START
-            + BotBase.MAX_NEUTRAL_TREES * FIELDS_NEUTRAL_TREES;
+            + MAX_NEUTRAL_TREES * FIELDS_NEUTRAL_TREES;
     public static final int OFFSET_MY_TREES_START = OFFSET_NEUTRAL_TREES_END;
     public static final int OFFSET_MY_TREES_END = OFFSET_MY_TREES_START
-            + BotBase.MAX_MY_TREES * FIELDS_MY_TREES;
+            + MAX_MY_TREES * FIELDS_MY_TREES;
 
     public static final int BITSHIFT = 12; // larger than max rounds of 3000
     public static final int BITMASK = (1 << BITSHIFT) - 1;
@@ -204,7 +214,7 @@ public strictfp class Messaging {
         return count;
     }
 
-    public static final void broadcastScout(final x_Seeding.BotScout bot) throws GameActionException {
+    public static final void broadcastScout(final BotBase bot) throws GameActionException {
         final int threshold = bot.rc.getRoundNum();
         int channel = OFFSET_SCOUT_START;
         while (channel < OFFSET_SCOUT_END && getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {
@@ -279,6 +289,41 @@ public strictfp class Messaging {
         }
         return new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
                 bot.rc.readBroadcastFloat(channel + 2));
+    }
+
+    public static final void broadcastEnemyGardener(final BotBase bot, final RobotInfo enemyRobot)
+            throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int channel = OFFSET_ENEMY_GARDENERS_START;
+        while (channel < OFFSET_ENEMY_GARDENERS_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getIDFromHeartbeat(heartbeat) == enemyRobot.ID || getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            channel += FIELDS_ENEMY_GARDENERS;
+        }
+        if (channel < OFFSET_ENEMY_GARDENERS_END) {
+            bot.rc.broadcast(channel, getRobotHeartbeat(bot, enemyRobot));
+            bot.rc.broadcastFloat(channel + 1, enemyRobot.location.x);
+            bot.rc.broadcastFloat(channel + 2, enemyRobot.location.y);
+        }
+    }
+
+    public static final int getEnemyGardeners(final MapLocation[] results, final BotBase bot)
+            throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int channel = OFFSET_ENEMY_GARDENERS_START;
+        int count = 0;
+        while (channel < OFFSET_ENEMY_GARDENERS_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            results[count++] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
+                    bot.rc.readBroadcastFloat(channel + 2));
+            channel += FIELDS_ENEMY_GARDENERS;
+        }
+        return count;
     }
 
     public static final void broadcastNeutralTree(final BotBase bot, final TreeInfo neutralTree)

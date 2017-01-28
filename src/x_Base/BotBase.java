@@ -65,8 +65,8 @@ public strictfp class BotBase {
         myLoc = rc.getLocation();
         shakeTrees();
         final float bullets = rc.getTeamBullets();
-        if (rc.getRoundNum() == rc.getRoundLimit() || rc.getTeamVictoryPoints()
-                + bullets / rc.getVictoryPointCost() >= GameConstants.VICTORY_POINTS_TO_WIN) {
+        if (rc.getRoundNum() == rc.getRoundLimit() - 1 || rc.getTeamVictoryPoints() + bullets /
+                rc.getVictoryPointCost() >= GameConstants.VICTORY_POINTS_TO_WIN) {
             rc.donate(bullets);
         } else if (bullets > MAX_BULLET_STASH) {
             rc.donate((int) ((bullets - MAX_BULLET_STASH) / rc.getVictoryPointCost())
@@ -77,6 +77,7 @@ public strictfp class BotBase {
             rc.donate((int) (bullets / rc.getVictoryPointCost())
                     * rc.getVictoryPointCost());
         }
+
         bulletsDelta = bullets - lastRoundBullets;
         lastRoundBullets = rc.getTeamBullets(); // use current figure in case we donated above
         mapEdges.detectMapEdges();

@@ -132,6 +132,10 @@ public strictfp class BotArchon extends x_Base.BotArchon {
             if (robot.type != RobotType.GARDENER) {
                 continue;
             }
+            // Those that aren't moving don't count, since they are harassers
+            if (robot.moveCount == 0) {
+                continue;
+            }
             count++;
         }
         return count;

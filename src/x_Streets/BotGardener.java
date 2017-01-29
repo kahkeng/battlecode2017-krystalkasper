@@ -39,7 +39,12 @@ public strictfp class BotGardener extends BotBase {
     public static TreeInfo rememberedTree = null;
     public static MapLocation rememberedPlantLoc = null;
     public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
-    public static boolean isFarmer = true;
+
+    public enum GardenerState {
+        FARMER, ROAMER, HARASSER;
+    }
+
+    public static GardenerState state = GardenerState.FARMER;
 
     public BotGardener(final RobotController rc) {
         super(rc);
@@ -55,10 +60,16 @@ public strictfp class BotGardener extends BotBase {
             e.printStackTrace();
         }
         while (true) {
-            if (isFarmer) {
+            switch (state) {
+            case FARMER:
                 farmingLoop();
-            } else {
+                break;
+            case ROAMER:
+                roamingLoop();
+                break;
+            case HARASSER:
                 harassmentLoop(/* withScout= */false);
+                break;
             }
         }
     }
@@ -149,8 +160,8 @@ public strictfp class BotGardener extends BotBase {
                             } else {
                                 // Debug.debug_print(this, "random jitter");
                                 if (rc.getTreeCount() < 3) {
-                                    // become harasser
-                                    isFarmer = false;
+                                    // become roamer then harasser
+                                    state = GardenerState.ROAMER;
                                     return;
                                 } else {
                                     randomlyJitter();
@@ -689,6 +700,11 @@ public strictfp class BotGardener extends BotBase {
             }
         }
         // Greedily find better spawning position
+        findBetterSpawningPosition();
+
+    }
+
+    public final void findBetterSpawningPosition() throws GameActionException {
         float lowestDensity = meta.getTerrainDensity(myLoc);
         MapLocation lowestLoc = myLoc;
         Direction dir = Direction.NORTH;
@@ -735,12 +751,47 @@ public strictfp class BotGardener extends BotBase {
         return false;
     }
 
+    public final void roamingLoop() {
+        final MapLocation startLoc = rc.getLocation();
+        MapLocation baseLoc = startLoc;
+        MapLocation targetLoc = null;
+        int targetRound = 0;
+        while (true) {
+            try {
+                startLoop();
+                waterTrees();
+
+                final int clock = rc.getRoundNum();
+                if (targetLoc == null) {
+                    targetLoc = baseLoc.add(Util.randomDirection(), 10.0f);
+                    targetRound = clock;
+                }
+
+                if (myLoc.distanceTo(targetLoc) <= 2.0f || targetRound < clock - 20) {
+                    findBetterSpawningPosition();
+                    state = GardenerState.HARASSER;
+                    return;
+                } else {
+                    nav.setDestination(targetLoc);
+                    if (!tryMove(targetLoc)) {
+                        randomlyJitter();
+                    }
+                }
+
+                Clock.yield();
+            } catch (Exception e) {
+                System.out.println("Gardener Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
     public final void harassmentLoop(final boolean withScout) {
         int buildIndex = 0;
         while (true) {
             try {
                 if (rc.getTreeCount() >= 10) {
-                    isFarmer = true;
+                    state = GardenerState.FARMER;
                     return;
                 }
                 startLoop();

@@ -754,7 +754,8 @@ public strictfp class BotGardener extends BotBase {
         for (int i = 0; i < 6; i++) {
             final MapLocation buildLoc = myLoc.add(dir, myType.bodyRadius * 2 + 0.01f);
             if (rc.senseNearbyRobots(buildLoc, myType.bodyRadius, null).length == 0
-                    && rc.senseNearbyTrees(buildLoc, myType.bodyRadius, null).length == 0) {
+                    && rc.senseNearbyTrees(buildLoc, myType.bodyRadius, null).length == 0
+                    && mapEdges.distanceFromEdge(buildLoc) >= myType.bodyRadius * 2 + 0.01f) {
                 canBuild += 1;
                 if (canBuild == 2) {
                     plantDir = dir;
@@ -852,10 +853,10 @@ public strictfp class BotGardener extends BotBase {
                         switch (buildIndex) {
                         default:
                         case 0:
-                            buildType = RobotType.SOLDIER;
+                            buildType = RobotType.LUMBERJACK;
                             break;
                         case 1: // TODO: based on tree density
-                            buildType = RobotType.LUMBERJACK;
+                            buildType = RobotType.SOLDIER;
                             break;
                         }
                     }

@@ -33,6 +33,7 @@ public strictfp class BotGardener extends BotBase {
     public static final float BUILD_PENALTY = 1.0f;
     public static final float TREE_SPAWN_LUMBERJACK_RADIUS = -1;
     public static final float PLANT_DIST = RobotType.GARDENER.bodyRadius + GameConstants.BULLET_TREE_RADIUS + 0.01f;
+    public static final int MAX_HARASSERS = 10;
 
     public static int buildCount = 0; // used to ensure other gardeners have their chance at building
     public static int lastFleeRound = -FLEE_EXPIRY_ROUNDS; // last time we fleed
@@ -165,7 +166,7 @@ public strictfp class BotGardener extends BotBase {
                                 }
                             } else {
                                 // Debug.debug_print(this, "random jitter");
-                                if (rc.getTreeCount() < 3) {
+                                if (rc.getTreeCount() < 3 && Messaging.getNumHarassers(this) < MAX_HARASSERS) {
                                     // become roamer then harasser
                                     state = GardenerState.ROAMER;
                                     return;
@@ -727,6 +728,8 @@ public strictfp class BotGardener extends BotBase {
         // Greedily find better spawning position
         findBetterSpawningPosition();
 
+        // Start out as a harasser
+        state = GardenerState.HARASSER;
     }
 
     public final void findBetterSpawningPosition() throws GameActionException {
@@ -785,6 +788,8 @@ public strictfp class BotGardener extends BotBase {
         while (true) {
             try {
                 startLoop();
+                Messaging.broadcastHarasser(this);
+
                 waterTrees();
 
                 final int clock = rc.getRoundNum();
@@ -821,6 +826,8 @@ public strictfp class BotGardener extends BotBase {
                     return;
                 }
                 startLoop();
+                Messaging.broadcastHarasser(this);
+
                 waterTrees();
                 final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
                 final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);

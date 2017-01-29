@@ -1,6 +1,7 @@
 package x_Streets;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
@@ -21,6 +22,7 @@ public strictfp class BotArchon extends x_Base.BotArchon {
     public static final int MAX_GARDENERS_AROUND = 5;
     public static final float ARCHON_WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH / 3;
     public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
+    public static final int[] broadcastedHarasserIDs = new int[BotGardener.MAX_HARASSERS + 1];
 
     public BotArchon(final RobotController rc) {
         super(rc);
@@ -127,13 +129,19 @@ public strictfp class BotArchon extends x_Base.BotArchon {
 
     public final int numGardenersAround() throws GameActionException {
         final RobotInfo[] robots = rc.senseNearbyRobots(GARDENER_RADIUS, myTeam);
+        final int numHarassers = Messaging.getHarasserIDs(broadcastedHarasserIDs, this);
+        final HashSet<Integer> harasserIDs = new HashSet<Integer>();
+        for (int i = 0; i < numHarassers; i++) {
+            harasserIDs.add(broadcastedHarasserIDs[i]);
+        }
         int count = 0;
+        final int clock = rc.getRoundNum();
         for (final RobotInfo robot : robots) {
             if (robot.type != RobotType.GARDENER) {
                 continue;
             }
-            // Those that aren't moving don't count, since they are harassers
-            if (robot.moveCount == 0) {
+            // ignore harassers after 150 rounds
+            if (clock >= 150 && harasserIDs.contains(robot.ID)) {
                 continue;
             }
             count++;

@@ -19,6 +19,7 @@ public strictfp class Messaging {
     /** Number of fields for archon data. */
     public static final int FIELDS_ARCHON = 3;
     public static final int FIELDS_GARDENER = 1;
+    public static final int FIELDS_HARASSER = 1;
     public static final int FIELDS_SCOUT = 1;
     public static final int FIELDS_PRIORITY_ENEMY_ROBOTS = 3;
     public static final int FIELDS_ENEMY_ROBOTS = 3;
@@ -38,7 +39,10 @@ public strictfp class Messaging {
             + GameConstants.NUMBER_OF_ARCHONS_MAX * FIELDS_ARCHON;
     public static final int OFFSET_GARDENER_START = OFFSET_ARCHON_END;
     public static final int OFFSET_GARDENER_END = OFFSET_GARDENER_START + BotArchon.MAX_GARDENERS * FIELDS_GARDENER;
-    public static final int OFFSET_SCOUT_START = OFFSET_GARDENER_END;
+    public static final int OFFSET_HARASSER_START = OFFSET_GARDENER_END;
+    public static final int OFFSET_HARASSER_END = OFFSET_HARASSER_START
+            + x_Streets.BotGardener.MAX_HARASSERS * FIELDS_HARASSER;
+    public static final int OFFSET_SCOUT_START = OFFSET_HARASSER_END;
     public static final int OFFSET_SCOUT_END = OFFSET_SCOUT_START + BotArchon.MAX_SCOUTS * FIELDS_SCOUT;
     public static final int OFFSET_PRIORITY_ENEMY_ROBOTS_START = OFFSET_SCOUT_END;
     public static final int OFFSET_PRIORITY_ENEMY_ROBOTS_END = OFFSET_PRIORITY_ENEMY_ROBOTS_START
@@ -215,6 +219,43 @@ public strictfp class Messaging {
         while (channel < OFFSET_GARDENER_END && getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {
             count += 1;
             channel += FIELDS_GARDENER;
+        }
+        return count;
+    }
+
+    public static final void broadcastHarasser(final BotBase bot) throws GameActionException {
+        final int threshold = bot.rc.getRoundNum();
+        int channel = OFFSET_HARASSER_START;
+        while (channel < OFFSET_HARASSER_END && getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {
+            channel += FIELDS_HARASSER;
+        }
+        if (channel < OFFSET_HARASSER_END) {
+            bot.rc.broadcast(channel, getHeartbeat(bot));
+        }
+    }
+
+    public static final int getNumHarassers(final BotBase bot) throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int count = 0;
+        int channel = OFFSET_HARASSER_START;
+        while (channel < OFFSET_HARASSER_END && getRoundFromHeartbeat(bot.rc.readBroadcast(channel)) >= threshold) {
+            count += 1;
+            channel += FIELDS_HARASSER;
+        }
+        return count;
+    }
+
+    public static final int getHarasserIDs(final int[] results, final BotBase bot) throws GameActionException {
+        final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
+        int count = 0;
+        int channel = OFFSET_HARASSER_START;
+        while (channel < OFFSET_HARASSER_END) {
+            final int heartbeat = bot.rc.readBroadcast(channel);
+            if (getRoundFromHeartbeat(heartbeat) < threshold) {
+                break;
+            }
+            results[count++] = getIDFromHeartbeat(heartbeat);
+            channel += FIELDS_HARASSER;
         }
         return count;
     }

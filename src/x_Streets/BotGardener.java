@@ -205,7 +205,8 @@ public strictfp class BotGardener extends BotBase {
     }
 
     public final void buildRobotsInPeace() throws GameActionException {
-        if (Messaging.getNumScouts(this) < 1 && lastFleeRound < rc.getRoundNum() - FLEE_EXPIRY_ROUNDS) {
+        if (Messaging.getNumScouts(this) < 1 && lastFleeRound < rc.getRoundNum() - FLEE_EXPIRY_ROUNDS
+                && numNearbyCombatUnits() > 0 && rc.getRobotCount() >= rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
             buildScouts(formation.baseDir);
         } else if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
             buildLumberjacksForFarming();

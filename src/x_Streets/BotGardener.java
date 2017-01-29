@@ -173,9 +173,8 @@ public strictfp class BotGardener extends BotBase {
         if (worstEnemy != null) {
             buildSoldiers(myLoc.directionTo(enemyLoc));
         } else if (myLoc.distanceTo(enemyLoc) <= WAR_THRESHOLD_DISTANCE) {
-            if (rc.getRobotCount() * 1.5 < rc.getTreeCount()) {
-                buildTanks(formation.baseDir);
-            }
+            // Prefer tanks if we can build them
+            buildTanks(formation.baseDir);
             if (rc.getRobotCount() < rc.getTreeCount()) {
                 buildSoldiers(formation.baseDir);
             }
@@ -191,7 +190,7 @@ public strictfp class BotGardener extends BotBase {
                 buildSoldiers(formation.baseDir);
             }
         } else {
-            if (rc.getRobotCount() * 1.5 < rc.getTreeCount()) {
+            if (rc.getRobotCount() < rc.getTreeCount()) {
                 buildTanks(formation.baseDir);
             }
         }
@@ -546,16 +545,55 @@ public strictfp class BotGardener extends BotBase {
             return;
         }
 
-        // Build this if we have neutral trees within some radius, or were blocked recently
-        final TreeInfo[] trees = rc.senseNearbyTrees(TREE_SPAWN_LUMBERJACK_RADIUS, Team.NEUTRAL);
-        if (trees.length == 0) {
+        // Build this if we have neutral trees within some radius, or there is a neutral robot tree
+        final TreeInfo[] allNeutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+        TreeInfo hasRobotTree = null;
+        outer: for (final TreeInfo tree : allNeutralTrees) {
+            if (tree.containedRobot == null) {
+                continue;
+            }
+            switch (tree.containedRobot) {
+            case SOLDIER:
+            case TANK:
+            case LUMBERJACK:
+            case ARCHON:
+                hasRobotTree = tree;
+                break outer;
+            default:
+                continue outer;
+            }
+        }
+        if (hasRobotTree != null) {
+            Messaging.broadcastNeutralTree(this, hasRobotTree);
+
+            // But only if we don't have enough lumberjacks
+            final int numLumberjacks = numNearbyLumberjacks();
+            if (numLumberjacks < 1) {
+                if (tryBuildRobot(buildType, formation.baseDir)) {
+                    buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+                }
+                return;
+            }
+        }
+
+        final TreeInfo[] nearbyNeutralTrees = rc.senseNearbyTrees(TREE_SPAWN_LUMBERJACK_RADIUS, Team.NEUTRAL);
+        if (nearbyNeutralTrees.length == 0) {
             return;
         } else {
             // Broadcast one of the trees
-            Messaging.broadcastNeutralTree(this, trees[0]);
+            Messaging.broadcastNeutralTree(this, nearbyNeutralTrees[0]);
         }
 
         // But only if we don't have enough lumberjacks
+        final int numLumberjacks = numNearbyLumberjacks();
+        if (nearbyNeutralTrees.length > numLumberjacks && numLumberjacks < 2) {
+            if (tryBuildRobot(buildType, formation.baseDir)) {
+                buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+            }
+        }
+    }
+
+    public final int numNearbyLumberjacks() throws GameActionException {
         final RobotInfo[] robots = rc.senseNearbyRobots(-1, myTeam);
         int numLumberjacks = 0;
         for (final RobotInfo robot : robots) {
@@ -563,11 +601,7 @@ public strictfp class BotGardener extends BotBase {
                 numLumberjacks++;
             }
         }
-        if (trees.length > numLumberjacks && numLumberjacks < 2) {
-            if (tryBuildRobot(buildType, formation.baseDir)) {
-                buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
-            }
-        }
+        return numLumberjacks;
     }
 
     public final void earlyFleeFromEnemy() throws GameActionException {
@@ -594,6 +628,7 @@ public strictfp class BotGardener extends BotBase {
         if (rc.getRoundNum() > 10) {
             return;
         }
+        final float terrainDensity = meta.getTerrainDensity(myLoc);
         if (meta.isLongGame()) {
             while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
                 startLoop();
@@ -601,7 +636,7 @@ public strictfp class BotGardener extends BotBase {
                 earlyFleeFromEnemy();
                 Clock.yield();
             }
-            if (meta.getTerrainDensity(myLoc) >= 0.5) {
+            if (terrainDensity >= 0.5) {
                 while (!tryBuildRobot(RobotType.LUMBERJACK, formation.baseDir)) {
                     startLoop();
                     earlyFleeFromEnemy();
@@ -621,7 +656,7 @@ public strictfp class BotGardener extends BotBase {
                 Clock.yield();
             }
         } else {
-            if (meta.getTerrainDensity(myLoc) >= 0.5) {
+            if (terrainDensity >= 0.5) {
                 while (!tryBuildRobot(RobotType.LUMBERJACK, formation.baseDir)) {
                     startLoop();
                     earlyFleeFromEnemy();
@@ -634,10 +669,18 @@ public strictfp class BotGardener extends BotBase {
                     Clock.yield();
                 }
             }
-            while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
-                startLoop();
-                earlyFleeFromEnemy();
-                Clock.yield();
+            if (terrainDensity >= 0.3 && terrainDensity < 0.5) {
+                while (!tryBuildRobot(RobotType.LUMBERJACK, formation.baseDir)) {
+                    startLoop();
+                    earlyFleeFromEnemy();
+                    Clock.yield();
+                }
+            } else {
+                while (!tryBuildRobot(RobotType.SOLDIER, formation.baseDir)) {
+                    startLoop();
+                    earlyFleeFromEnemy();
+                    Clock.yield();
+                }
             }
             while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
                 startLoop();

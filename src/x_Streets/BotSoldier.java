@@ -102,10 +102,10 @@ public strictfp class BotSoldier extends BotBase {
                     }
                 }
             } else {
-                moveTowardsTreeBorder();
+                moveTowardsTreeBorder2();
             }
         } else {
-            moveTowardsTreeBorder();
+            moveTowardsTreeBorder2();
         }
     }
 }

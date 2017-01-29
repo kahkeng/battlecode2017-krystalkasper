@@ -6,6 +6,7 @@ import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
@@ -34,6 +35,7 @@ public strictfp class BotBase {
 
     public static MapLocation homeArchon = null;
     public static MapLocation myLoc = null;
+    public static MapLocation lastBaseLoc = null;
     public static final MapLocation[] broadcastedPriorityEnemies = new MapLocation[Messaging.MAX_PRIORITY_ENEMY_ROBOTS
             + 1];
     public static final MapLocation[] broadcastedEnemies = new MapLocation[Messaging.MAX_ENEMY_ROBOTS + 1];
@@ -215,6 +217,79 @@ public strictfp class BotBase {
         }
         final MapLocation centroid = new MapLocation(x / myTrees.length, y / myTrees.length);
 
+        final MapLocation moveLoc = centroid.add(nearestArchon.directionTo(centroid), myType.sensorRadius - 1.0f);
+        if (!tryMove(moveLoc)) {
+            randomlyJitter();
+        }
+
+    }
+
+    public final void moveTowardsTreeBorder2() throws GameActionException {
+        // If I don't see any of my own bullet trees, head towards last base loc to
+        // find nearest gardener, else archon
+        final TreeInfo[] myTrees = rc.senseNearbyTrees(-1, myTeam);
+
+        if (myTrees.length == 0) {
+            if (lastBaseLoc == null || myLoc.distanceTo(lastBaseLoc) <= 4.0f) {
+                MapLocation baseLoc = null; // either archon or gardener
+                final RobotInfo[] friendlies = rc.senseNearbyRobots(-1, myTeam);
+                outer: for (final RobotInfo friendly : friendlies) {
+                    switch (friendly.type) {
+                    case GARDENER:
+                        baseLoc = friendly.location;
+                        break outer;
+                    default:
+                        break;
+                    }
+                }
+                if (baseLoc == null) {
+                    baseLoc = getNearestArchon();
+                    lastBaseLoc = null;
+                } else {
+                    lastBaseLoc = baseLoc;
+                }
+
+                final float baseDist = myLoc.distanceTo(baseLoc);
+                if (baseDist > 6.0f) {
+                    nav.setDestination(baseLoc);
+                    if (!tryMove(nav.getNextLocation())) {
+                        randomlyJitter();
+                    }
+                } else if (baseDist < 4.0f) {
+                    nav.setDestination(baseLoc.add(baseLoc.directionTo(myLoc), 5.0f));
+                    if (!tryMove(nav.getNextLocation())) {
+                        randomlyJitter();
+                    }
+                } else {
+                    randomlyJitter();
+                }
+            } else {
+                nav.setDestination(lastBaseLoc);
+                if (!tryMove(nav.getNextLocation())) {
+                    randomlyJitter();
+                }
+            }
+            return;
+        }
+
+        final MapLocation enemyLoc = Messaging.getLastEnemyLocation(this);
+        if (enemyLoc != null) {
+            nav.setDestination(enemyLoc);
+            if (!tryMove(nav.getNextLocation())) {
+                randomlyJitter();
+            }
+            return;
+        }
+
+        // Get centroid of our trees
+        float x = 0, y = 0;
+        for (final TreeInfo tree : myTrees) {
+            x += tree.location.x;
+            y += tree.location.y;
+        }
+        final MapLocation centroid = new MapLocation(x / myTrees.length, y / myTrees.length);
+
+        final MapLocation nearestArchon = getNearestArchon();
         final MapLocation moveLoc = centroid.add(nearestArchon.directionTo(centroid), myType.sensorRadius - 1.0f);
         if (!tryMove(moveLoc)) {
             randomlyJitter();

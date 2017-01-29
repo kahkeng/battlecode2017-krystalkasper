@@ -133,10 +133,17 @@ public strictfp class BotLumberjack extends BotBase {
         }
 
         // Get centroid of our trees
+        TreeInfo closestTree = null;
+        float closestDist = 0;
         float x = 0, y = 0;
         for (final TreeInfo tree : myTrees) {
             x += tree.location.x;
             y += tree.location.y;
+            final float dist = myLoc.distanceTo(tree.location);
+            if (closestTree == null || dist < closestDist) {
+                closestTree = tree;
+                closestDist = dist;
+            }
         }
         final MapLocation centroid = new MapLocation(x / myTrees.length, y / myTrees.length);
         // Navigate towards nearest neutral tree to base tree
@@ -161,14 +168,20 @@ public strictfp class BotLumberjack extends BotBase {
             return;
         }
 
-        // Otherwise, just hang around at some distance from centroid
-        final MapLocation moveLoc = centroid.add(centroid.directionTo(myLoc), myType.sensorRadius - 1.0f);
-        final boolean moved = tryMove(moveLoc);
+        // Otherwise, just hang around at some distance closest tree to us, with direction from centroid
+        final MapLocation moveLoc = closestTree.location.add(centroid.directionTo(myLoc), myType.sensorRadius - 1.0f);
+        final boolean moved;
+        if (myLoc.distanceTo(moveLoc) >= 0.01f) {
+            moved = tryMove(moveLoc);
+        } else {
+            moved = false;
+        }
 
         // Check if can chop
         chopAnyNearbyUnownedTrees();
 
         if (!moved && !rc.hasAttacked()) {
+            // TODO: maybe head out further?
             randomlyJitter();
         }
     }

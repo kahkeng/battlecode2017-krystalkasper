@@ -26,6 +26,7 @@ public strictfp class BotGardener extends BotBase {
     public static final float TRIANGLE_DX = (float) (TRIANGLE_DY / Math.sqrt(3) * 2);
     public static final float WATER_THRESHOLD = GameConstants.BULLET_TREE_MAX_HEALTH - 10.0f;
 
+    public static final float TREE_TO_ROBOT_RATIO = 1.2f;
     public static final float WAR_THRESHOLD_DISTANCE = 20.0f;
     public static final int FLEE_EXPIRY_ROUNDS = 50;
 
@@ -141,7 +142,9 @@ public strictfp class BotGardener extends BotBase {
                                 randomlyJitter();
                             }
                         }
-                    } else {
+                    } else if (rc.getRobotCount() >= rc.getTreeCount() * TREE_TO_ROBOT_RATIO
+                            || numNearbyCombatUnits() > 0) {
+                        // Only plant trees if we have enough defensive units
                         final MapLocation plantLoc;
                         if (StrategyFeature.GARDENER_FARM_TRIANGLE.enabled()) {
                             plantLoc = findIdealPlantLocation2();
@@ -195,7 +198,7 @@ public strictfp class BotGardener extends BotBase {
         } else if (myLoc.distanceTo(enemyLoc) <= WAR_THRESHOLD_DISTANCE) {
             // Prefer tanks if we can build them
             buildTanks(formation.baseDir);
-            if (rc.getRobotCount() < rc.getTreeCount()) {
+            if (rc.getRobotCount() < rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
                 buildSoldiers(formation.baseDir);
             }
         }
@@ -206,11 +209,11 @@ public strictfp class BotGardener extends BotBase {
             buildScouts(formation.baseDir);
         } else if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
             buildLumberjacksForFarming();
-            if (rc.getRobotCount() < rc.getTreeCount()) {
+            if (rc.getRobotCount() < rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
                 buildSoldiers(formation.baseDir);
             }
         } else {
-            if (rc.getRobotCount() < rc.getTreeCount()) {
+            if (rc.getRobotCount() < rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
                 buildTanks(formation.baseDir);
             }
         }

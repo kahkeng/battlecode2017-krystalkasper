@@ -10,6 +10,7 @@ import x_Base.BotBase;
 import x_Base.Combat;
 import x_Base.Debug;
 import x_Base.Messaging;
+import x_Base.SprayCombat;
 import x_Base.StrategyFeature;
 
 public strictfp class BotSoldier extends BotBase {
@@ -30,7 +31,11 @@ public strictfp class BotSoldier extends BotBase {
             try {
                 startLoop();
                 if (!Combat.attackPriorityEnemies(this)) {
-                    if (StrategyFeature.IMPROVED_COMBAT1.enabled()) {
+                    if (StrategyFeature.COMBAT_SPRAY1.enabled()) {
+                        if (!SprayCombat.sprayEnemy1(this)) {
+                            macroCombatStrategy();
+                        }
+                    } else if (StrategyFeature.IMPROVED_COMBAT1.enabled()) {
                         if (!Combat.seekAndAttackAndSurroundEnemy5(this)) {
                             macroCombatStrategy();
                         }

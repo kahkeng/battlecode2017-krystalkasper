@@ -99,12 +99,18 @@ public strictfp class BotGardener extends BotBase {
                     }
                     enemyLoc = worstEnemy.location;
                 } else {
-                    final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
-                    if (numEnemies > 0) {
-                        enemyLoc = broadcastedEnemies[0];
-                        shouldFlee = true; // can't tell if dangerous but just in case
+                    final int numPriorityEnemies = Messaging.getPriorityEnemyRobots(broadcastedPriorityEnemies, this);
+                    if (numPriorityEnemies > 0) {
+                        enemyLoc = broadcastedPriorityEnemies[0];
+                        shouldFlee = true;
                     } else {
-                        enemyLoc = null;
+                        final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
+                        if (numEnemies > 0) {
+                            enemyLoc = broadcastedEnemies[0];
+                            shouldFlee = true; // can't tell if dangerous but just in case
+                        } else {
+                            enemyLoc = null;
+                        }
                     }
                 }
                 final int clock = rc.getRoundNum();

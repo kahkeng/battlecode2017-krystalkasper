@@ -30,9 +30,18 @@ public strictfp class Combat {
             }
             return enemyRobots[0].location;
         }
-        final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
         MapLocation nearestLoc = null;
         float minDistance = 0;
+        final int numPriorityEnemies = Messaging.getPriorityEnemyRobots(bot.broadcastedPriorityEnemies, bot);
+        for (int i = 0; i < numPriorityEnemies; i++) {
+            final MapLocation enemyLoc = bot.broadcastedPriorityEnemies[i];
+            final float distance = enemyLoc.distanceTo(bot.myLoc);
+            if (nearestLoc == null || distance < minDistance) {
+                nearestLoc = enemyLoc;
+                minDistance = distance;
+            }
+        }
+        final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
         for (int i = 0; i < numEnemies; i++) {
             final MapLocation enemyLoc = bot.broadcastedEnemies[i];
             final float distance = enemyLoc.distanceTo(bot.myLoc);
@@ -1117,6 +1126,7 @@ public strictfp class Combat {
     public static final boolean headTowardsBroadcastedEnemy(final BotBase bot, final float reactionRange)
             throws GameActionException {
         // Head towards closest known broadcasted enemies
+        // Assumes broadcasted priority enemies are handled already
         final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
         MapLocation nearestLoc = null;
         float minDistance = 0;

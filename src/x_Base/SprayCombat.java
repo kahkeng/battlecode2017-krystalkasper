@@ -7,20 +7,40 @@ import battlecode.common.RobotInfo;
 
 public strictfp class SprayCombat {
 
+    public static final float EPS = Combat.EPS;
     public static final float SPRAY_DISTANCE_RANGE = 6.0f;
+    public static final float DRAW_RANGE = 7.0f;
 
     public static final void debugSpray(final BotBase bot, final MapLocation enemyLoc) {
         final Direction enemyDir = bot.myLoc.directionTo(enemyLoc);
-        final float drawRange = 7.0f;
-        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(enemyDir.rotateLeftRads(Combat.PENTAD_RADIANS), drawRange), 255,
-                0, 0);
-        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(enemyDir.rotateRightRads(Combat.PENTAD_RADIANS), drawRange), 255,
-                0, 0);
-        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(enemyDir.rotateLeftRads(Combat.TRIAD_RADIANS), drawRange), 255,
+        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(enemyDir.rotateLeftRads(Combat.PENTAD_RADIANS), DRAW_RANGE), 255,
+                128, 0);
+        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(enemyDir.rotateRightRads(Combat.PENTAD_RADIANS), DRAW_RANGE),
+                255, 128, 0);
+        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(enemyDir.rotateLeftRads(Combat.TRIAD_RADIANS), DRAW_RANGE), 255,
                 255, 0);
-        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(enemyDir.rotateRightRads(Combat.TRIAD_RADIANS), drawRange), 255,
+        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(enemyDir.rotateRightRads(Combat.TRIAD_RADIANS), DRAW_RANGE), 255,
                 255, 0);
 
+    }
+
+    public static final void debugPentad(final BotBase bot, final Direction enemyDir) {
+        Debug.debug_dot(bot, bot.myLoc.add(enemyDir.rotateLeftRads(Combat.PENTAD_RADIANS), DRAW_RANGE), 255,
+                128, 0);
+        Debug.debug_dot(bot, bot.myLoc.add(enemyDir.rotateRightRads(Combat.PENTAD_RADIANS), DRAW_RANGE), 255,
+                128, 0);
+    }
+
+    public static final void debugTriad(final BotBase bot, final Direction enemyDir) {
+        Debug.debug_dot(bot, bot.myLoc.add(enemyDir.rotateLeftRads(Combat.TRIAD_RADIANS), DRAW_RANGE), 255,
+                128, 0);
+        Debug.debug_dot(bot, bot.myLoc.add(enemyDir.rotateRightRads(Combat.TRIAD_RADIANS), DRAW_RANGE), 255,
+                128, 0);
+    }
+
+    public static final void debugSingle(final BotBase bot, final Direction enemyDir) {
+        Debug.debug_dot(bot, bot.myLoc.add(enemyDir, DRAW_RANGE), 255,
+                128, 0);
     }
 
     public static final boolean sprayEnemy1(final BotBase bot) throws GameActionException {
@@ -31,6 +51,7 @@ public strictfp class SprayCombat {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
             final float enemyDistance = bot.myLoc.distanceTo(worstEnemy.location);
             final float enemyRadius = worstEnemy.getRadius();
+            final float edgeDistance = enemyDistance - enemyRadius;
             final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
             debugSpray(bot, worstEnemy.location);
 
@@ -44,10 +65,10 @@ public strictfp class SprayCombat {
                 Combat.attackSpecificEnemy(bot, worstEnemy);
             }
 
-            // Retreat if too close
-            if (enemyDistance < SPRAY_DISTANCE_RANGE) {
+            // Retreat if too close. Assume robot still has a turn to move after I do.
+            if (edgeDistance < SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius + EPS) {
                 final MapLocation moveLoc = worstEnemy.location.subtract(enemyDir,
-                        SPRAY_DISTANCE_RANGE);
+                        SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius + enemyRadius + EPS);
                 bot.tryMove(moveLoc);
             }
 

@@ -481,6 +481,7 @@ public strictfp class Combat {
             }
             if (ok) {
                 bot.rc.firePentadShot(enemyDir);
+                SprayCombat.debugPentad(bot, enemyDir);
                 return true;
             }
         }
@@ -503,11 +504,13 @@ public strictfp class Combat {
             }
             if (ok) {
                 bot.rc.fireTriadShot(enemyDir);
+                SprayCombat.debugTriad(bot, enemyDir);
                 return true;
             }
         }
         if (bot.rc.canFireSingleShot()) {
             bot.rc.fireSingleShot(enemyDir);
+            SprayCombat.debugSingle(bot, enemyDir);
             return true;
         }
         return false;

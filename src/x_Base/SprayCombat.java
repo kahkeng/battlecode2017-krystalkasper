@@ -4,11 +4,13 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public strictfp class SprayCombat {
 
     public static final float EPS = Combat.EPS;
     public static final float SPRAY_DISTANCE_RANGE = 6.0f;
+    public static final float SCOUT_DISTANCE_RANGE = 4.0f;
     public static final float DRAW_RANGE = 7.0f;
 
     public static final void debugSpray(final BotBase bot, final MapLocation enemyLoc) {
@@ -52,6 +54,7 @@ public strictfp class SprayCombat {
             final float enemyDistance = bot.myLoc.distanceTo(worstEnemy.location);
             final float enemyRadius = worstEnemy.getRadius();
             final float edgeDistance = enemyDistance - enemyRadius;
+            final float minDistance = edgeDistance - bot.myType.bodyRadius;
             final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
             debugSpray(bot, worstEnemy.location);
 
@@ -59,17 +62,47 @@ public strictfp class SprayCombat {
             // Also, where to dodge
 
             // Attack first before retreating
-            if (!Combat.willBulletCollideWithFriendlies(bot, enemyDir, enemyDistance, enemyRadius)
-                    && !Combat.willBulletCollideWithTrees(bot, enemyDir, enemyDistance, enemyRadius)) {
+            boolean shouldAttack = true;
+            if (Combat.willBulletCollideWithFriendlies(bot, enemyDir, enemyDistance, enemyRadius)
+                    || Combat.willBulletCollideWithTrees(bot, enemyDir, enemyDistance, enemyRadius)) {
+                shouldAttack = false;
+            } else if (worstEnemy.type == RobotType.SCOUT && minDistance > 3.0f) {
+                shouldAttack = false;
+            }
+            if (shouldAttack) {
                 // TODO: choose pentad/triad based on span
                 Combat.attackSpecificEnemy(bot, worstEnemy);
             }
 
-            // Retreat if too close. Assume robot still has a turn to move after I do.
-            if (edgeDistance < SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius + EPS) {
-                final MapLocation moveLoc = worstEnemy.location.subtract(enemyDir,
-                        SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius + enemyRadius + EPS);
+            // Retreat if too close depending on type. Assume robot still has a turn to move after I do.
+            switch (worstEnemy.type) {
+            case SOLDIER:
+            case TANK:
+            case LUMBERJACK: {
+                if (edgeDistance < SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius + EPS) {
+                    final MapLocation moveLoc = worstEnemy.location.subtract(enemyDir,
+                            SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius + enemyRadius + EPS);
+                    bot.tryMove(moveLoc);
+                }
+                break;
+            }
+            case ARCHON:
+            case GARDENER: {
+                final MapLocation moveLoc = worstEnemy.location;
                 bot.tryMove(moveLoc);
+                break;
+            }
+            case SCOUT: {
+                if (edgeDistance < SCOUT_DISTANCE_RANGE + worstEnemy.type.strideRadius + EPS) {
+                    final MapLocation moveLoc = worstEnemy.location.subtract(enemyDir,
+                            SCOUT_DISTANCE_RANGE + worstEnemy.type.strideRadius + enemyRadius + EPS);
+                    bot.tryMove(moveLoc);
+                }
+                break;
+            }
+            default:
+                break;
+
             }
 
             return true;

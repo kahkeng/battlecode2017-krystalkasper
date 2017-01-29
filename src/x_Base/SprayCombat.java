@@ -61,6 +61,19 @@ public strictfp class SprayCombat {
             // TODO: Calculate direction based on centroid? Also, where to move along arc to maximize fire
             // Also, where to dodge
 
+            // Move first before attacking
+            switch (worstEnemy.type) {
+            case SCOUT:
+            case ARCHON:
+            case GARDENER: {
+                final MapLocation moveLoc = worstEnemy.location;
+                bot.tryMove(moveLoc);
+                break;
+            }
+            default:
+                break;
+            }
+
             // Attack first before retreating
             boolean shouldAttack = true;
             if (Combat.willBulletCollideWithFriendlies(bot, enemyDir, enemyDistance, enemyRadius)
@@ -86,23 +99,8 @@ public strictfp class SprayCombat {
                 }
                 break;
             }
-            case ARCHON:
-            case GARDENER: {
-                final MapLocation moveLoc = worstEnemy.location;
-                bot.tryMove(moveLoc);
-                break;
-            }
-            case SCOUT: {
-                if (edgeDistance < SCOUT_DISTANCE_RANGE + worstEnemy.type.strideRadius + EPS) {
-                    final MapLocation moveLoc = worstEnemy.location.subtract(enemyDir,
-                            SCOUT_DISTANCE_RANGE + worstEnemy.type.strideRadius + enemyRadius + EPS);
-                    bot.tryMove(moveLoc);
-                }
-                break;
-            }
             default:
                 break;
-
             }
 
             return true;

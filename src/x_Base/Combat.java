@@ -398,8 +398,12 @@ public strictfp class Combat {
                 final RobotInfo enemy = bot.rc.senseRobotAtLocation(nearestEnemy);
                 if (enemy != null) {
                     // Move closer first before attacking
-                    if (!bot.rc.hasMoved()) {
-                        bot.tryMove(enemy.location);
+                    if (bot.myType == RobotType.SCOUT && bot.myLoc.distanceTo(enemy.location) <= 5.0f) {
+                        avoidSpecificEnemy(bot, enemy);
+                    } else {
+                        if (!bot.rc.hasMoved()) {
+                            bot.tryMove(enemy.location);
+                        }
                     }
                     final float enemyRadius = enemy.getRadius();
                     final float enemyDistance = bot.myLoc.distanceTo(enemy.location);
@@ -824,33 +828,37 @@ public strictfp class Combat {
         final RobotInfo worstEnemy = enemies.length == 0 ? null : prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
-            Debug.debug_dot(bot, worstEnemy.location, 0, 0, 0);
-            final float enemyRadius = worstEnemy.getRadius();
-            final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
-            if (enemyDistance < AVOID_RANGE) {
-                bot.fleeFromEnemy(worstEnemy.location);
-                return true;
-            }
-            final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
-            final Direction rotateDir;
-            final boolean rotated = true;
-            if (bot.preferRight) {
-                rotateDir = enemyDir.opposite()
-                        .rotateRightRads(bot.myType.strideRadius / enemyDistance);
-            } else {
-                rotateDir = enemyDir.opposite()
-                        .rotateLeftRads(bot.myType.strideRadius / enemyDistance);
-            }
-            final MapLocation moveLoc = worstEnemy.location.add(rotateDir,
-                    AVOID_RANGE + enemyRadius + bot.myType.bodyRadius);
-            if (!bot.tryMove(moveLoc)) {
-                if (rotated) {
-                    bot.preferRight = !bot.preferRight;
-                }
-            }
+            avoidSpecificEnemy(bot, worstEnemy);
             return true;
         }
         return headTowardsBroadcastedEnemy(bot, ENEMY_REACTION_RANGE);
+    }
+
+    public static final void avoidSpecificEnemy(final BotBase bot, final RobotInfo worstEnemy)
+            throws GameActionException {
+        Debug.debug_dot(bot, worstEnemy.location, 0, 0, 0);
+        final float enemyRadius = worstEnemy.getRadius();
+        final float enemyDistance = worstEnemy.location.distanceTo(bot.myLoc);
+        if (enemyDistance < AVOID_RANGE) {
+            bot.fleeFromEnemy(worstEnemy.location);
+        }
+        final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
+        final Direction rotateDir;
+        final boolean rotated = true;
+        if (bot.preferRight) {
+            rotateDir = enemyDir.opposite()
+                    .rotateRightRads(bot.myType.strideRadius / enemyDistance);
+        } else {
+            rotateDir = enemyDir.opposite()
+                    .rotateLeftRads(bot.myType.strideRadius / enemyDistance);
+        }
+        final MapLocation moveLoc = worstEnemy.location.add(rotateDir,
+                AVOID_RANGE + enemyRadius + bot.myType.bodyRadius);
+        if (!bot.tryMove(moveLoc)) {
+            if (rotated) {
+                bot.preferRight = !bot.preferRight;
+            }
+        }
     }
 
     public static final boolean stationaryAttackEnemy(final x_Arc.BotArcBase bot) throws GameActionException {

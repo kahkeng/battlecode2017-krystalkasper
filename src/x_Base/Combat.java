@@ -348,7 +348,38 @@ public strictfp class Combat {
             }
             // Check if should do triad/pentad shots
             if (distanceAttack || minDistance < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
-                attackSpecificEnemy(bot, worstEnemy);
+                if (!attackSpecificEnemy(bot, worstEnemy)) {
+                    // didn't manage to attack worst enemy. pick any other enemy to attack
+                    for (int i = 0; i < enemies.length; i++) {
+                        final RobotInfo enemy1 = enemies[i];
+                        if (enemy1.ID == worstEnemy.ID) {
+                            continue;
+                        }
+                        final float enemyRadius1 = enemy1.getRadius();
+                        final Direction enemyDir1 = bot.myLoc.directionTo(enemy1.location);
+
+                        final float enemyDistance1 = enemy1.location.distanceTo(bot.myLoc);
+                        final float minDistance1 = enemyDistance1 - enemyRadius1 - bot.myType.bodyRadius;
+                        boolean distanceAttack1 = false;
+                        final float distanceAttackRange1;
+                        if (enemy1.type == RobotType.SCOUT) {
+                            distanceAttackRange1 = 3.0f;
+                        } else {
+                            distanceAttackRange1 = DISTANCE_ATTACK_RANGE;
+                        }
+                        if (minDistance1 <= distanceAttackRange1) {
+                            if (!willBulletCollideWithFriendlies(bot, enemyDir1, enemyDistance1, enemyRadius1)
+                                    && !willBulletCollideWithTrees(bot, enemyDir1, enemyDistance1, enemyRadius1)) {
+                                distanceAttack1 = true;
+                            }
+                        }
+                        if (distanceAttack1 || minDistance1 < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
+                            if (attackSpecificEnemy(bot, enemy1)) {
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             return true;
         }

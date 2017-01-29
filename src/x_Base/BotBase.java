@@ -72,7 +72,7 @@ public strictfp class BotBase {
         if (rc.getRoundNum() == rc.getRoundLimit() - 1 || rc.getTeamVictoryPoints() + bullets /
                 rc.getVictoryPointCost() >= GameConstants.VICTORY_POINTS_TO_WIN) {
             rc.donate(bullets);
-        } else if (bullets > MAX_BULLET_STASH) {
+        } else if (bullets > MAX_BULLET_STASH && rc.getRoundNum() >= 500) {
             rc.donate((int) ((bullets - MAX_BULLET_STASH) / rc.getVictoryPointCost())
                     * rc.getVictoryPointCost());
         } else if (rc.getRoundNum() >= 500 && Messaging.getNumSurvivingArchons(this) == 0

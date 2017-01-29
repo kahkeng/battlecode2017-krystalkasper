@@ -39,6 +39,7 @@ public strictfp class BotGardener extends BotBase {
     public static TreeInfo rememberedTree = null;
     public static MapLocation rememberedPlantLoc = null;
     public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
+    public static boolean isFarmer = true;
 
     public BotGardener(final RobotController rc) {
         super(rc);
@@ -53,7 +54,13 @@ public strictfp class BotGardener extends BotBase {
             System.out.println("Gardener Exception");
             e.printStackTrace();
         }
-        farmingLoop();
+        while (true) {
+            if (isFarmer) {
+                farmingLoop();
+            } else {
+                harassmentLoop(/* withScout= */false);
+            }
+        }
     }
 
     public final void farmingLoop() {
@@ -141,7 +148,13 @@ public strictfp class BotGardener extends BotBase {
                                 }
                             } else {
                                 // Debug.debug_print(this, "random jitter");
-                                randomlyJitter();
+                                if (rc.getTreeCount() < 3) {
+                                    // become harasser
+                                    isFarmer = false;
+                                    return;
+                                } else {
+                                    randomlyJitter();
+                                }
                             }
                         }
                     }
@@ -656,4 +669,96 @@ public strictfp class BotGardener extends BotBase {
         }
     }
 
+    public final boolean tryPlantTreesWithSpace() throws GameActionException {
+        Direction dir = formation.baseDir;
+        Direction plantDir = null;
+        int canBuild = 0;
+        for (int i = 0; i < 6; i++) {
+            final MapLocation buildLoc = myLoc.add(dir, myType.bodyRadius * 2 + 0.01f);
+            if (rc.senseNearbyRobots(buildLoc, myType.bodyRadius, null).length == 0
+                    && rc.senseNearbyTrees(buildLoc, myType.bodyRadius, null).length == 0) {
+                canBuild += 1;
+                if (canBuild == 2) {
+                    plantDir = dir;
+                    break;
+                }
+            }
+            dir = dir.rotateRightDegrees(60.0f);
+        }
+        if (plantDir != null && rc.canPlantTree(plantDir)) {
+            rc.plantTree(plantDir);
+            return true;
+        }
+        return false;
+    }
+
+    public final void harassmentLoop(final boolean withScout) {
+        int buildIndex = 0;
+        while (true) {
+            try {
+                if (rc.getTreeCount() >= 10) {
+                    isFarmer = true;
+                    return;
+                }
+                startLoop();
+                waterTrees();
+                final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
+                final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);
+                if (worstEnemy != null) {
+                    switch (worstEnemy.type) {
+                    case SOLDIER:
+                    case TANK:
+                    case LUMBERJACK:
+                    case SCOUT:
+                        Messaging.broadcastPriorityEnemyRobot(this, worstEnemy);
+                        break;
+                    default:
+                        Messaging.broadcastEnemyRobot(this, worstEnemy);
+                        break;
+                    }
+                } else {
+                    tryPlantTreesWithSpace();
+                }
+                final RobotType buildType;
+                if (withScout) {
+                    switch (buildIndex) {
+                    default:
+                    case 0:
+                        buildType = RobotType.SCOUT;
+                        break;
+                    case 1:
+                        buildType = RobotType.SOLDIER;
+                        break;
+                    case 2: // TODO: based on tree density
+                        buildType = RobotType.LUMBERJACK;
+                        break;
+                    }
+                } else {
+                    switch (buildIndex) {
+                    default:
+                    case 0:
+                        buildType = RobotType.SOLDIER;
+                        break;
+                    case 1: // TODO: based on tree density
+                        buildType = RobotType.LUMBERJACK;
+                        break;
+                    }
+                }
+                if (rc.getTeamBullets() >= buildType.bulletCost + buildCount * BUILD_PENALTY) {
+                    if (tryBuildRobot(buildType, formation.baseDir)) {
+                        if (withScout) {
+                            buildIndex = (buildIndex + 1) % 3;
+                        } else {
+                            buildIndex = (buildIndex + 1) % 2;
+                        }
+                        buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+                    }
+                }
+                Clock.yield();
+            } catch (Exception e) {
+                System.out.println("Gardener Exception");
+                e.printStackTrace();
+            }
+        }
+    }
 }

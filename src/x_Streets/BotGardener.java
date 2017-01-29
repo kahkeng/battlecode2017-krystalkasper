@@ -182,7 +182,9 @@ public strictfp class BotGardener extends BotBase {
     public final void buildRobotsInWar(final RobotInfo worstEnemy, final MapLocation enemyLoc)
             throws GameActionException {
         if (worstEnemy != null) {
-            buildSoldiers(myLoc.directionTo(enemyLoc));
+            if (numNearbyCombatUnits() < 3) {
+                buildSoldiers(myLoc.directionTo(enemyLoc));
+            }
         } else if (myLoc.distanceTo(enemyLoc) <= WAR_THRESHOLD_DISTANCE) {
             // Prefer tanks if we can build them
             buildTanks(formation.baseDir);
@@ -615,6 +617,23 @@ public strictfp class BotGardener extends BotBase {
         return numLumberjacks;
     }
 
+    public final int numNearbyCombatUnits() throws GameActionException {
+        final RobotInfo[] friendlies = rc.senseNearbyRobots(-1, myTeam);
+        int numFriendlies = 0;
+        for (final RobotInfo friendly : friendlies) {
+            switch (friendly.type) {
+            case SOLDIER:
+            case TANK:
+            case LUMBERJACK:
+                numFriendlies++;
+                break;
+            default:
+                break;
+            }
+        }
+        return numFriendlies;
+    }
+
     public final void earlyFleeFromEnemy() throws GameActionException {
         final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
         final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);
@@ -814,20 +833,7 @@ public strictfp class BotGardener extends BotBase {
                     tryPlantTreesWithSpace();
                 }
                 // count friendly units before building new ones
-                final RobotInfo[] friendlies = rc.senseNearbyRobots(-1, myTeam);
-                int numFriendlies = 0;
-                for (final RobotInfo friendly : friendlies) {
-                    switch (friendly.type) {
-                    case SOLDIER:
-                    case TANK:
-                    case LUMBERJACK:
-                        numFriendlies++;
-                        break;
-                    default:
-                        break;
-                    }
-                }
-                if (numFriendlies < 6) {
+                if (numNearbyCombatUnits() < 6) {
                     final RobotType buildType;
                     if (withScout) {
                         switch (buildIndex) {

@@ -142,6 +142,7 @@ task run(type: JavaExec, dependsOn: 'build') {
     args = ['-c=-']
     jvmArgs = [
         '-Dbc.testing.strategy-features-a='+project.property('strategyFeaturesA'),
+        '-Dbc.testing.strategy-features-b='+project.property('strategyFeaturesB'),
         '-Dbc.server.mode=headless',
         '-Dbc.server.map-path=maps',
         '-Dbc.server.debug=true',

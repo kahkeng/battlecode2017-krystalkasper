@@ -813,39 +813,55 @@ public strictfp class BotGardener extends BotBase {
                 } else {
                     tryPlantTreesWithSpace();
                 }
-                final RobotType buildType;
-                if (withScout) {
-                    switch (buildIndex) {
+                // count friendly units before building new ones
+                final RobotInfo[] friendlies = rc.senseNearbyRobots(-1, myTeam);
+                int numFriendlies = 0;
+                for (final RobotInfo friendly : friendlies) {
+                    switch (friendly.type) {
+                    case SOLDIER:
+                    case TANK:
+                    case LUMBERJACK:
+                        numFriendlies++;
+                        break;
                     default:
-                    case 0:
-                        buildType = RobotType.SCOUT;
-                        break;
-                    case 1:
-                        buildType = RobotType.SOLDIER;
-                        break;
-                    case 2: // TODO: based on tree density
-                        buildType = RobotType.LUMBERJACK;
-                        break;
-                    }
-                } else {
-                    switch (buildIndex) {
-                    default:
-                    case 0:
-                        buildType = RobotType.SOLDIER;
-                        break;
-                    case 1: // TODO: based on tree density
-                        buildType = RobotType.LUMBERJACK;
                         break;
                     }
                 }
-                if (rc.getTeamBullets() >= buildType.bulletCost + buildCount * BUILD_PENALTY) {
-                    if (tryBuildRobot(buildType, formation.baseDir)) {
-                        if (withScout) {
-                            buildIndex = (buildIndex + 1) % 3;
-                        } else {
-                            buildIndex = (buildIndex + 1) % 2;
+                if (numFriendlies < 6) {
+                    final RobotType buildType;
+                    if (withScout) {
+                        switch (buildIndex) {
+                        default:
+                        case 0:
+                            buildType = RobotType.SCOUT;
+                            break;
+                        case 1:
+                            buildType = RobotType.SOLDIER;
+                            break;
+                        case 2: // TODO: based on tree density
+                            buildType = RobotType.LUMBERJACK;
+                            break;
                         }
-                        buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+                    } else {
+                        switch (buildIndex) {
+                        default:
+                        case 0:
+                            buildType = RobotType.SOLDIER;
+                            break;
+                        case 1: // TODO: based on tree density
+                            buildType = RobotType.LUMBERJACK;
+                            break;
+                        }
+                    }
+                    if (rc.getTeamBullets() >= buildType.bulletCost + buildCount * BUILD_PENALTY) {
+                        if (tryBuildRobot(buildType, formation.baseDir)) {
+                            if (withScout) {
+                                buildIndex = (buildIndex + 1) % 3;
+                            } else {
+                                buildIndex = (buildIndex + 1) % 2;
+                            }
+                            buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
+                        }
                     }
                 }
                 Clock.yield();

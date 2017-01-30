@@ -34,7 +34,7 @@ public strictfp class BotLumberjack extends BotBase {
             try {
                 startLoop();
 
-                if (!Combat.attackPriorityEnemies(this)) {
+                if (!Combat.strikePriorityEnemies(this)) {
                     final BulletInfo[] bullets = rc.senseNearbyBullets();
                     final Direction dodgeDir = getDodgeDirection(bullets);
                     if (dodgeDir != null) {

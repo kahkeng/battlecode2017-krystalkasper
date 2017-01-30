@@ -524,10 +524,10 @@ public strictfp class Combat {
             final float typeScore;
             switch (enemy.type) {
             case SOLDIER:
-                typeScore = 200;
+                typeScore = 400;
                 break;
             case TANK:
-                typeScore = 300;
+                typeScore = 600;
                 break;
             case LUMBERJACK:
             case SCOUT:

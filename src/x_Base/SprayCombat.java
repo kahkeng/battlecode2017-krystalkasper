@@ -93,7 +93,7 @@ public strictfp class SprayCombat {
                 if (!isSafeDistance) {
                     final MapLocation moveLoc = worstEnemy.location.subtract(enemyDir, safeDistance);
                     bot.tryMove(moveLoc);
-                    // TODO: incorporate dodging
+                    // TODO: what about dodging? adding that seems to hurt a lot
                 }
                 break;
             }
@@ -124,6 +124,9 @@ public strictfp class SprayCombat {
 
     public final static MapLocation getDodgeLocation(final BotBase bot, final MapLocation enemyLoc,
             final float safeDistance) {
+        if (bot.myType == RobotType.TANK) {
+            return null;
+        }
         final float enemyDistance = bot.myLoc.distanceTo(enemyLoc);
         final Direction enemyDir = bot.myLoc.directionTo(enemyLoc);
         final BulletInfo[] bullets = bot.rc.senseNearbyBullets(bot.myLoc.add(enemyDir, enemyDistance / 2),
@@ -156,6 +159,10 @@ public strictfp class SprayCombat {
         addDodgeCandidateLoc(bot, enemyLoc.subtract(enemyDir.rotateLeftRads(theta2 * 0.66f), safeDistance));
         addDodgeCandidateLoc(bot, enemyLoc.subtract(enemyDir.rotateRightRads(theta2 * 0.66f), safeDistance));
 
+        if (Math.abs(safeDistance - enemyDistance) > EPS) {
+            addDodgeCandidateLoc(bot, enemyLoc.subtract(enemyDir.rotateLeftRads(theta2), enemyDistance));
+            addDodgeCandidateLoc(bot, enemyLoc.subtract(enemyDir.rotateRightRads(theta2), enemyDistance));
+        }
         // addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir, strideRadius));
         // addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateLeftDegrees(30.0f), strideRadius));
         // addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateRightDegrees(30.0f), strideRadius));

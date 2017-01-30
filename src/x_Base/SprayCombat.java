@@ -29,12 +29,7 @@ public strictfp class SprayCombat {
             spraySpecificEnemy(bot, worstEnemy);
             return true;
         }
-        if (!StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
-            // Else head towards closest known broadcasted enemies
-            return Combat.headTowardsBroadcastedEnemy(bot, 100.0f);
-        } else {
-            return false;
-        }
+        return false;
     }
 
     public final static void spraySpecificEnemy(final BotBase bot, final RobotInfo worstEnemy)

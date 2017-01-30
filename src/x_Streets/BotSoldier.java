@@ -30,24 +30,31 @@ public strictfp class BotSoldier extends BotBase {
         while (true) {
             try {
                 startLoop();
-                if (!Combat.attackPriorityEnemies(this)) {
-                    if (StrategyFeature.COMBAT_SPRAY1.enabled()) {
-                        if (!SprayCombat.sprayEnemy1(this)) {
-                            macroCombatStrategy();
+                if (StrategyFeature.COMBAT_SPRAY1.enabled()) {
+                    if (!SprayCombat.sprayEnemy1(this)) {
+                        if (!Combat.attackPriorityEnemies(this)) {
+                            if (!StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
+                                // Else head towards closest known broadcasted enemies
+                                if (!Combat.headTowardsBroadcastedEnemy(this, 100.0f)) {
+                                    macroCombatStrategy();
+                                }
+                            } else {
+                                macroCombatStrategy();
+                            }
                         }
-                    } else if (StrategyFeature.IMPROVED_COMBAT1.enabled()) {
-                        if (!Combat.seekAndAttackAndSurroundEnemy5(this)) {
-                            macroCombatStrategy();
-                        }
-                    } else {
-                        final BulletInfo[] bullets = rc.senseNearbyBullets();
-                        final Direction dodgeDir = getDodgeDirection(bullets);
-                        if (dodgeDir != null) {
-                            tryMove(myLoc.add(dodgeDir));
-                        }
-                        if (!Combat.seekAndAttackAndSurroundEnemy3(this)) {
-                            macroCombatStrategy();
-                        }
+                    }
+                } else if (StrategyFeature.IMPROVED_COMBAT1.enabled()) {
+                    if (!Combat.seekAndAttackAndSurroundEnemy5(this)) {
+                        macroCombatStrategy();
+                    }
+                } else {
+                    final BulletInfo[] bullets = rc.senseNearbyBullets();
+                    final Direction dodgeDir = getDodgeDirection(bullets);
+                    if (dodgeDir != null) {
+                        tryMove(myLoc.add(dodgeDir));
+                    }
+                    if (!Combat.seekAndAttackAndSurroundEnemy3(this)) {
+                        macroCombatStrategy();
                     }
                 }
 

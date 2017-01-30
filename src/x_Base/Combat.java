@@ -432,7 +432,6 @@ public strictfp class Combat {
                     if (canAttack) {
                         attackSpecificEnemy(bot, enemy);
                     }
-                    return true;
                 }
             }
             // head towards nearest enemy

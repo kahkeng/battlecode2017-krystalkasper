@@ -20,6 +20,7 @@ public strictfp class Combat {
     public static final float MAX_ROBOT_RADIUS = 2.0f;
     public static final float TRIAD_RADIANS = (float) Math.toRadians(20.0f);
     public static final float PENTAD_RADIANS = (float) Math.toRadians(30.0f);
+    public static final float COUNTER_BUFFER_DIST = RobotType.SOLDIER.bodyRadius - RobotType.SOLDIER.strideRadius - EPS;
     public static final int PROCESS_OBJECT_LIMIT = 15;
     public static Direction lastFiredDir = null;
 
@@ -490,10 +491,11 @@ public strictfp class Combat {
                 final Direction enemyDir2;
                 if (StrategyFeature.COMBAT_COUNTER_DODGE.enabled() && lastFiredDir != null) {
                     final float radBetween = lastFiredDir.radiansBetween(enemyDir);
+                    final float radAdjust = COUNTER_BUFFER_DIST / enemyDistance;
                     if (radBetween > 0) {
-                        enemyDir2 = enemyDir.rotateLeftRads(PENTAD_RADIANS / 8);
+                        enemyDir2 = enemyDir.rotateLeftRads(radAdjust);
                     } else {
-                        enemyDir2 = enemyDir.rotateRightRads(PENTAD_RADIANS / 8);
+                        enemyDir2 = enemyDir.rotateRightRads(radAdjust);
                     }
                 } else {
                     enemyDir2 = enemyDir;
@@ -525,10 +527,11 @@ public strictfp class Combat {
                 final Direction enemyDir2;
                 if (StrategyFeature.COMBAT_COUNTER_DODGE.enabled() && lastFiredDir != null) {
                     final float radBetween = lastFiredDir.radiansBetween(enemyDir);
+                    final float radAdjust = COUNTER_BUFFER_DIST / enemyDistance;
                     if (radBetween > 0) {
-                        enemyDir2 = enemyDir.rotateLeftRads(TRIAD_RADIANS / 8);
+                        enemyDir2 = enemyDir.rotateLeftRads(radAdjust);
                     } else {
-                        enemyDir2 = enemyDir.rotateRightRads(TRIAD_RADIANS / 8);
+                        enemyDir2 = enemyDir.rotateRightRads(radAdjust);
                     }
                 } else {
                     enemyDir2 = enemyDir;
@@ -543,11 +546,11 @@ public strictfp class Combat {
             final Direction enemyDir2;
             if (StrategyFeature.COMBAT_COUNTER_DODGE.enabled() && lastFiredDir != null) {
                 final float radBetween = lastFiredDir.radiansBetween(enemyDir);
-                final float radAdjust = enemyRadius / enemyDistance;
+                final float radAdjust = COUNTER_BUFFER_DIST / enemyDistance;
                 if (radBetween > 0) {
-                    enemyDir2 = enemyDir.rotateLeftRads(radAdjust / 2);
+                    enemyDir2 = enemyDir.rotateLeftRads(radAdjust);
                 } else {
-                    enemyDir2 = enemyDir.rotateRightRads(radAdjust / 2);
+                    enemyDir2 = enemyDir.rotateRightRads(radAdjust);
                 }
             } else {
                 enemyDir2 = enemyDir;

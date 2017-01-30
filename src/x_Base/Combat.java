@@ -455,7 +455,8 @@ public strictfp class Combat {
             minTriadDist = 5.0f;
         }
         if (bot.rc.canFirePentadShot()
-                && (theta * 2 >= PENTAD_RADIANS || enemy.type == RobotType.SCOUT || minDistance <= minPentadDist)) {
+                && (theta * 2 >= PENTAD_RADIANS || enemy.type == RobotType.SCOUT
+                        || minDistance <= minPentadDist)) {
             final Direction dirL2 = enemyDir.rotateLeftRads(PENTAD_RADIANS);
             final Direction dirL1 = enemyDir.rotateLeftRads(PENTAD_RADIANS / 2);
             final Direction dirR2 = enemyDir.rotateRightRads(PENTAD_RADIANS);
@@ -524,10 +525,8 @@ public strictfp class Combat {
             final float typeScore;
             switch (enemy.type) {
             case SOLDIER:
-                typeScore = 400;
-                break;
             case TANK:
-                typeScore = 600;
+                typeScore = 400;
                 break;
             case LUMBERJACK:
             case SCOUT:

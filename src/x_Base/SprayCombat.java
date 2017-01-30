@@ -15,6 +15,9 @@ public strictfp class SprayCombat {
     public static final float SCOUT_DISTANCE_RANGE = 4.0f;
     public static final float DRAW_RANGE = 7.0f;
     public static final float[] DODGE_DELTAS = { 0.251f, 0.501f };
+    public static final int MAX_DODGE_CANDIDATES = 10;
+    public static final MapLocation[] dodgeCandidateLocs = new MapLocation[MAX_DODGE_CANDIDATES + 1];
+    public static final float[] dodgeCandidateScores = new float[MAX_DODGE_CANDIDATES + 1];
 
     public static final boolean sprayEnemy1(final BotBase bot) throws GameActionException {
         // TODO: include remembered enemies
@@ -28,8 +31,8 @@ public strictfp class SprayCombat {
             final float minDistance = edgeDistance - bot.myType.bodyRadius;
             final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
             debugSpray(bot, worstEnemy.location);
-            Debug.debug_print(bot,
-                    "enemyDistance=" + enemyDistance + " edgeDistance=" + edgeDistance + " minDistance=" + minDistance);
+            // Debug.debug_print(bot, "enemyDistance=" + enemyDistance + " edgeDistance=" + edgeDistance + "
+            // minDistance=" + minDistance);
 
             // TODO: Calculate direction based on centroid? Also, where to move along arc to maximize fire
             // Also, where to dodge
@@ -113,52 +116,85 @@ public strictfp class SprayCombat {
         final Direction enemyDir = bot.myLoc.directionTo(enemyLoc);
         final BulletInfo[] bullets = bot.rc.senseNearbyBullets(bot.myLoc.add(enemyDir, enemyDistance / 2),
                 enemyDistance / 2);
-        MapLocation bestLoc = null;
-        float bestScore = 0;
-        final float hopDistance = bot.myType.bodyRadius / 4 + EPS;
-        final int size = 2;
-        final MapLocation[] candidateLocs = new MapLocation[size];
-        final float[] scores = new float[size];
+        if (bullets.length == 0) {
+            return null;
+        }
+        // final float hopDistance = bot.myType.bodyRadius / 4 + 0.007f + EPS;
+        final float hopDistance = bot.myType.bodyRadius / 2 + EPS;
 
         // Add the tangent left/right spots
-        final float sine = hopDistance / 2 / enemyDistance;
-        final float theta = (float) (Math.asin(sine) * 2);
-        candidateLocs[0] = enemyLoc.subtract(enemyDir.rotateLeftRads(theta), safeDistance);
-        candidateLocs[1] = enemyLoc.subtract(enemyDir.rotateRightRads(theta), safeDistance);
+        // final float sine = hopDistance / 2 / enemyDistance;
+        // final float theta = (float) (Math.asin(sine) * 2);
+        int size = 0;
+        dodgeCandidateLocs[size++] = bot.myLoc;
+        /*
+         * dodgeCandidateLocs[size++] = enemyLoc.subtract(enemyDir.rotateLeftRads(theta), safeDistance);
+         * dodgeCandidateLocs[size++] = enemyLoc.subtract(enemyDir.rotateRightRads(theta), safeDistance); final
+         * MapLocation safeLoc = enemyLoc.subtract(enemyDir, safeDistance); if (!bot.myLoc.equals(safeLoc)) {
+         * dodgeCandidateLocs[size++] = safeLoc; }
+         */
+
+        // final float hopDistance2 = bot.myType.bodyRadius / 4 + 0.007f + EPS;
+        final float hopDistance2 = bot.myType.strideRadius;
+        final float sine2 = hopDistance2 / 2 / enemyDistance;
+        final float theta2 = (float) (Math.asin(sine2) * 2);
+        dodgeCandidateLocs[size++] = enemyLoc.subtract(enemyDir.rotateLeftRads(theta2), safeDistance);
+        dodgeCandidateLocs[size++] = enemyLoc.subtract(enemyDir.rotateRightRads(theta2), safeDistance);
+
+        for (int i = 0; i < size; i++) {
+            dodgeCandidateScores[i] = 0;
+        }
         for (final BulletInfo bullet : bullets) {
-            System.out.println(Clock.getBytecodesLeft());
+            // System.out.println(Clock.getBytecodesLeft());
             if (Clock.getBytecodesLeft() < 2000) {
                 break;
             }
             for (int i = 0; i < size; i++) {
-                final MapLocation candidateLoc = candidateLocs[i];
+                final MapLocation candidateLoc = dodgeCandidateLocs[i];
                 float score = 0;
                 final float damage = bullet.damage;
-                // t=1
-                final MapLocation loc1 = bullet.location.add(bullet.dir, bullet.speed);
-                final float dist1 = candidateLoc.distanceTo(loc1);
-                final float escapeDist1 = bot.myType.bodyRadius - dist1;
-                if (escapeDist1 > 0) {
-                    score += damage;
+                final float bulletDist = bullet.location.distanceTo(candidateLoc);
+                final float alpha = bullet.location.directionTo(candidateLoc).radiansBetween(bullet.dir);
+                final float tangentDist = Math.abs((float) (Math.sin(alpha) * bulletDist));
+                final float cosine = (float) Math.cos(alpha);
+                if (cosine < 0) {
+                    continue;
                 }
-                // t=2
-                final MapLocation loc2 = loc1.add(bullet.dir, bullet.speed);
-                final float dist2 = candidateLoc.distanceTo(loc1);
-                final float escapeDist2 = bot.myType.bodyRadius - dist2;
-                if (escapeDist2 > hopDistance) { // need 2 hops to escape
-                    score += damage;
-                } else if (escapeDist2 > 0) { // need 1 hop to escape
-                    score += damage / 2;
-                } else if (escapeDist2 > -hopDistance) { // will affect flexibility of future hops
-                    score += damage / 4;
+                final int roundsToHit = (int) ((cosine * bulletDist - EPS) / bullet.speed);
+                final float escapeDist = bot.myType.bodyRadius - tangentDist;
+                switch (roundsToHit) {
+                case 0: {
+                    if (escapeDist >= 0) {
+                        score += damage;
+                    }
+                    break;
                 }
-                scores[i] += score;
+                case 1: {
+                    if (escapeDist >= hopDistance2) {
+                        score += damage;
+                    } else if (escapeDist >= 0) {
+                        score += (damage / 2) * (escapeDist / hopDistance2);
+                    }
+                    break;
+                }
+                case 2: {
+                    score += (damage / 4) * (escapeDist / (hopDistance * 2));
+                    break;
+                }
+                default:
+                    break;
+                }
+                // System.out.println("rounds " + roundsToHit + " " + tangentDist);
+                dodgeCandidateScores[i] += score;
             }
         }
+        MapLocation bestLoc = null;
+        float bestScore = 0;
         for (int i = 0; i < size; i++) {
-            final float score = scores[i];
+            final float score = dodgeCandidateScores[i];
+            // System.out.println("cand " + i + " " + score);
             if (bestLoc == null || score < bestScore) {
-                bestLoc = candidateLocs[i];
+                bestLoc = dodgeCandidateLocs[i];
                 bestScore = score;
             }
         }

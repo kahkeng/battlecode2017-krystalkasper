@@ -28,7 +28,7 @@ public strictfp class BotGardener extends BotBase {
 
     public static final float TREE_TO_ROBOT_RATIO = 1.2f;
     public static final float WAR_THRESHOLD_DISTANCE = 20.0f;
-    public static final int FLEE_EXPIRY_ROUNDS = 50;
+    public static final int FLEE_EXPIRY_ROUNDS = 25;
 
     public static final int MAX_BUILD_PENALTY = 5;
     public static final float BUILD_PENALTY = 1.0f;

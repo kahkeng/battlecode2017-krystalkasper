@@ -574,6 +574,8 @@ public strictfp class Combat {
                 typeScore = 400;
                 break;
             case LUMBERJACK:
+                typeScore = 350; // close lumberjack takes precedence over far soldier/tank
+                break;
             case SCOUT:
                 typeScore = 150;
                 break;

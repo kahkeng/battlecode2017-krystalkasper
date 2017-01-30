@@ -140,6 +140,9 @@ public strictfp class Messaging {
 
     public static final void broadcastArchonLocation(final BotArchon bot)
             throws GameActionException {
+        if (bot.myArchonID < 0) {
+            return; // this is an unlocked archon
+        }
         final MapLocation loc = bot.rc.getLocation();
         final int channel = OFFSET_ARCHON_START + bot.myArchonID * FIELDS_ARCHON;
         bot.rc.broadcast(channel, getHeartbeat(bot));

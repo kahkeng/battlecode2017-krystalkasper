@@ -84,7 +84,7 @@ public strictfp class BotGardener extends BotBase {
                 waterTrees();
                 final RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemyTeam);
                 final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(this, enemies);
-                final MapLocation enemyLoc;
+                MapLocation enemyLoc = null;
                 boolean shouldFlee = false;
                 if (worstEnemy != null) {
                     switch (worstEnemy.type) {
@@ -108,10 +108,14 @@ public strictfp class BotGardener extends BotBase {
                     } else {
                         final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
                         if (numEnemies > 0) {
-                            enemyLoc = broadcastedEnemies[0];
-                            shouldFlee = true; // can't tell if dangerous but just in case
-                        } else {
-                            enemyLoc = null;
+                            for (int i = 0; i < numEnemies; i++) {
+                                final RobotInfo enemy = broadcastedEnemies[i];
+                                if (myLoc.distanceTo(enemy.location) < FLEE_DISTANCE * 2) {
+                                    enemyLoc = enemy.location;
+                                    shouldFlee = true; // can't tell if dangerous enemy but just in case
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
@@ -142,14 +146,18 @@ public strictfp class BotGardener extends BotBase {
                                 randomlyJitter();
                             }
                         }
-                    } else if (rc.getRobotCount() >= rc.getTreeCount() * TREE_TO_ROBOT_RATIO
-                            || numNearbyCombatUnits() > 0) {
+                    } else {
                         // Only plant trees if we have enough defensive units
                         final MapLocation plantLoc;
-                        if (StrategyFeature.GARDENER_FARM_TRIANGLE.enabled()) {
-                            plantLoc = findIdealPlantLocation2();
+                        if (rc.getRobotCount() >= rc.getTreeCount() * TREE_TO_ROBOT_RATIO
+                                || numNearbyCombatUnits() > 0) {
+                            if (StrategyFeature.GARDENER_FARM_TRIANGLE.enabled()) {
+                                plantLoc = findIdealPlantLocation2();
+                            } else {
+                                plantLoc = findIdealPlantLocation0();
+                            }
                         } else {
-                            plantLoc = findIdealPlantLocation0();
+                            plantLoc = null;
                         }
                         if (plantLoc != null) {
                             // Debug.debug_print(this, "found place to plant");

@@ -21,6 +21,7 @@ public strictfp class Combat {
     public static final float TRIAD_RADIANS = (float) Math.toRadians(20.0f);
     public static final float PENTAD_RADIANS = (float) Math.toRadians(30.0f);
     public static final int PROCESS_OBJECT_LIMIT = 15;
+    public static Direction lastFiredDir = null;
 
     public static final MapLocation senseNearbyEnemies(final BotBase bot) throws GameActionException {
         final RobotInfo[] enemyRobots = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
@@ -486,8 +487,20 @@ public strictfp class Combat {
                     ok = false;
             }
             if (ok) {
-                bot.rc.firePentadShot(enemyDir);
                 SprayCombat.debugPentad(bot, enemyDir);
+                final Direction enemyDir2;
+                if (StrategyFeature.COMBAT_COUNTER_DODGE.enabled() && lastFiredDir != null) {
+                    final float radBetween = lastFiredDir.radiansBetween(enemyDir);
+                    if (radBetween > 0) {
+                        enemyDir2 = enemyDir.rotateLeftRads(PENTAD_RADIANS / 8);
+                    } else {
+                        enemyDir2 = enemyDir.rotateRightRads(PENTAD_RADIANS / 8);
+                    }
+                } else {
+                    enemyDir2 = enemyDir;
+                }
+                bot.rc.firePentadShot(enemyDir2);
+                lastFiredDir = enemyDir;
                 return true;
             }
         }
@@ -509,14 +522,39 @@ public strictfp class Combat {
                     ok = false;
             }
             if (ok) {
-                bot.rc.fireTriadShot(enemyDir);
                 SprayCombat.debugTriad(bot, enemyDir);
+                final Direction enemyDir2;
+                if (StrategyFeature.COMBAT_COUNTER_DODGE.enabled() && lastFiredDir != null) {
+                    final float radBetween = lastFiredDir.radiansBetween(enemyDir);
+                    if (radBetween > 0) {
+                        enemyDir2 = enemyDir.rotateLeftRads(TRIAD_RADIANS / 8);
+                    } else {
+                        enemyDir2 = enemyDir.rotateRightRads(TRIAD_RADIANS / 8);
+                    }
+                } else {
+                    enemyDir2 = enemyDir;
+                }
+                bot.rc.fireTriadShot(enemyDir2);
+                lastFiredDir = enemyDir;
                 return true;
             }
         }
         if (bot.rc.canFireSingleShot()) {
-            bot.rc.fireSingleShot(enemyDir);
             SprayCombat.debugSingle(bot, enemyDir);
+            final Direction enemyDir2;
+            if (StrategyFeature.COMBAT_COUNTER_DODGE.enabled() && lastFiredDir != null) {
+                final float radBetween = lastFiredDir.radiansBetween(enemyDir);
+                final float radAdjust = enemyRadius / enemyDistance;
+                if (radBetween > 0) {
+                    enemyDir2 = enemyDir.rotateLeftRads(radAdjust / 2);
+                } else {
+                    enemyDir2 = enemyDir.rotateRightRads(radAdjust / 2);
+                }
+            } else {
+                enemyDir2 = enemyDir;
+            }
+            bot.rc.fireSingleShot(enemyDir2);
+            lastFiredDir = enemyDir;
             return true;
         }
         return false;

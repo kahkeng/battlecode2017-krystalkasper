@@ -11,7 +11,11 @@ public strictfp enum StrategyFeature {
                             false), GARDENER_FARM_TRIANGLE("gardener_farm_triangle",
                                     true), COMBAT_SPRAY1("combat_spray1", true), COMBAT_DODGE1("combat_dodge1",
                                             false), COMBAT_DODGE2("combat_dodge2",
-                                                    true), COMBAT_COUNTER_DODGE("combat_counter_dodge", true);
+                                                    true), COMBAT_COUNTER_DODGE("combat_counter_dodge",
+                                                            true), COMBAT_BROADCAST("combat_broadcast",
+                                                                    true), COMBAT_UNSEEN_DEFENSE(
+                                                                            "combat_unseen_defense",
+                                                                            true);
 
     public final String codename;
     private boolean enabled, emitted;

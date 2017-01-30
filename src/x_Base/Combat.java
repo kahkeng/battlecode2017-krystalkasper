@@ -45,7 +45,7 @@ public strictfp class Combat {
         }
         final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
         for (int i = 0; i < numEnemies; i++) {
-            final MapLocation enemyLoc = bot.broadcastedEnemies[i];
+            final MapLocation enemyLoc = bot.broadcastedEnemies[i].location;
             final float distance = enemyLoc.distanceTo(bot.myLoc);
             if (nearestLoc == null || distance < minDistance) {
                 nearestLoc = enemyLoc;
@@ -409,7 +409,7 @@ public strictfp class Combat {
                 final RobotInfo enemy = bot.rc.senseRobotAtLocation(nearestEnemy);
                 if (enemy != null) {
                     if (bot.myType == RobotType.SOLDIER || bot.myType == RobotType.TANK) {
-                        SprayCombat.spraySpecificEnemy(bot, enemy);
+                        SprayCombat.spraySpecificEnemy(bot, enemy, new RobotInfo[0]);
                         return true;
                     }
                     // Move closer first before attacking
@@ -1180,7 +1180,7 @@ public strictfp class Combat {
         MapLocation nearestLoc = null;
         float minDistance = 0;
         for (int i = 0; i < numEnemies; i++) {
-            final MapLocation enemyLoc = bot.broadcastedEnemies[i];
+            final MapLocation enemyLoc = bot.broadcastedEnemies[i].location;
             final float distance = enemyLoc.distanceTo(bot.myLoc);
             if (nearestLoc == null || distance < minDistance) {
                 nearestLoc = enemyLoc;
@@ -1195,5 +1195,9 @@ public strictfp class Combat {
             return true;
         }
         return false;
+    }
+
+    public static void unseenDefense() {
+        // Attack enemy that we might not be able to see
     }
 }

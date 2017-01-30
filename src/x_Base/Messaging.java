@@ -9,9 +9,11 @@ import battlecode.common.TreeInfo;
 
 public strictfp class Messaging {
 
+    public static final int BROADCASTED_ROBOT_SENTINEL = -123;
+
     // max number of items, used for declaring arrays in BotBase
     public static final int MAX_PRIORITY_ENEMY_ROBOTS = 10;
-    public static final int MAX_ENEMY_ROBOTS = 10;
+    public static final int MAX_ENEMY_ROBOTS = 20;
     public static final int MAX_ENEMY_GARDENERS = 10;
     public static final int MAX_NEUTRAL_TREES = 10;
     public static final int MAX_MY_TREES = 20;
@@ -22,7 +24,7 @@ public strictfp class Messaging {
     public static final int FIELDS_HARASSER = 1;
     public static final int FIELDS_SCOUT = 1;
     public static final int FIELDS_PRIORITY_ENEMY_ROBOTS = 3;
-    public static final int FIELDS_ENEMY_ROBOTS = 3;
+    public static final int FIELDS_ENEMY_ROBOTS = 5;
     public static final int FIELDS_ENEMY_GARDENERS = 3;
     public static final int FIELDS_NEUTRAL_TREES = 3;
     public static final int FIELDS_MY_TREES = 4;
@@ -311,10 +313,13 @@ public strictfp class Messaging {
             bot.rc.broadcast(channel, getRobotHeartbeat(bot, enemyRobot));
             bot.rc.broadcastFloat(channel + 1, enemyRobot.location.x);
             bot.rc.broadcastFloat(channel + 2, enemyRobot.location.y);
+            bot.rc.broadcastFloat(channel + 3, enemyRobot.health);
+            // System.out.println("tx ord " + enemyRobot.type.ordinal() + " " + enemyRobot.type);
+            bot.rc.broadcastInt(channel + 4, enemyRobot.type.ordinal());
         }
     }
 
-    public static final int getEnemyRobots(final MapLocation[] results, final BotBase bot) throws GameActionException {
+    public static final int getEnemyRobots(final RobotInfo[] results, final BotBase bot) throws GameActionException {
         final int threshold = bot.rc.getRoundNum() - 1; // additional -1 in case bytecode limit exceeded
         int channel = OFFSET_ENEMY_ROBOTS_START;
         int count = 0;
@@ -323,8 +328,13 @@ public strictfp class Messaging {
             if (getRoundFromHeartbeat(heartbeat) < threshold) {
                 break;
             }
-            results[count++] = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
+            final MapLocation loc = new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
                     bot.rc.readBroadcastFloat(channel + 2));
+            final float health = bot.rc.readBroadcastFloat(channel + 3);
+            final RobotType type = RobotType.values()[bot.rc.readBroadcastInt(channel + 4)];
+            // System.out.println("rc ord " + bot.rc.readBroadcastInt(channel + 4) + " " + type);
+            results[count++] = new RobotInfo(getIDFromHeartbeat(heartbeat), bot.enemyTeam, type, loc, health,
+                    BROADCASTED_ROBOT_SENTINEL, 0);
             channel += FIELDS_ENEMY_ROBOTS;
         }
         return count;

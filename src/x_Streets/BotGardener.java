@@ -663,7 +663,7 @@ public strictfp class BotGardener extends BotBase {
         } else {
             final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
             if (numEnemies > 0) {
-                enemyLoc = broadcastedEnemies[0];
+                enemyLoc = broadcastedEnemies[0].location;
             } else {
                 enemyLoc = null;
             }

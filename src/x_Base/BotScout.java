@@ -90,7 +90,7 @@ public strictfp class BotScout extends BotBase {
         MapLocation nearestLoc = null;
         float minDistance = 0;
         for (int i = 0; i < numEnemies; i++) {
-            final MapLocation enemyLoc = broadcastedEnemies[i];
+            final MapLocation enemyLoc = broadcastedEnemies[i].location;
             final float distance = enemyLoc.distanceTo(myLoc);
             if (nearestLoc == null || distance < minDistance) {
                 nearestLoc = enemyLoc;

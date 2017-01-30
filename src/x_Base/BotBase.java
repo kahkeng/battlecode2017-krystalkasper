@@ -38,7 +38,7 @@ public strictfp class BotBase {
     public static MapLocation lastBaseLoc = null;
     public static final MapLocation[] broadcastedPriorityEnemies = new MapLocation[Messaging.MAX_PRIORITY_ENEMY_ROBOTS
             + 1];
-    public static final MapLocation[] broadcastedEnemies = new MapLocation[Messaging.MAX_ENEMY_ROBOTS + 1];
+    public static final RobotInfo[] broadcastedEnemies = new RobotInfo[Messaging.MAX_ENEMY_ROBOTS + 1];
     public static final MapLocation[] broadcastedEnemyGardeners = new MapLocation[Messaging.MAX_ENEMY_GARDENERS + 1];
     public static final MapLocation[] broadcastedNeutralTrees = new MapLocation[Messaging.MAX_NEUTRAL_TREES + 1];
     public static final MapLocation[] broadcastedMyTrees = new MapLocation[Messaging.MAX_MY_TREES + 1];

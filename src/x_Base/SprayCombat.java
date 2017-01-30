@@ -12,6 +12,7 @@ public strictfp class SprayCombat {
 
     public static final float EPS = Combat.EPS;
     public static final float SPRAY_DISTANCE_RANGE = 6.1f;
+    public static final float ENGAGE_DISTANCE_RANGE = 9.0f; // we will engage enemies starting from this far away
     public static final float SCOUT_DISTANCE_RANGE = 4.0f;
     public static final float DRAW_RANGE = 7.0f;
     public static final float[] DODGE_DELTAS = { 0.251f, 0.501f };
@@ -19,20 +20,50 @@ public strictfp class SprayCombat {
     public static int numCandidates = 0;
     public static final MapLocation[] dodgeCandidateLocs = new MapLocation[MAX_DODGE_CANDIDATES + 1];
     public static final float[] dodgeCandidateScores = new float[MAX_DODGE_CANDIDATES + 1];
+    public static final RobotInfo[] engageDistanceEnemies = new RobotInfo[Messaging.MAX_ENEMY_ROBOTS + 1]; // temp
+                                                                                                           // storage
 
     public static final boolean sprayEnemy1(final BotBase bot) throws GameActionException {
         // TODO: include remembered enemies
-        final RobotInfo[] enemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
-        final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(bot, enemies);
+        final RobotInfo[] allEnemies;
+        if (StrategyFeature.COMBAT_BROADCAST.enabled()) {
+            // include broadcasted enemies that are close
+            final RobotInfo[] sensedEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+            final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
+            int numEngageEnemies = 0;
+            for (int i = 0; i < numEnemies; i++) {
+                final RobotInfo enemy = bot.broadcastedEnemies[i];
+                if (enemy.location.distanceTo(bot.myLoc) <= ENGAGE_DISTANCE_RANGE) {
+                    engageDistanceEnemies[numEngageEnemies++] = enemy;
+                }
+            }
+            allEnemies = new RobotInfo[sensedEnemies.length + numEngageEnemies];
+            int count = 0;
+            for (int i = 0; i < sensedEnemies.length; i++) {
+                allEnemies[count++] = sensedEnemies[i];
+            }
+            for (int i = 0; i < numEngageEnemies; i++) {
+                allEnemies[count++] = engageDistanceEnemies[i];
+            }
+        } else {
+            allEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+        }
+        final RobotInfo worstEnemy = allEnemies.length == 0 ? null : Combat.prioritizedEnemy(bot, allEnemies);
         if (worstEnemy != null) {
-            Messaging.broadcastEnemyRobot(bot, worstEnemy);
-            spraySpecificEnemy(bot, worstEnemy);
+            if (worstEnemy.attackCount != Messaging.BROADCASTED_ROBOT_SENTINEL) {
+                Messaging.broadcastEnemyRobot(bot, worstEnemy);
+            }
+            spraySpecificEnemy(bot, worstEnemy, allEnemies);
             return true;
         }
         return false;
     }
 
-    public final static void spraySpecificEnemy(final BotBase bot, final RobotInfo worstEnemy)
+    public final static void getEnemySpan(final BotBase bot, final RobotInfo worstEnemy, final RobotInfo[] allEnemies) {
+    }
+
+    public final static void spraySpecificEnemy(final BotBase bot, final RobotInfo worstEnemy,
+            final RobotInfo[] allEnemies)
             throws GameActionException {
         final float enemyDistance = bot.myLoc.distanceTo(worstEnemy.location);
         final float enemyRadius = worstEnemy.getRadius();
@@ -67,7 +98,6 @@ public strictfp class SprayCombat {
                     final MapLocation moveLoc = worstEnemy.location.subtract(rotateDir, safeDistance);
                     bot.tryMove(moveLoc);
                 } else if (StrategyFeature.COMBAT_DODGE2.enabled()) {
-                    // TODO: incorporate bullet sensing
                     final MapLocation dodgeLoc = getDodgeLocation(bot, worstEnemy.location, safeDistance);
                     if (dodgeLoc != null) {
                         bot.tryMove(dodgeLoc);

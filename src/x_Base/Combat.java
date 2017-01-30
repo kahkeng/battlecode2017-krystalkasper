@@ -1207,9 +1207,15 @@ public strictfp class Combat {
         // Look at the furthest few bullets for any coming straight for us
         for (int i = bullets.length - 1; i >= 0 && i >= bullets.length - 10; i--) {
             final BulletInfo bullet = bullets[i];
-            if (bot.willCollideWithMe(bullet)) {
-                bot.rc.fireSingleShot(bot.myLoc.directionTo(bullet.location));
-                break;
+            final float bulletDistance = bot.myLoc.distanceTo(bullet.location);
+            if (bulletDistance > bot.myType.sensorRadius && bot.willCollideWithMe(bullet)) {
+                final Direction shootDir = bot.myLoc.directionTo(bullet.location);
+                if (!willBulletCollideWithFriendlies(bot, shootDir, bulletDistance, 0f)
+                        && !willBulletCollideWithTrees(bot, shootDir, bulletDistance, 0f)) {
+                    bot.rc.fireSingleShot(shootDir);
+                    Debug.debug_line(bot, bot.myLoc, bullet.location, 255, 0, 255);
+                    break;
+                }
             }
         }
     }

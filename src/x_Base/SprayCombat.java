@@ -65,6 +65,9 @@ public strictfp class SprayCombat {
     public final static void spraySpecificEnemy(final BotBase bot, final RobotInfo worstEnemy,
             final RobotInfo[] allEnemies)
             throws GameActionException {
+        for (int i = 0; i < allEnemies.length; i++) {
+            Debug.debug_dot(bot, allEnemies[i].location, 255, 0, 0);
+        }
         final float enemyDistance = bot.myLoc.distanceTo(worstEnemy.location);
         final float enemyRadius = worstEnemy.getRadius();
         final float edgeDistance = enemyDistance - enemyRadius;
@@ -212,12 +215,12 @@ public strictfp class SprayCombat {
         // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateRightDegrees(60.0f), strideRadius * 0.5f));
 
         final int size = numCandidates;
-        for (final BulletInfo bullet : bullets) {
+        outer: for (final BulletInfo bullet : bullets) {
             // System.out.println(Clock.getBytecodesLeft());
-            if (Clock.getBytecodesLeft() < 2000) {
-                break;
-            }
             for (int i = 0; i < size; i++) {
+                if (Clock.getBytecodesLeft() < 2000) {
+                    break outer;
+                }
                 final MapLocation candidateLoc = dodgeCandidateLocs[i];
                 float score = 0;
                 final float damage = bullet.damage;

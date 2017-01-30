@@ -406,6 +406,10 @@ public strictfp class Combat {
             if (bot.rc.canSenseLocation(nearestEnemy)) {
                 final RobotInfo enemy = bot.rc.senseRobotAtLocation(nearestEnemy);
                 if (enemy != null) {
+                    if (bot.myType == RobotType.SOLDIER || bot.myType == RobotType.TANK) {
+                        SprayCombat.spraySpecificEnemy(bot, enemy);
+                        return true;
+                    }
                     // Move closer first before attacking
                     if (bot.myType == RobotType.SCOUT && bot.myLoc.distanceTo(enemy.location) <= 5.0f) {
                         avoidSpecificEnemy(bot, enemy);
@@ -427,6 +431,7 @@ public strictfp class Combat {
                     if (canAttack) {
                         attackSpecificEnemy(bot, enemy);
                     }
+                    return true;
                 }
             }
             // head towards nearest enemy
@@ -434,7 +439,7 @@ public strictfp class Combat {
             if (!bot.tryMove(bot.nav.getNextLocation())) {
                 bot.randomlyJitter();
             }
-
+            return true;
         }
         return false;
     }

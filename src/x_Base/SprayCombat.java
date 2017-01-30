@@ -26,81 +26,7 @@ public strictfp class SprayCombat {
         final RobotInfo worstEnemy = enemies.length == 0 ? null : Combat.prioritizedEnemy(bot, enemies);
         if (worstEnemy != null) {
             Messaging.broadcastEnemyRobot(bot, worstEnemy);
-            final float enemyDistance = bot.myLoc.distanceTo(worstEnemy.location);
-            final float enemyRadius = worstEnemy.getRadius();
-            final float edgeDistance = enemyDistance - enemyRadius;
-            final float minDistance = edgeDistance - bot.myType.bodyRadius;
-            final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
-            debugSpray(bot, worstEnemy.location);
-            // Debug.debug_print(bot, "enemyDistance=" + enemyDistance + " edgeDistance=" + edgeDistance + "
-            // minDistance=" + minDistance);
-
-            // TODO: Calculate direction based on centroid? Also, where to move along arc to maximize fire
-            // Also, where to dodge
-
-            final boolean isSafeDistance = edgeDistance >= SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius - EPS;
-            final float safeDistance = SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius + enemyRadius + EPS;
-            // Move first before attacking
-            switch (worstEnemy.type) {
-            case SCOUT:
-            case ARCHON:
-            case GARDENER: {
-                final MapLocation moveLoc = worstEnemy.location;
-                bot.tryMove(moveLoc);
-                break;
-            }
-            case SOLDIER:
-            case TANK:
-            case LUMBERJACK: {
-                if (isSafeDistance) {
-                    if (StrategyFeature.COMBAT_DODGE1.enabled()) {
-                        final Direction rotateDir = enemyDir
-                                .rotateLeftRads((bot.myType.bodyRadius) / enemyDistance / 3.95f);
-                        final MapLocation moveLoc = worstEnemy.location.subtract(rotateDir, safeDistance);
-                        bot.tryMove(moveLoc);
-                    } else if (StrategyFeature.COMBAT_DODGE2.enabled()) {
-                        // TODO: incorporate bullet sensing
-                        final MapLocation dodgeLoc = getDodgeLocation(bot, worstEnemy.location, safeDistance);
-                        if (dodgeLoc != null) {
-                            bot.tryMove(dodgeLoc);
-                        }
-                    }
-                }
-                break;
-            }
-            default:
-                break;
-            }
-
-            // Attack first before retreating
-            boolean shouldAttack = true;
-            if (Combat.willBulletCollideWithFriendlies(bot, enemyDir, enemyDistance, enemyRadius)
-                    || Combat.willBulletCollideWithTrees(bot, enemyDir, enemyDistance, enemyRadius)) {
-                shouldAttack = false;
-            } else if (worstEnemy.type == RobotType.SCOUT && minDistance > 3.0f) {
-                shouldAttack = false;
-            }
-            if (shouldAttack) {
-                // TODO: choose pentad/triad based on span, and also randomness for making hard dodging
-                Combat.attackSpecificEnemy(bot, worstEnemy);
-            }
-
-            // Retreat if too close depending on type. Assume robot still has a turn to move after I do.
-            switch (worstEnemy.type) {
-            case SOLDIER:
-            case TANK:
-            case LUMBERJACK: {
-                if (!isSafeDistance) {
-                    final MapLocation moveLoc = worstEnemy.location.subtract(enemyDir, safeDistance);
-                    bot.tryMove(moveLoc);
-                    // TODO: what about dodging? adding that seems to hurt a lot
-                }
-                break;
-            }
-            default:
-                break;
-            }
-
+            spraySpecificEnemy(bot, worstEnemy);
             return true;
         }
         if (!StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
@@ -108,6 +34,84 @@ public strictfp class SprayCombat {
             return Combat.headTowardsBroadcastedEnemy(bot, 100.0f);
         } else {
             return false;
+        }
+    }
+
+    public final static void spraySpecificEnemy(final BotBase bot, final RobotInfo worstEnemy)
+            throws GameActionException {
+        final float enemyDistance = bot.myLoc.distanceTo(worstEnemy.location);
+        final float enemyRadius = worstEnemy.getRadius();
+        final float edgeDistance = enemyDistance - enemyRadius;
+        final float minDistance = edgeDistance - bot.myType.bodyRadius;
+        final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
+        debugSpray(bot, worstEnemy.location);
+        // Debug.debug_print(bot, "enemyDistance=" + enemyDistance + " edgeDistance=" + edgeDistance + "
+        // minDistance=" + minDistance);
+
+        // TODO: Calculate direction based on centroid? Also, where to move along arc to maximize fire
+        // Also, where to dodge
+
+        final boolean isSafeDistance = edgeDistance >= SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius - EPS;
+        final float safeDistance = SPRAY_DISTANCE_RANGE + worstEnemy.type.strideRadius + enemyRadius + EPS;
+        // Move first before attacking
+        switch (worstEnemy.type) {
+        case SCOUT:
+        case ARCHON:
+        case GARDENER: {
+            final MapLocation moveLoc = worstEnemy.location;
+            bot.tryMove(moveLoc);
+            break;
+        }
+        case SOLDIER:
+        case TANK:
+        case LUMBERJACK: {
+            if (isSafeDistance) {
+                if (StrategyFeature.COMBAT_DODGE1.enabled()) {
+                    final Direction rotateDir = enemyDir
+                            .rotateLeftRads((bot.myType.bodyRadius) / enemyDistance / 3.95f);
+                    final MapLocation moveLoc = worstEnemy.location.subtract(rotateDir, safeDistance);
+                    bot.tryMove(moveLoc);
+                } else if (StrategyFeature.COMBAT_DODGE2.enabled()) {
+                    // TODO: incorporate bullet sensing
+                    final MapLocation dodgeLoc = getDodgeLocation(bot, worstEnemy.location, safeDistance);
+                    if (dodgeLoc != null) {
+                        bot.tryMove(dodgeLoc);
+                    }
+                }
+            }
+            break;
+        }
+        default:
+            break;
+        }
+
+        // Attack first before retreating
+        boolean shouldAttack = true;
+        if (Combat.willBulletCollideWithFriendlies(bot, enemyDir, enemyDistance, enemyRadius)
+                || Combat.willBulletCollideWithTrees(bot, enemyDir, enemyDistance, enemyRadius)) {
+            shouldAttack = false;
+        } else if (worstEnemy.type == RobotType.SCOUT && minDistance > 3.0f) {
+            shouldAttack = false;
+        }
+        if (shouldAttack) {
+            // TODO: choose pentad/triad based on span, and also randomness for making hard dodging
+            Combat.attackSpecificEnemy(bot, worstEnemy);
+        }
+
+        // Retreat if too close depending on type. Assume robot still has a turn to move after I do.
+        switch (worstEnemy.type) {
+        case SOLDIER:
+        case TANK:
+        case LUMBERJACK: {
+            if (!isSafeDistance) {
+                final MapLocation moveLoc = worstEnemy.location.subtract(enemyDir, safeDistance);
+                bot.tryMove(moveLoc);
+                // TODO: what about dodging? adding that seems to hurt a lot
+            }
+            break;
+        }
+        default:
+            break;
         }
     }
 

@@ -1,5 +1,6 @@
 package x_Base;
 
+import battlecode.common.BulletInfo;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
@@ -1197,7 +1198,19 @@ public strictfp class Combat {
         return false;
     }
 
-    public static void unseenDefense() {
+    public static void unseenDefense(final BotBase bot) throws GameActionException {
+        if (!bot.rc.canFireSingleShot()) {
+            return;
+        }
         // Attack enemy that we might not be able to see
+        final BulletInfo[] bullets = bot.rc.senseNearbyBullets();
+        // Look at the furthest few bullets for any coming straight for us
+        for (int i = bullets.length - 1; i >= 0 && i >= bullets.length - 10; i--) {
+            final BulletInfo bullet = bullets[i];
+            if (bot.willCollideWithMe(bullet)) {
+                bot.rc.fireSingleShot(bot.myLoc.directionTo(bullet.location));
+                break;
+            }
+        }
     }
 }

@@ -34,7 +34,7 @@ public strictfp class BotSoldier extends BotBase {
                     if (!SprayCombat.sprayEnemy1(this)) {
                         if (!Combat.attackPriorityEnemies(this)) {
                             if (StrategyFeature.COMBAT_UNSEEN_DEFENSE.enabled()) {
-                                Combat.unseenDefense();
+                                Combat.unseenDefense(this);
                             }
                             if (!StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
                                 // Else head towards closest known broadcasted enemies

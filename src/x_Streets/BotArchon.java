@@ -140,9 +140,13 @@ public strictfp class BotArchon extends x_Base.BotArchon {
             if (robot.type != RobotType.GARDENER) {
                 continue;
             }
-            // ignore harassers after 150 rounds
+            // skip harassers only after at least 150 rounds, and if they have at least 2 trees next to them
             if (clock >= 150 && harasserIDs.contains(robot.ID)) {
-                continue;
+                final TreeInfo[] trees = rc.senseNearbyTrees(robot.location, robot.type.bodyRadius +
+                        GameConstants.BULLET_TREE_RADIUS + 0.5f, myTeam);
+                if (trees.length >= 2) {
+                    continue;
+                }
             }
             count++;
         }

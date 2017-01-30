@@ -15,7 +15,8 @@ public strictfp class SprayCombat {
     public static final float SCOUT_DISTANCE_RANGE = 4.0f;
     public static final float DRAW_RANGE = 7.0f;
     public static final float[] DODGE_DELTAS = { 0.251f, 0.501f };
-    public static final int MAX_DODGE_CANDIDATES = 10;
+    public static final int MAX_DODGE_CANDIDATES = 50;
+    public static int numCandidates = 0;
     public static final MapLocation[] dodgeCandidateLocs = new MapLocation[MAX_DODGE_CANDIDATES + 1];
     public static final float[] dodgeCandidateScores = new float[MAX_DODGE_CANDIDATES + 1];
 
@@ -110,6 +111,17 @@ public strictfp class SprayCombat {
         }
     }
 
+    public final static void addDodgeCandidateLoc(final BotBase bot, final MapLocation loc) {
+        if (numCandidates >= MAX_DODGE_CANDIDATES) {
+            return;
+        }
+        if (bot.canMove(loc)) {
+            dodgeCandidateLocs[numCandidates] = loc;
+            dodgeCandidateScores[numCandidates] = 0;
+            numCandidates++;
+        }
+    }
+
     public final static MapLocation getDodgeLocation(final BotBase bot, final MapLocation enemyLoc,
             final float safeDistance) {
         final float enemyDistance = bot.myLoc.distanceTo(enemyLoc);
@@ -120,13 +132,12 @@ public strictfp class SprayCombat {
             return null;
         }
         // final float hopDistance = bot.myType.bodyRadius / 4 + 0.007f + EPS;
-        final float hopDistance = bot.myType.bodyRadius / 2 + EPS;
 
         // Add the tangent left/right spots
         // final float sine = hopDistance / 2 / enemyDistance;
         // final float theta = (float) (Math.asin(sine) * 2);
-        int size = 0;
-        dodgeCandidateLocs[size++] = bot.myLoc;
+        numCandidates = 0;
+        addDodgeCandidateLoc(bot, bot.myLoc);
         /*
          * dodgeCandidateLocs[size++] = enemyLoc.subtract(enemyDir.rotateLeftRads(theta), safeDistance);
          * dodgeCandidateLocs[size++] = enemyLoc.subtract(enemyDir.rotateRightRads(theta), safeDistance); final
@@ -135,15 +146,36 @@ public strictfp class SprayCombat {
          */
 
         // final float hopDistance2 = bot.myType.bodyRadius / 4 + 0.007f + EPS;
-        final float hopDistance2 = bot.myType.strideRadius;
-        final float sine2 = hopDistance2 / 2 / enemyDistance;
+        final float strideRadius = bot.myType.strideRadius;
+        final float sine2 = strideRadius / 2 / enemyDistance;
         final float theta2 = (float) (Math.asin(sine2) * 2);
-        dodgeCandidateLocs[size++] = enemyLoc.subtract(enemyDir.rotateLeftRads(theta2), safeDistance);
-        dodgeCandidateLocs[size++] = enemyLoc.subtract(enemyDir.rotateRightRads(theta2), safeDistance);
 
-        for (int i = 0; i < size; i++) {
-            dodgeCandidateScores[i] = 0;
-        }
+        addDodgeCandidateLoc(bot, enemyLoc.subtract(enemyDir.rotateLeftRads(theta2), safeDistance));
+        addDodgeCandidateLoc(bot, enemyLoc.subtract(enemyDir.rotateRightRads(theta2), safeDistance));
+
+        addDodgeCandidateLoc(bot, enemyLoc.subtract(enemyDir.rotateLeftRads(theta2 * 0.66f), safeDistance));
+        addDodgeCandidateLoc(bot, enemyLoc.subtract(enemyDir.rotateRightRads(theta2 * 0.66f), safeDistance));
+
+        // addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir, strideRadius));
+        // addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateLeftDegrees(30.0f), strideRadius));
+        // addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateRightDegrees(30.0f), strideRadius));
+        // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateLeftDegrees(30.0f), strideRadius));
+        // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateRightDegrees(30.0f), strideRadius));
+        // addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateLeftDegrees(60.0f), strideRadius));
+        // addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateRightDegrees(60.0f), strideRadius));
+        // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateLeftDegrees(60.0f), strideRadius));
+        // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateRightDegrees(60.0f), strideRadius));
+        addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir, strideRadius * 0.5f));
+        addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateLeftDegrees(30.0f), strideRadius * 0.5f));
+        addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateRightDegrees(30.0f), strideRadius * 0.5f));
+        // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateLeftDegrees(30.0f), strideRadius * 0.5f));
+        // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateRightDegrees(30.0f), strideRadius * 0.5f));
+        addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateLeftDegrees(60.0f), strideRadius * 0.5f));
+        addDodgeCandidateLoc(bot, bot.myLoc.subtract(enemyDir.rotateRightDegrees(60.0f), strideRadius * 0.5f));
+        // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateLeftDegrees(60.0f), strideRadius * 0.5f));
+        // addDodgeCandidateLoc(bot, bot.myLoc.add(enemyDir.rotateRightDegrees(60.0f), strideRadius * 0.5f));
+
+        final int size = numCandidates;
         for (final BulletInfo bullet : bullets) {
             // System.out.println(Clock.getBytecodesLeft());
             if (Clock.getBytecodesLeft() < 2000) {
@@ -170,17 +202,22 @@ public strictfp class SprayCombat {
                     break;
                 }
                 case 1: {
-                    if (escapeDist >= hopDistance2) {
+                    if (escapeDist >= strideRadius) {
                         score += damage;
                     } else if (escapeDist >= 0) {
-                        score += (damage / 2) * (escapeDist / hopDistance2);
+                        score += (damage / 2) * (escapeDist / strideRadius);
                     }
                     break;
                 }
                 case 2: {
-                    score += (damage / 4) * (escapeDist / (hopDistance * 2));
+                    score += (damage / 4) * (escapeDist / (strideRadius * 2));
                     break;
                 }
+                case 3: {
+                    score += (damage / 8) * (escapeDist / (strideRadius * 3));
+                    break;
+                }
+
                 default:
                     break;
                 }

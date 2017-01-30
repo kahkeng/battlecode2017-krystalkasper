@@ -9,7 +9,8 @@ public strictfp enum StrategyFeature {
             false), IMPROVED_COMBAT1("improved_combat1",
                     true), LUMBERJACK_FOCUS("lumberjack_focus", false), COMBAT_SNIPE_BASES("combat_snipe_bases",
                             false), GARDENER_FARM_TRIANGLE("gardener_farm_triangle",
-                                    false), COMBAT_SPRAY1("combat_spray1", true);
+                                    false), COMBAT_SPRAY1("combat_spray1", true), COMBAT_DODGE1("combat_dodge1",
+                                            true), COMBAT_DODGE2("combat_dodge2", true);
 
     public final String codename;
     private boolean enabled, emitted;

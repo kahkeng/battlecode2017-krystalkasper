@@ -22,13 +22,20 @@ public strictfp class SprayCombat {
     public static final float[] dodgeCandidateScores = new float[MAX_DODGE_CANDIDATES + 1];
     public static final RobotInfo[] engageDistanceEnemies = new RobotInfo[Messaging.MAX_ENEMY_ROBOTS + 1]; // temp
                                                                                                            // storage
+    public static RobotInfo[] lastSensedEnemies = null; // enemies sensed in last round
 
     public static final boolean sprayEnemy1(final BotBase bot) throws GameActionException {
         // TODO: include remembered enemies
         final RobotInfo[] allEnemies;
         if (StrategyFeature.COMBAT_BROADCAST.enabled()) {
             // include broadcasted enemies that are close
-            final RobotInfo[] sensedEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+            final RobotInfo[] sensedEnemies;
+            if (StrategyFeature.COMBAT_LAST_SENSED.enabled()) {
+                final RobotInfo[] sensedEnemies0 = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+                sensedEnemies = sensedEnemies0.length == 0 ? lastSensedEnemies : sensedEnemies0;
+            } else {
+                sensedEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+            }
             final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
             int numEngageEnemies = 0;
             for (int i = 0; i < numEnemies; i++) {

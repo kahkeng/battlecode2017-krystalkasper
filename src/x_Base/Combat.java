@@ -1208,7 +1208,7 @@ public strictfp class Combat {
         for (int i = bullets.length - 1; i >= 0 && i >= bullets.length - 10; i--) {
             final BulletInfo bullet = bullets[i];
             final float bulletDistance = bot.myLoc.distanceTo(bullet.location);
-            if (bulletDistance > bot.myType.sensorRadius && bot.willCollideWithMe(bullet)) {
+            if (bulletDistance > bot.myType.sensorRadius - 1.0f && bot.willCollideWithMe(bullet)) {
                 final Direction shootDir = bot.myLoc.directionTo(bullet.location);
                 if (!willBulletCollideWithFriendlies(bot, shootDir, bulletDistance, 0f)
                         && !willBulletCollideWithTrees(bot, shootDir, bulletDistance, 0f)) {

@@ -27,8 +27,14 @@ public strictfp class SprayCombat {
     public static final boolean sprayEnemy1(final BotBase bot, boolean firstTime) throws GameActionException {
         currentSensedEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
         // TODO: include remembered enemies
+
+        // If firstTime, we include broadcasted enemies in the array for span calculation, but
+        // only attempt to shoot at within range enemies. This way, our second time will still
+        // have a chance at shooting at within range enemy after movement. If none at that point,
+        // we will include broadcasted enemies as candidates for direct shots.
         final RobotInfo[] allEnemies;
-        if (!firstTime && StrategyFeature.COMBAT_BROADCAST.enabled()) {
+        final RobotInfo worstEnemy;
+        if (StrategyFeature.COMBAT_BROADCAST.enabled()) {
             // include broadcasted enemies that are close
             final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
             int numEngageEnemies = 0;
@@ -46,10 +52,17 @@ public strictfp class SprayCombat {
             for (int i = 0; i < numEngageEnemies; i++) {
                 allEnemies[count++] = engageDistanceEnemies[i];
             }
+            // Per comment above, only consider worstEnemy within sensedEnemies the first time
+            if (firstTime) {
+                worstEnemy = currentSensedEnemies.length == 0 ? null
+                        : Combat.prioritizedEnemy(bot, currentSensedEnemies);
+            } else {
+                worstEnemy = allEnemies.length == 0 ? null : Combat.prioritizedEnemy(bot, allEnemies);
+            }
         } else {
             allEnemies = currentSensedEnemies;
+            worstEnemy = allEnemies.length == 0 ? null : Combat.prioritizedEnemy(bot, allEnemies);
         }
-        final RobotInfo worstEnemy = allEnemies.length == 0 ? null : Combat.prioritizedEnemy(bot, allEnemies);
         if (worstEnemy != null) {
             if (worstEnemy.attackCount != Messaging.BROADCASTED_ROBOT_SENTINEL) {
                 Messaging.broadcastEnemyRobot(bot, worstEnemy);

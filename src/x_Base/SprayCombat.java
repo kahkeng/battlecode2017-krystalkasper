@@ -22,20 +22,14 @@ public strictfp class SprayCombat {
     public static final float[] dodgeCandidateScores = new float[MAX_DODGE_CANDIDATES + 1];
     public static final RobotInfo[] engageDistanceEnemies = new RobotInfo[Messaging.MAX_ENEMY_ROBOTS + 1]; // temp
                                                                                                            // storage
-    public static RobotInfo[] lastSensedEnemies = null; // enemies sensed in last round
+    public static RobotInfo[] currentSensedEnemies = new RobotInfo[0]; // enemies sensed in current round
 
     public static final boolean sprayEnemy1(final BotBase bot) throws GameActionException {
+        currentSensedEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
         // TODO: include remembered enemies
         final RobotInfo[] allEnemies;
         if (StrategyFeature.COMBAT_BROADCAST.enabled()) {
             // include broadcasted enemies that are close
-            final RobotInfo[] sensedEnemies;
-            if (StrategyFeature.COMBAT_LAST_SENSED.enabled()) {
-                final RobotInfo[] sensedEnemies0 = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
-                sensedEnemies = sensedEnemies0.length == 0 ? lastSensedEnemies : sensedEnemies0;
-            } else {
-                sensedEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
-            }
             final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
             int numEngageEnemies = 0;
             for (int i = 0; i < numEnemies; i++) {
@@ -44,16 +38,16 @@ public strictfp class SprayCombat {
                     engageDistanceEnemies[numEngageEnemies++] = enemy;
                 }
             }
-            allEnemies = new RobotInfo[sensedEnemies.length + numEngageEnemies];
+            allEnemies = new RobotInfo[currentSensedEnemies.length + numEngageEnemies];
             int count = 0;
-            for (int i = 0; i < sensedEnemies.length; i++) {
-                allEnemies[count++] = sensedEnemies[i];
+            for (int i = 0; i < currentSensedEnemies.length; i++) {
+                allEnemies[count++] = currentSensedEnemies[i];
             }
             for (int i = 0; i < numEngageEnemies; i++) {
                 allEnemies[count++] = engageDistanceEnemies[i];
             }
         } else {
-            allEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
+            allEnemies = currentSensedEnemies;
         }
         final RobotInfo worstEnemy = allEnemies.length == 0 ? null : Combat.prioritizedEnemy(bot, allEnemies);
         if (worstEnemy != null) {

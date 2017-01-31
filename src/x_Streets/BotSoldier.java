@@ -47,6 +47,12 @@ public strictfp class BotSoldier extends BotBase {
                             }
                         }
                     }
+                    if (StrategyFeature.COMBAT_LAST_SENSED.enabled()) {
+                        // sense enemies again if we moved this round
+                        if (rc.hasMoved() && !rc.hasAttacked()) {
+                            SprayCombat.sprayEnemy1(this);
+                        }
+                    }
                 } else if (StrategyFeature.IMPROVED_COMBAT1.enabled()) {
                     if (!Combat.seekAndAttackAndSurroundEnemy5(this)) {
                         macroCombatStrategy();
@@ -61,9 +67,6 @@ public strictfp class BotSoldier extends BotBase {
                         macroCombatStrategy();
                     }
                 }
-                // Sense enemies at end of round, in case we moved this round and see them and they move out
-                // of range before the start of our next turn
-                SprayCombat.lastSensedEnemies = rc.senseNearbyRobots(-1, enemyTeam);
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Soldier Exception");

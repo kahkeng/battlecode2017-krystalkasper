@@ -352,7 +352,7 @@ public strictfp class BotBase {
     }
 
     public final boolean tryHireGardenerWithSpace(Direction dir) throws GameActionException {
-        final int numTries = 12;
+        final int numTries = 20;
         final float degreeDelta = 360.0f / numTries;
         for (int i = 0; i < numTries; i++) {
             if (rc.canHireGardener(dir)) {
@@ -361,7 +361,7 @@ public strictfp class BotBase {
                 int canBuild = 0;
                 final float buildRadius = RobotType.SOLDIER.bodyRadius;
                 Direction dir2 = dir;
-                for (int j = 0; j < 6; j++) {
+                for (int j = 0; j < 36; j++) {
                     final MapLocation buildLoc = gardenerLoc.add(dir2,
                             RobotType.GARDENER.bodyRadius + buildRadius + 0.01f);
                     if (!mapEdges.isOffMap(buildLoc) && rc.senseNearbyRobots(buildLoc, buildRadius, null).length == 0
@@ -369,7 +369,7 @@ public strictfp class BotBase {
                         canBuild += 1;
                         break;
                     }
-                    dir2 = dir2.rotateRightDegrees(60.0f);
+                    dir2 = dir2.rotateRightDegrees(10.0f);
                 }
                 if (canBuild > 0) {
                     break;

@@ -228,7 +228,7 @@ public strictfp class BotGardener extends BotBase {
     public final void buildRobotsInPeace() throws GameActionException {
         final int clock = rc.getRoundNum();
         if (StrategyFeature.GARDENER_MORE_SOLDIERS.enabled()
-                && lastCombatBuildRound < clock - COMBAT_BUILD_EXPIRY_ROUNDS) {
+                && lastCombatBuildRound < clock - COMBAT_BUILD_EXPIRY_ROUNDS && numNearbySoldiersAndTanks() < 3) {
             buildSoldiers(formation.baseDir);
         } else if (Messaging.getNumScouts(this) < 1 && lastFleeRound < clock - FLEE_EXPIRY_ROUNDS
                 && numNearbyCombatUnits() > 0 && rc.getRobotCount() >= rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
@@ -664,6 +664,17 @@ public strictfp class BotGardener extends BotBase {
             }
         }
         return numSoldiers;
+    }
+
+    public final int numNearbySoldiersAndTanks() throws GameActionException {
+        final RobotInfo[] robots = rc.senseNearbyRobots(-1, myTeam);
+        int num = 0;
+        for (final RobotInfo robot : robots) {
+            if (robot.type == RobotType.SOLDIER || robot.type == RobotType.TANK) {
+                num++;
+            }
+        }
+        return num;
     }
 
     public final int numNearbyCombatUnits() throws GameActionException {

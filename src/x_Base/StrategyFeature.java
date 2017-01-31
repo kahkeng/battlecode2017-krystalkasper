@@ -18,7 +18,10 @@ public strictfp enum StrategyFeature {
                                                                             true), COMBAT_LAST_SENSED(
                                                                                     "combat_last_sensed",
                                                                                     true), COMBAT_SPRAY_TANK(
-                                                                                            "combat_spray_tank", true);
+                                                                                            "combat_spray_tank",
+                                                                                            true), COMBAT_IGNORE_ENEMY_TREES(
+                                                                                                    "combat_ignore_enemy_trees",
+                                                                                                    true);
 
     public final String codename;
     private boolean enabled, emitted;

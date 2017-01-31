@@ -671,39 +671,68 @@ public strictfp class Combat {
         final float objectRadius = 0.0f;
 
         // Also, we only optimize this if needed.
-        final TreeInfo[] neutralTrees0 = bot.rc.senseNearbyTrees(totalDistance, Team.NEUTRAL);
-        final TreeInfo[] myTrees0 = bot.rc.senseNearbyTrees(totalDistance, bot.myTeam);
-        if (neutralTrees0.length + myTrees0.length > PROCESS_OBJECT_LIMIT) {
-            // we use overlapping circles that cover a rectangular box with robot width and length of travel
-            // to find potential obstacles.
-            final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
-            final float startDist = boxRadius; // start point of the centers of circles
-            final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
-                                                             // further than this
-            final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
-            final MapLocation currLoc = bot.myLoc;
-            float centerDist = startDist;
-            while (centerDist <= endDist) {
-                final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
-                final TreeInfo[] neutralTrees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, Team.NEUTRAL);
+        if (StrategyFeature.COMBAT_IGNORE_ENEMY_TREES.enabled()) {
+            final TreeInfo[] neutralTrees0 = bot.rc.senseNearbyTrees(totalDistance, Team.NEUTRAL);
+            final TreeInfo[] myTrees0 = bot.rc.senseNearbyTrees(totalDistance, bot.myTeam);
+            if (neutralTrees0.length + myTrees0.length > PROCESS_OBJECT_LIMIT) {
+                // we use overlapping circles that cover a rectangular box with robot width and length of travel
+                // to find potential obstacles.
+                final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
+                final float startDist = boxRadius; // start point of the centers of circles
+                final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
+                                                                 // further than this
+                final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
+                final MapLocation currLoc = bot.myLoc;
+                float centerDist = startDist;
+                while (centerDist <= endDist) {
+                    final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
+                    final TreeInfo[] neutralTrees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, Team.NEUTRAL);
+                    if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
+                            neutralTrees)) {
+                        return true;
+                    }
+                    final TreeInfo[] myTrees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, bot.myTeam);
+                    if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
+                            myTrees)) {
+                        return true;
+                    }
+                    centerDist += 2 * boxRadius;
+                }
+            } else {
                 if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
-                        neutralTrees)) {
+                        neutralTrees0)) {
                     return true;
                 }
-                final TreeInfo[] myTrees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, bot.myTeam);
-                if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
-                        myTrees)) {
+                if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius, myTrees0)) {
                     return true;
                 }
-                centerDist += 2 * boxRadius;
             }
         } else {
-            if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
-                    neutralTrees0)) {
-                return true;
-            }
-            if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius, myTrees0)) {
-                return true;
+            final TreeInfo[] trees0 = bot.rc.senseNearbyTrees(totalDistance, null);
+            if (trees0.length > PROCESS_OBJECT_LIMIT) {
+                // we use overlapping circles that cover a rectangular box with robot width and length of travel
+                // to find potential obstacles.
+                final float boxRadius = Math.max(objectRadius, 1.0f); // use 1.0f for bullets
+                final float startDist = boxRadius; // start point of the centers of circles
+                final float endDist = totalDistance + boxRadius; // end point of centers of circles, no need to go
+                                                                 // further than this
+                final float senseRadius = Math.max(boxRadius, (float) (objectRadius * Math.sqrt(2)));
+                final MapLocation currLoc = bot.myLoc;
+                float centerDist = startDist;
+                while (centerDist <= endDist) {
+                    final MapLocation centerLoc = currLoc.add(objectDir, centerDist);
+                    final TreeInfo[] trees = bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
+                    if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
+                            trees)) {
+                        return true;
+                    }
+                    centerDist += 2 * boxRadius;
+                }
+            } else {
+                if (Combat.willObjectCollideWithSpecifiedTrees(bot, objectDir, totalDistance, objectRadius,
+                        trees0)) {
+                    return true;
+                }
             }
         }
         return false;

@@ -12,7 +12,7 @@ public strictfp class SprayCombat {
 
     public static final float EPS = Combat.EPS;
     public static final float SPRAY_DISTANCE_RANGE = 6.1f;
-    public static final float ENGAGE_DISTANCE_RANGE = 9.0f; // we will engage enemies starting from this far away
+    public static final float ENGAGE_DISTANCE_RANGE = 10.0f; // we will engage enemies starting from this far away
     public static final float SCOUT_DISTANCE_RANGE = 4.0f;
     public static final float DRAW_RANGE = 7.0f;
     public static final float[] DODGE_DELTAS = { 0.251f, 0.501f };
@@ -75,8 +75,8 @@ public strictfp class SprayCombat {
         final float minDistance = edgeDistance - bot.myType.bodyRadius;
         final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
         debugSpray(bot, worstEnemy.location);
-        // Debug.debug_print(bot, "enemyDistance=" + enemyDistance + " edgeDistance=" + edgeDistance + "
-        // minDistance=" + minDistance);
+        // Debug.debug_print(bot,
+        // "enemyDistance=" + enemyDistance + " edgeDistance=" + edgeDistance + " minDistance=" + minDistance);
 
         // TODO: Calculate direction based on centroid? Also, where to move along arc to maximize fire
         // Also, where to dodge

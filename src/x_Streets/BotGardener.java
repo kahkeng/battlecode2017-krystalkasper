@@ -54,6 +54,7 @@ public strictfp class BotGardener extends BotBase {
         super(rc);
         StrategyFeature.initialize(rc);
         DEBUG = true;
+        lastCombatBuildRound = rc.getRoundNum();
     }
 
     public void run() throws GameActionException {

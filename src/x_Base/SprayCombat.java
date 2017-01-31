@@ -24,11 +24,11 @@ public strictfp class SprayCombat {
                                                                                                            // storage
     public static RobotInfo[] currentSensedEnemies = new RobotInfo[0]; // enemies sensed in current round
 
-    public static final boolean sprayEnemy1(final BotBase bot) throws GameActionException {
+    public static final boolean sprayEnemy1(final BotBase bot, boolean firstTime) throws GameActionException {
         currentSensedEnemies = bot.rc.senseNearbyRobots(-1, bot.enemyTeam);
         // TODO: include remembered enemies
         final RobotInfo[] allEnemies;
-        if (StrategyFeature.COMBAT_BROADCAST.enabled()) {
+        if (!firstTime && StrategyFeature.COMBAT_BROADCAST.enabled()) {
             // include broadcasted enemies that are close
             final int numEnemies = Messaging.getEnemyRobots(bot.broadcastedEnemies, bot);
             int numEngageEnemies = 0;

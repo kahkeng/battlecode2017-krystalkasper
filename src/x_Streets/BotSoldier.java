@@ -32,7 +32,7 @@ public strictfp class BotSoldier extends BotBase {
             try {
                 startLoop();
                 if (StrategyFeature.COMBAT_SPRAY1.enabled()) {
-                    if (!SprayCombat.sprayEnemy1(this)) {
+                    if (!SprayCombat.sprayEnemy1(this, /* firstTime= */ true)) {
                         if (!Combat.attackPriorityEnemies(this)) {
                             if (myType != RobotType.TANK || !StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
                                 // Else head towards closest known broadcasted enemies
@@ -47,7 +47,7 @@ public strictfp class BotSoldier extends BotBase {
                     if (StrategyFeature.COMBAT_LAST_SENSED.enabled()) {
                         // sense enemies again if we moved this round
                         if (rc.hasMoved() && !rc.hasAttacked()) {
-                            SprayCombat.sprayEnemy1(this);
+                            SprayCombat.sprayEnemy1(this, /* firstTime= */false);
                         }
                     }
                     if (StrategyFeature.COMBAT_UNSEEN_DEFENSE.enabled()) {

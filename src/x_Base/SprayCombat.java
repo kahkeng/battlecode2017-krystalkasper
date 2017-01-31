@@ -88,8 +88,17 @@ public strictfp class SprayCombat {
         case SCOUT:
         case ARCHON:
         case GARDENER: {
-            final MapLocation moveLoc = worstEnemy.location;
-            bot.tryMove(moveLoc);
+            // Hack: we somehow end up going around the hex trees because there's no way to actually enter
+            // the hex. Hence, we try to get adjacent to enemy if we are able to path to it. We can't
+            // just use the computed adjacent loc each time since we get stuck.
+            final MapLocation adjLoc = worstEnemy.location.add(worstEnemy.location.directionTo(bot.myLoc),
+                    enemyRadius + bot.myType.bodyRadius + EPS);
+            if (bot.nav.canPathTowardsLocation(adjLoc)) {
+                bot.tryMove(worstEnemy.location);
+            } else {
+                bot.nav.setDestination(worstEnemy.location);
+                bot.tryMove(bot.nav.getNextLocation());
+            }
             break;
         }
         case SOLDIER:

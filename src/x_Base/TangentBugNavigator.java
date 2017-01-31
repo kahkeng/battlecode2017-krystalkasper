@@ -18,7 +18,6 @@ public strictfp class TangentBugNavigator {
     private static final int MAX_WALLS = 100;
     private static final float EPS = 0.04f; // buffer to add to not always exactly touch edges
     private static final float LEAVE_THRESHOLD = 0.0f; // distance improvement before we leave obstacle
-    // public static final float EFFECTIVE_DISTANCE = 5.0f;
 
     boolean preferRight;
 
@@ -78,13 +77,6 @@ public strictfp class TangentBugNavigator {
         final float destDist = currLoc.distanceTo(destLoc);
         if (destDist < bot.myType.strideRadius) {
             return destLoc;
-            /*
-             * Might not need this now that we ignore enemy robots as obstacles for combat units } else if (bot.myType
-             * != RobotType.GARDENER && bot.myType != RobotType.SCOUT && bot.myType != RobotType.LUMBERJACK && destDist
-             * < EFFECTIVE_DISTANCE && bot.rc.senseNearbyTrees(-1, bot.myTeam).length > 0) { // Soldiers and tanks are
-             * not effective using bug if too close to target return currLoc.add(currLoc.directionTo(destLoc),
-             * bot.myType.strideRadius);
-             */
         }
 
         // Bug 2 algorithm: https://www.cs.cmu.edu/~motionplanning/lecture/Chap2-Bug-Alg_howie.pdf
@@ -209,7 +201,7 @@ public strictfp class TangentBugNavigator {
      * Determine if we can greedily navigate towards destLoc, inclusive of whether destLoc is traversable. We need to be
      * within sensing range of destLoc for this to work.
      */
-    private final boolean canPathTowardsLocation(final MapLocation destLoc) {
+    public final boolean canPathTowardsLocation(final MapLocation destLoc) {
         final MapLocation currLoc = bot.myLoc;
         final float destDistance = currLoc.distanceTo(destLoc);
         if (destDistance > bot.myType.sensorRadius - bot.myType.bodyRadius) {

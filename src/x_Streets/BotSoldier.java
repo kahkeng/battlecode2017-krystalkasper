@@ -6,6 +6,7 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.common.RobotType;
 import x_Base.BotBase;
 import x_Base.Combat;
 import x_Base.Debug;
@@ -15,8 +16,8 @@ import x_Base.StrategyFeature;
 
 public strictfp class BotSoldier extends BotBase {
 
-    public static final int ENEMY_GARDENER_EXPIRY = 100;
-    public static final float SNIPE_DISTANCE = 15.0f;
+    public static final int ENEMY_GARDENER_EXPIRY = 60;
+    public static final float SNIPE_DISTANCE = 30.0f;
     public static MapLocation enemyGardenerLoc = null;
     public static int enemyGardenerRound = 0;
 
@@ -36,7 +37,7 @@ public strictfp class BotSoldier extends BotBase {
                             if (StrategyFeature.COMBAT_UNSEEN_DEFENSE.enabled()) {
                                 Combat.unseenDefense(this);
                             }
-                            if (!StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
+                            if (myType != RobotType.TANK || !StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
                                 // Else head towards closest known broadcasted enemies
                                 if (!Combat.headTowardsBroadcastedEnemy(this, 100.0f)) {
                                     macroCombatStrategy();
@@ -72,7 +73,7 @@ public strictfp class BotSoldier extends BotBase {
     }
 
     public final void macroCombatStrategy() throws GameActionException {
-        if (StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
+        if (myType == RobotType.TANK && StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
             // Check if previously committed location is still reported, if so, refresh timer
             final int clock = rc.getRoundNum();
             final int numEnemyGardeners = Messaging.getEnemyGardeners(broadcastedEnemyGardeners, this);

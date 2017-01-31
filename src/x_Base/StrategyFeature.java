@@ -8,7 +8,7 @@ public strictfp enum StrategyFeature {
     SCOUT_DISTANCE_ATTACK("scout_distance_attack", false), GARDENER_PLANT_NEAR_ARCHON("gardener_plant_near_archon",
             false), IMPROVED_COMBAT1("improved_combat1",
                     true), LUMBERJACK_FOCUS("lumberjack_focus", true), COMBAT_SNIPE_BASES("combat_snipe_bases",
-                            false), GARDENER_FARM_TRIANGLE("gardener_farm_triangle",
+                            true), GARDENER_FARM_TRIANGLE("gardener_farm_triangle",
                                     true), COMBAT_SPRAY1("combat_spray1", true), COMBAT_DODGE1("combat_dodge1",
                                             false), COMBAT_DODGE2("combat_dodge2",
                                                     true), COMBAT_COUNTER_DODGE("combat_counter_dodge",

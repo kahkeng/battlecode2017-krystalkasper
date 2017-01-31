@@ -367,7 +367,7 @@ public strictfp class Combat {
             }
             return true;
         }
-        if (!StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
+        if (bot.myType != RobotType.TANK || !StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
             // Else head towards closest known broadcasted enemies
             return headTowardsBroadcastedEnemy(bot, 100.0f);
         } else {

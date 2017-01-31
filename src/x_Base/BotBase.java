@@ -1,5 +1,7 @@
 package x_Base;
 
+import java.util.Random;
+
 import battlecode.common.BulletInfo;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -46,6 +48,7 @@ public strictfp class BotBase {
     public static boolean preferRight = false;
     public static float lastRoundBullets;
     public static float bulletsDelta;
+    public static final Random random = new Random();
 
     public BotBase(final RobotController rc) {
         this.rc = rc;

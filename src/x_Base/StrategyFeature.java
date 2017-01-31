@@ -16,7 +16,9 @@ public strictfp enum StrategyFeature {
                                                                     true), COMBAT_UNSEEN_DEFENSE(
                                                                             "combat_unseen_defense",
                                                                             true), COMBAT_LAST_SENSED(
-                                                                                    "combat_last_sensed", true);
+                                                                                    "combat_last_sensed",
+                                                                                    true), COMBAT_SPRAY_TANK(
+                                                                                            "combat_spray_tank", true);
 
     public final String codename;
     private boolean enabled, emitted;

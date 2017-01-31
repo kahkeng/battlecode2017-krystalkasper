@@ -496,13 +496,20 @@ public strictfp class Combat {
             if (ok) {
                 SprayCombat.debugPentad(bot, enemyDir);
                 final Direction enemyDir2;
-                if (StrategyFeature.COMBAT_COUNTER_DODGE.enabled() && lastFiredDir != null) {
+                if (enemy.type != RobotType.TANK && StrategyFeature.COMBAT_COUNTER_DODGE.enabled()
+                        && lastFiredDir != null) {
                     final float radBetween = lastFiredDir.radiansBetween(enemyDir);
                     final float radAdjust = COUNTER_BUFFER_DIST / enemyDistance;
                     if (radBetween > 0) {
                         enemyDir2 = enemyDir.rotateLeftRads(radAdjust);
                     } else {
                         enemyDir2 = enemyDir.rotateRightRads(radAdjust);
+                    }
+                } else if (enemy.type == RobotType.TANK && StrategyFeature.COMBAT_SPRAY_TANK.enabled()) {
+                    if (bot.random.nextBoolean()) {
+                        enemyDir2 = enemyDir.rotateLeftRads(PENTAD_RADIANS / 4);
+                    } else {
+                        enemyDir2 = enemyDir.rotateRightRads(PENTAD_RADIANS / 4);
                     }
                 } else {
                     enemyDir2 = enemyDir;
@@ -532,13 +539,20 @@ public strictfp class Combat {
             if (ok) {
                 SprayCombat.debugTriad(bot, enemyDir);
                 final Direction enemyDir2;
-                if (StrategyFeature.COMBAT_COUNTER_DODGE.enabled() && lastFiredDir != null) {
+                if (enemy.type != RobotType.TANK && StrategyFeature.COMBAT_COUNTER_DODGE.enabled()
+                        && lastFiredDir != null) {
                     final float radBetween = lastFiredDir.radiansBetween(enemyDir);
                     final float radAdjust = COUNTER_BUFFER_DIST / enemyDistance;
                     if (radBetween > 0) {
                         enemyDir2 = enemyDir.rotateLeftRads(radAdjust);
                     } else {
                         enemyDir2 = enemyDir.rotateRightRads(radAdjust);
+                    }
+                } else if (enemy.type == RobotType.TANK && StrategyFeature.COMBAT_SPRAY_TANK.enabled()) {
+                    if (bot.random.nextBoolean()) {
+                        enemyDir2 = enemyDir.rotateLeftRads(TRIAD_RADIANS / 2);
+                    } else {
+                        enemyDir2 = enemyDir.rotateRightRads(TRIAD_RADIANS / 2);
                     }
                 } else {
                     enemyDir2 = enemyDir;

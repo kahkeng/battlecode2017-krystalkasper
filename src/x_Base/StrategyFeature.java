@@ -23,7 +23,9 @@ public strictfp enum StrategyFeature {
                                                                                                     "combat_ignore_enemy_trees",
                                                                                                     true), COMBAT_CHASE_ENEMY(
                                                                                                             "combat_chase_enemy",
-                                                                                                            true);
+                                                                                                            true), COMBAT_SPRAY_SPAN(
+                                                                                                                    "combat_spray_span",
+                                                                                                                    true);
 
     public final String codename;
     private boolean enabled, emitted;
@@ -55,7 +57,7 @@ public strictfp enum StrategyFeature {
     public final boolean enabled() {
         if (!emitted) {
             emitted = true;
-            System.out.println("StrategyFeature: " + codename + "=" + enabled);
+            // System.out.println("StrategyFeature: " + codename + "=" + enabled);
         }
         return enabled;
     }

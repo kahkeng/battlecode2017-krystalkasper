@@ -60,7 +60,57 @@ public strictfp class SprayCombat {
         return false;
     }
 
-    public final static void getEnemySpan(final BotBase bot, final RobotInfo worstEnemy, final RobotInfo[] allEnemies) {
+    static class SpanInfo {
+        final Direction dir;
+        final float rangeLeftRads;
+        final float rangeRightRads;
+
+        public SpanInfo(final Direction dir, final float rangeLeftRads, final float rangeRightRads) {
+            this.dir = dir;
+            this.rangeLeftRads = rangeLeftRads;
+            this.rangeRightRads = rangeRightRads;
+        }
+
+        public final float getSpan() {
+            return rangeLeftRads + rangeRightRads;
+        }
+
+        @Override
+        public String toString() {
+            return "SpanInfo(" + dir + ", " + rangeLeftRads + ", " + rangeRightRads + ")";
+        }
+    }
+
+    public final static SpanInfo getEnemySpan(final BotBase bot, final RobotInfo worstEnemy,
+            final RobotInfo[] allEnemies) {
+        if (!StrategyFeature.COMBAT_SPRAY_SPAN.enabled()) {
+            return null;
+        }
+        final Direction dir = bot.myLoc.directionTo(worstEnemy.location);
+        float rangeLeftRads = 0, rangeRightRads = 0;
+        for (final RobotInfo robot : allEnemies) {
+            if (robot.location.distanceTo(worstEnemy.location) <= 10.0f) {
+                final Direction d = bot.myLoc.directionTo(robot.location);
+                final float radsBetween = d.radiansBetween(dir);
+                if (radsBetween > 0 && radsBetween < Math.PI / 2) {
+                    rangeRightRads = Math.max(rangeRightRads, radsBetween);
+                } else if (radsBetween < 0 && radsBetween > -Math.PI / 2) {
+                    rangeLeftRads = Math.max(rangeLeftRads, -radsBetween);
+                }
+            }
+        }
+        return new SpanInfo(dir, rangeLeftRads, rangeRightRads);
+    }
+
+    public final static void debugSpan(final BotBase bot, final SpanInfo spanInfo) {
+        if (spanInfo == null) {
+            return;
+        }
+        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(spanInfo.dir.rotateLeftRads(spanInfo.rangeLeftRads), 10.0f), 0,
+                0, 0);
+        Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(spanInfo.dir.rotateRightRads(spanInfo.rangeRightRads), 10.0f), 0,
+                0, 0);
+        Debug.debug_print(bot, "enemy span " + spanInfo);
     }
 
     public final static void spraySpecificEnemy(final BotBase bot, final RobotInfo worstEnemy,
@@ -69,6 +119,9 @@ public strictfp class SprayCombat {
         for (int i = 0; i < allEnemies.length; i++) {
             Debug.debug_dot(bot, allEnemies[i].location, 255, 0, 0);
         }
+        final SpanInfo spanInfo = getEnemySpan(bot, worstEnemy, allEnemies);
+        debugSpan(bot, spanInfo);
+
         final float enemyDistance = bot.myLoc.distanceTo(worstEnemy.location);
         final float enemyRadius = worstEnemy.getRadius();
         final float edgeDistance = enemyDistance - enemyRadius;
@@ -133,7 +186,7 @@ public strictfp class SprayCombat {
         }
         if (shouldAttack) {
             // TODO: choose pentad/triad based on span, and also randomness for making hard dodging
-            if (!Combat.attackSpecificEnemy(bot, worstEnemy)) {
+            if (!Combat.attackSpecificEnemy(bot, worstEnemy, spanInfo)) {
                 // didn't manage to attack worst enemy. pick any other enemy to attack
                 Combat.attackAnyOtherEnemy(bot, worstEnemy, allEnemies);
             }

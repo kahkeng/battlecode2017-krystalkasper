@@ -73,7 +73,7 @@ public strictfp class TangentBugNavigator {
     public MapLocation getNextLocation() {
         final MapLocation currLoc = rc.getLocation();
         final MapLocation destLoc = destination;
-        Debug.debug_line(bot, currLoc, destLoc, 255, 255, 255);
+        // Debug.debug_line(bot, currLoc, destLoc, 255, 255, 255);
         final float destDist = currLoc.distanceTo(destLoc);
         if (destDist < bot.myType.strideRadius) {
             return destLoc;

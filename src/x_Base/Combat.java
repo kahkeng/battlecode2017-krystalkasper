@@ -9,6 +9,7 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
+import x_Base.SprayCombat.SpanInfo;
 
 public strictfp class Combat {
 
@@ -198,7 +199,7 @@ public strictfp class Combat {
             }
             // Check if should do triad/pentad shots
             if (distanceAttack || minDistance < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
-                attackSpecificEnemy(bot, worstEnemy);
+                attackSpecificEnemy(bot, worstEnemy, null);
             }
             return true;
         }
@@ -253,7 +254,7 @@ public strictfp class Combat {
             }
             // Check if should do triad/pentad shots
             if (distanceAttack || minDistance < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
-                attackSpecificEnemy(bot, worstEnemy);
+                attackSpecificEnemy(bot, worstEnemy, null);
             }
             return true;
         }
@@ -302,7 +303,7 @@ public strictfp class Combat {
             }
             // Check if should do triad/pentad shots
             if (distanceAttack || minDistance < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
-                attackSpecificEnemy(bot, worstEnemy);
+                attackSpecificEnemy(bot, worstEnemy, null);
             }
             return true;
         }
@@ -362,7 +363,7 @@ public strictfp class Combat {
             }
             // Check if should do triad/pentad shots
             if (distanceAttack || minDistance < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
-                if (!attackSpecificEnemy(bot, worstEnemy)) {
+                if (!attackSpecificEnemy(bot, worstEnemy, null)) {
                     // didn't manage to attack worst enemy. pick any other enemy to attack
                     attackAnyOtherEnemy(bot, worstEnemy, enemies);
                 }
@@ -405,7 +406,7 @@ public strictfp class Combat {
                 }
             }
             if (distanceAttack1 || minDistance1 < GameConstants.NEUTRAL_TREE_MIN_RADIUS) {
-                if (attackSpecificEnemy(bot, enemy1)) {
+                if (attackSpecificEnemy(bot, enemy1, null)) {
                     return true;
                 }
             }
@@ -442,7 +443,7 @@ public strictfp class Combat {
                         canAttack = true;
                     }
                     if (canAttack) {
-                        attackSpecificEnemy(bot, enemy);
+                        attackSpecificEnemy(bot, enemy, null);
                     }
                 }
             }
@@ -456,7 +457,7 @@ public strictfp class Combat {
         return false;
     }
 
-    public static final boolean attackSpecificEnemy(final BotBase bot, final RobotInfo enemy)
+    public static final boolean attackSpecificEnemy(final BotBase bot, final RobotInfo enemy, final SpanInfo spanInfo)
             throws GameActionException {
         final float enemyRadius = enemy.getRadius();
         final float enemyDistance = bot.myLoc.distanceTo(enemy.location);
@@ -473,7 +474,8 @@ public strictfp class Combat {
         }
         if (bot.rc.canFirePentadShot()
                 && (theta * 2 >= PENTAD_RADIANS || enemy.type == RobotType.SCOUT
-                        || minDistance <= minPentadDist)) {
+                        || minDistance <= minPentadDist
+                        || spanInfo != null && spanInfo.getSpan() > TRIAD_RADIANS * 2)) {
             final Direction dirL2 = enemyDir.rotateLeftRads(PENTAD_RADIANS);
             final Direction dirL1 = enemyDir.rotateLeftRads(PENTAD_RADIANS / 2);
             final Direction dirR2 = enemyDir.rotateRightRads(PENTAD_RADIANS);
@@ -525,7 +527,8 @@ public strictfp class Combat {
             }
         }
         if (bot.rc.canFireTriadShot()
-                && (theta * 2 >= TRIAD_RADIANS || enemy.type == RobotType.SCOUT || minDistance <= minTriadDist)) {
+                && (theta * 2 >= TRIAD_RADIANS || enemy.type == RobotType.SCOUT || minDistance <= minTriadDist
+                        || spanInfo != null && spanInfo.getSpan() > TRIAD_RADIANS)) {
             final Direction dirL1 = enemyDir.rotateLeftRads(TRIAD_RADIANS);
             final Direction dirR1 = enemyDir.rotateRightRads(TRIAD_RADIANS);
             boolean ok = true;

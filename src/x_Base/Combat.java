@@ -1205,17 +1205,33 @@ public strictfp class Combat {
         // Attack enemy that we might not be able to see
         final BulletInfo[] bullets = bot.rc.senseNearbyBullets();
         // Look at the furthest few bullets for any coming straight for us
-        for (int i = bullets.length - 1; i >= 0 && i >= bullets.length - 10; i--) {
+        Direction chosenDir = null;
+        int count = 0;
+        for (int i = bullets.length - 1; i >= 0 && i >= bullets.length - 20; i--) {
             final BulletInfo bullet = bullets[i];
             final float bulletDistance = bot.myLoc.distanceTo(bullet.location);
             if (bulletDistance > bot.myType.sensorRadius - 1.0f && bot.willCollideWithMe(bullet)) {
                 final Direction shootDir = bot.myLoc.directionTo(bullet.location);
                 if (!willBulletCollideWithFriendlies(bot, shootDir, bulletDistance, 0f)
                         && !willBulletCollideWithTrees(bot, shootDir, bulletDistance, 0f)) {
-                    bot.rc.fireSingleShot(shootDir);
-                    Debug.debug_line(bot, bot.myLoc, bullet.location, 255, 0, 255);
-                    break;
+                    chosenDir = shootDir;
+                    count++;
                 }
+            }
+        }
+        if (chosenDir != null) {
+            if (count > 2 && bot.rc.canFirePentadShot()) {
+                bot.rc.firePentadShot(chosenDir);
+                SprayCombat.debugPentad(bot, chosenDir);
+                Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(chosenDir, 7.0f), 255, 0, 255);
+            } else if (count > 1 && bot.rc.canFireTriadShot()) {
+                bot.rc.fireTriadShot(chosenDir);
+                SprayCombat.debugTriad(bot, chosenDir);
+                Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(chosenDir, 7.0f), 255, 0, 255);
+            } else {
+                bot.rc.fireSingleShot(chosenDir);
+                SprayCombat.debugSingle(bot, chosenDir);
+                Debug.debug_line(bot, bot.myLoc, bot.myLoc.add(chosenDir, 7.0f), 255, 0, 255);
             }
         }
     }

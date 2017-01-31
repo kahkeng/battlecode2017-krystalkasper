@@ -29,6 +29,7 @@ public strictfp class BotGardener extends BotBase {
     public static final float TREE_TO_ROBOT_RATIO = 1.2f;
     public static final float WAR_THRESHOLD_DISTANCE = 20.0f;
     public static final int FLEE_EXPIRY_ROUNDS = 25;
+    public static final int COMBAT_BUILD_EXPIRY_ROUNDS = 100;
 
     public static final int MAX_BUILD_PENALTY = 5;
     public static final float BUILD_PENALTY = 1.0f;
@@ -38,6 +39,7 @@ public strictfp class BotGardener extends BotBase {
 
     public static int buildCount = 0; // used to ensure other gardeners have their chance at building
     public static int lastFleeRound = -FLEE_EXPIRY_ROUNDS; // last time we fleed
+    public static int lastCombatBuildRound = -1; // last time we built a combat unit (soldier/tank)
     public static TreeInfo rememberedTree = null;
     public static MapLocation rememberedPlantLoc = null;
     public static final HashMap<Integer, Integer> seenTreeIDs = new HashMap<Integer, Integer>();
@@ -223,7 +225,11 @@ public strictfp class BotGardener extends BotBase {
     }
 
     public final void buildRobotsInPeace() throws GameActionException {
-        if (Messaging.getNumScouts(this) < 1 && lastFleeRound < rc.getRoundNum() - FLEE_EXPIRY_ROUNDS
+        final int clock = rc.getRoundNum();
+        if (StrategyFeature.GARDENER_MORE_SOLDIERS.enabled()
+                && lastCombatBuildRound < clock - COMBAT_BUILD_EXPIRY_ROUNDS) {
+            buildSoldiers(formation.baseDir);
+        } else if (Messaging.getNumScouts(this) < 1 && lastFleeRound < clock - FLEE_EXPIRY_ROUNDS
                 && numNearbyCombatUnits() > 0 && rc.getRobotCount() >= rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
             buildScouts(formation.baseDir);
         } else if (meta.getTerrainType(myLoc, /* includeRobots= */false) == TerrainType.DENSE) {
@@ -560,6 +566,7 @@ public strictfp class BotGardener extends BotBase {
         }
 
         if (tryBuildRobot(buildType, buildDir)) {
+            lastCombatBuildRound = rc.getRoundNum();
             buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
         }
     }
@@ -574,6 +581,7 @@ public strictfp class BotGardener extends BotBase {
         }
 
         if (tryBuildRobot(buildType, buildDir)) {
+            lastCombatBuildRound = rc.getRoundNum();
             buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
         }
     }

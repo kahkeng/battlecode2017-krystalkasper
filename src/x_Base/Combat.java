@@ -507,7 +507,8 @@ public strictfp class Combat {
                     } else {
                         enemyDir2 = enemyDir.rotateRightRads(radAdjust);
                     }
-                } else if (enemy.type == RobotType.TANK && StrategyFeature.COMBAT_SPRAY_TANK.enabled()) {
+                } else if (enemy.type == RobotType.TANK && enemyDistance >= 8.0f
+                        && StrategyFeature.COMBAT_SPRAY_TANK.enabled()) {
                     if (bot.random.nextBoolean()) {
                         enemyDir2 = enemyDir.rotateLeftRads(PENTAD_RADIANS / 4);
                     } else {
@@ -550,7 +551,8 @@ public strictfp class Combat {
                     } else {
                         enemyDir2 = enemyDir.rotateRightRads(radAdjust);
                     }
-                } else if (enemy.type == RobotType.TANK && StrategyFeature.COMBAT_SPRAY_TANK.enabled()) {
+                } else if (enemy.type == RobotType.TANK && enemyDistance >= 6.2f
+                        && StrategyFeature.COMBAT_SPRAY_TANK.enabled()) {
                     if (bot.random.nextBoolean()) {
                         enemyDir2 = enemyDir.rotateLeftRads(TRIAD_RADIANS / 2);
                     } else {

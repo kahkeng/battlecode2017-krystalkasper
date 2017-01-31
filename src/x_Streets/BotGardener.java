@@ -628,7 +628,7 @@ public strictfp class BotGardener extends BotBase {
 
         // But only if we don't have enough lumberjacks
         final int numLumberjacks = numNearbyLumberjacks();
-        if (nearbyNeutralTrees.length > numLumberjacks && numLumberjacks < 2) {
+        if (nearbyNeutralTrees.length > numLumberjacks && (numLumberjacks < 3 || rc.getTeamBullets() > 500)) {
             if (tryBuildRobot(buildType, formation.baseDir)) {
                 buildCount = (buildCount + 1) % MAX_BUILD_PENALTY;
             }
@@ -644,6 +644,17 @@ public strictfp class BotGardener extends BotBase {
             }
         }
         return numLumberjacks;
+    }
+
+    public final int numNearbySoldiers() throws GameActionException {
+        final RobotInfo[] robots = rc.senseNearbyRobots(-1, myTeam);
+        int numSoldiers = 0;
+        for (final RobotInfo robot : robots) {
+            if (robot.type == RobotType.SOLDIER) {
+                numSoldiers++;
+            }
+        }
+        return numSoldiers;
     }
 
     public final int numNearbyCombatUnits() throws GameActionException {
@@ -885,14 +896,20 @@ public strictfp class BotGardener extends BotBase {
                             break;
                         }
                     } else {
-                        switch (buildIndex) {
-                        default:
-                        case 0:
-                            buildType = RobotType.LUMBERJACK;
-                            break;
-                        case 1: // TODO: based on tree density
+                        if (numNearbySoldiers() < 2) {
                             buildType = RobotType.SOLDIER;
-                            break;
+                        } else if (rc.senseNearbyTrees(TREE_SPAWN_LUMBERJACK_RADIUS, Team.NEUTRAL).length > 5) {
+                            buildType = RobotType.LUMBERJACK;
+                        } else {
+                            switch (buildIndex) {
+                            default:
+                            case 0:
+                                buildType = RobotType.LUMBERJACK;
+                                break;
+                            case 1: // TODO: based on tree density
+                                buildType = RobotType.SOLDIER;
+                                break;
+                            }
                         }
                     }
                     if (rc.getTeamBullets() >= buildType.bulletCost + buildCount * BUILD_PENALTY) {

@@ -20,11 +20,15 @@ public strictfp class BotSoldier extends BotBase {
     public static final float SNIPE_DISTANCE = 30.0f;
     public static MapLocation enemyGardenerLoc = null;
     public static int enemyGardenerRound = 0;
+    public static boolean amRusher = false;
 
     public BotSoldier(final RobotController rc) {
         super(rc);
         StrategyFeature.initialize(rc);
         DEBUG = true;
+        if (rc.getRoundNum() < 50 && numInitialArchons == 1 && meta.isShortGame()) {
+            amRusher = true;
+        }
     }
 
     public void run() throws GameActionException {
@@ -126,7 +130,23 @@ public strictfp class BotSoldier extends BotBase {
                 }
             }
         } else {
-            moveTowardsTreeBorder2();
+            if (!(amRusher && StrategyFeature.SOLDIER_RUSH.enabled()) || !soldierRush()) {
+                moveTowardsTreeBorder2();
+            }
+        }
+    }
+
+    public final boolean soldierRush() throws GameActionException {
+        final MapLocation destLoc = enemyInitialArchonLocs[0];
+        if (myLoc.distanceTo(destLoc) <= 5) {
+            amRusher = false;
+            return false;
+        } else {
+            nav.setDestination(destLoc);
+            if (!tryMove(nav.getNextLocation())) {
+                randomlyJitter();
+            }
+            return true;
         }
     }
 }

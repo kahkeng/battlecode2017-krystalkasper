@@ -251,9 +251,16 @@ public strictfp class TangentBugNavigator {
             // scouts aren't blocked by trees
             return new TreeInfo[0];
         case LUMBERJACK:
-        case TANK:
             // should ignore neutral/enemy trees since can chop/mow them down
             return bot.rc.senseNearbyTrees(centerLoc, senseRadius, bot.myTeam);
+        case TANK:
+            // should ignore neutral/enemy trees since can chop/mow them down
+            // but only do this for half of the tanks since pathing might turn out better
+            if (bot.myID % 2 == 0) {
+                return bot.rc.senseNearbyTrees(centerLoc, senseRadius, bot.myTeam);
+            } else {
+                return bot.rc.senseNearbyTrees(centerLoc, senseRadius, null);
+            }
         case SOLDIER:
         case ARCHON:
         case GARDENER:

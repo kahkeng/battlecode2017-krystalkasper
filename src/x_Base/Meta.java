@@ -26,15 +26,15 @@ public strictfp class Meta {
         return !isShortGame();
     }
 
-    public final TerrainType getTerrainType(final MapLocation loc) {
-        if (getTerrainDensity(loc) > 0.33f) {
+    public final TerrainType getTerrainType(final MapLocation loc, boolean includeRobots) {
+        if (getTerrainDensity(loc, includeRobots) > 0.33f) {
             return TerrainType.DENSE;
         } else {
             return TerrainType.SPARSE;
         }
     }
 
-    public final float getTerrainDensity(final MapLocation loc) {
+    public final float getTerrainDensity(final MapLocation loc, boolean includeRobots) {
         if (bot.rc.senseNearbyTrees(loc, 1.0f, Team.NEUTRAL).length > 0) {
             return 1.0f;
         }
@@ -50,10 +50,13 @@ public strictfp class Meta {
         }
         int blocked = 0;
         for (int i = 0; i < count; i++) {
-            final MapLocation adjLoc = loc.add(dir, bot.myType.bodyRadius + 1.0f);
-            if (bot.rc.senseNearbyTrees(adjLoc, 1.0f, Team.NEUTRAL).length > 0 || bot.mapEdges.isOffMap(adjLoc)) {
+            final MapLocation adjLoc = loc.add(dir, bot.myType.bodyRadius + 1.1f);
+            if (bot.rc.senseNearbyTrees(adjLoc, 1.1f, Team.NEUTRAL).length > 0
+                    || (includeRobots && bot.rc.senseNearbyRobots(adjLoc, 1.1f, null).length > 0)
+                    || bot.mapEdges.isOffMap(adjLoc)) {
                 blocked++;
             }
+
             dir = dir.rotateLeftDegrees(increment);
         }
         return 1.0f * blocked / count;

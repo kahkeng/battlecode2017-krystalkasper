@@ -226,7 +226,7 @@ public strictfp class BotGardener extends BotBase {
         if (Messaging.getNumScouts(this) < 1 && lastFleeRound < rc.getRoundNum() - FLEE_EXPIRY_ROUNDS
                 && numNearbyCombatUnits() > 0 && rc.getRobotCount() >= rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
             buildScouts(formation.baseDir);
-        } else if (meta.getTerrainType(myLoc) == TerrainType.DENSE) {
+        } else if (meta.getTerrainType(myLoc, /* includeRobots= */false) == TerrainType.DENSE) {
             buildLumberjacksForFarming();
             if (rc.getRobotCount() < rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
                 buildSoldiers(formation.baseDir);
@@ -698,7 +698,7 @@ public strictfp class BotGardener extends BotBase {
         if (rc.getRoundNum() > 10) {
             return;
         }
-        final float terrainDensity = meta.getTerrainDensity(myLoc);
+        final float terrainDensity = meta.getTerrainDensity(myLoc, /* includeRobots= */true);
         if (meta.isLongGame()) {
             while (!tryBuildRobot(RobotType.SCOUT, formation.baseDir)) {
                 startLoop();
@@ -766,13 +766,13 @@ public strictfp class BotGardener extends BotBase {
     }
 
     public final void findBetterSpawningPosition() throws GameActionException {
-        float lowestDensity = meta.getTerrainDensity(myLoc);
+        float lowestDensity = meta.getTerrainDensity(myLoc, /* includeRobots= */true);
         MapLocation lowestLoc = myLoc;
         Direction dir = Direction.NORTH;
         for (int i = 0; i < 12; i++) {
             final MapLocation loc = myLoc.add(dir, myType.bodyRadius * 2);
             if (!mapEdges.isOffMap(loc)) {
-                final float density = meta.getTerrainDensity(loc);
+                final float density = meta.getTerrainDensity(loc, /* includeRobots= */true);
                 if (density < lowestDensity) {
                     lowestDensity = density;
                     lowestLoc = loc;

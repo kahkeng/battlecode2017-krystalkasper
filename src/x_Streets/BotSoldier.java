@@ -118,7 +118,9 @@ public strictfp class BotSoldier extends BotBase {
                     }
                 }
             } else {
-                moveTowardsTreeBorder2();
+                if (!Combat.headTowardsBroadcastedEnemy(this, 100.0f)) {
+                    moveTowardsTreeBorder2();
+                }
             }
         } else {
             moveTowardsTreeBorder2();

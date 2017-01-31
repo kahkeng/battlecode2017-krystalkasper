@@ -130,7 +130,10 @@ public strictfp class SprayCombat {
         }
         if (shouldAttack) {
             // TODO: choose pentad/triad based on span, and also randomness for making hard dodging
-            Combat.attackSpecificEnemy(bot, worstEnemy);
+            if (!Combat.attackSpecificEnemy(bot, worstEnemy)) {
+                // didn't manage to attack worst enemy. pick any other enemy to attack
+                Combat.attackAnyOtherEnemy(bot, worstEnemy, allEnemies);
+            }
         }
 
         // Retreat if too close depending on type. Assume robot still has a turn to move after I do.

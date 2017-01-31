@@ -128,6 +128,8 @@ public strictfp class SprayCombat {
                 // didn't manage to attack worst enemy. pick any other enemy to attack
                 Combat.attackAnyOtherEnemy(bot, worstEnemy, allEnemies);
             }
+        } else {
+            Combat.attackAnyOtherEnemy(bot, worstEnemy, allEnemies);
         }
 
         // Retreat if too close depending on type. Assume robot still has a turn to move after I do.

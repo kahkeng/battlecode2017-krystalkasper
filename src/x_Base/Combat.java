@@ -364,6 +364,8 @@ public strictfp class Combat {
                     // didn't manage to attack worst enemy. pick any other enemy to attack
                     attackAnyOtherEnemy(bot, worstEnemy, enemies);
                 }
+            } else {
+                attackAnyOtherEnemy(bot, worstEnemy, enemies);
             }
             return true;
         }

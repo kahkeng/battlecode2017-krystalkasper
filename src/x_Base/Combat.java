@@ -1300,6 +1300,7 @@ public strictfp class Combat {
                 if (!bot.tryMove(bot.nav.getNextLocation())) {
                     bot.randomlyJitter();
                 }
+                return true;
             }
         }
         return false;
@@ -1317,7 +1318,7 @@ public strictfp class Combat {
         // Attack enemy that we might not be able to see
         final BulletInfo[] bullets = bot.rc.senseNearbyBullets();
         // Look at the furthest few bullets for any coming straight for us
-        final Direction okDir = lastEnemy == null ? null : lastEnemy.directionTo(bot.myLoc);
+        final Direction okDir = lastEnemy == null ? null : lastEnemy.directionTo(bot.getNearestArchon());
         Direction chosenDir = null;
         int count = 0;
         for (int i = bullets.length - 1; i >= 0 && i >= bullets.length - 30; i--) {

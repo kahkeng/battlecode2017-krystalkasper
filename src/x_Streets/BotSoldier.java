@@ -16,7 +16,7 @@ import x_Base.StrategyFeature;
 
 public strictfp class BotSoldier extends BotBase {
 
-    public static final int ENEMY_GARDENER_EXPIRY = 60;
+    public static final int ENEMY_GARDENER_EXPIRY = 70;
     public static final float SNIPE_DISTANCE = 30.0f;
     public static MapLocation enemyGardenerLoc = null;
     public static int enemyGardenerRound = 0;
@@ -109,7 +109,10 @@ public strictfp class BotSoldier extends BotBase {
                 } else if (enemyGardenerDist <= SNIPE_DISTANCE) {
                     if (rc.canFireSingleShot()) {
                         final Direction enemyDir = myLoc.directionTo(enemyGardenerLoc);
-                        rc.fireSingleShot(enemyDir);
+                        if (!Combat.willBulletCollideWithFriendlies(this, enemyDir, enemyGardenerDist,
+                                RobotType.GARDENER.bodyRadius)) {
+                            rc.fireSingleShot(enemyDir);
+                        }
                     }
                 } else {
                     nav.setDestination(enemyGardenerLoc);

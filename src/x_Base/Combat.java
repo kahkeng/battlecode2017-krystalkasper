@@ -521,7 +521,19 @@ public strictfp class Combat {
                 } else {
                     enemyDir2 = enemyDir;
                 }
-                bot.rc.firePentadShot(enemyDir2);
+                final Direction enemyDir3;
+                if (spanInfo != null) {
+                    if (spanInfo.rangeRightRads - spanInfo.rangeLeftRads >= PENTAD_RADIANS / 2) {
+                        enemyDir3 = enemyDir2.rotateRightRads(PENTAD_RADIANS / 2);
+                    } else if (spanInfo.rangeLeftRads - spanInfo.rangeRightRads >= PENTAD_RADIANS / 2) {
+                        enemyDir3 = enemyDir2.rotateLeftRads(PENTAD_RADIANS / 2);
+                    } else {
+                        enemyDir3 = enemyDir2;
+                    }
+                } else {
+                    enemyDir3 = enemyDir2;
+                }
+                bot.rc.firePentadShot(enemyDir3);
                 lastFiredDir = enemyDir;
                 return true;
             }
@@ -566,7 +578,19 @@ public strictfp class Combat {
                 } else {
                     enemyDir2 = enemyDir;
                 }
-                bot.rc.fireTriadShot(enemyDir2);
+                final Direction enemyDir3;
+                if (spanInfo != null) {
+                    if (spanInfo.rangeRightRads - spanInfo.rangeLeftRads >= TRIAD_RADIANS) {
+                        enemyDir3 = enemyDir2.rotateRightRads(TRIAD_RADIANS);
+                    } else if (spanInfo.rangeLeftRads - spanInfo.rangeRightRads >= TRIAD_RADIANS) {
+                        enemyDir3 = enemyDir2.rotateLeftRads(TRIAD_RADIANS);
+                    } else {
+                        enemyDir3 = enemyDir2;
+                    }
+                } else {
+                    enemyDir3 = enemyDir2;
+                }
+                bot.rc.fireTriadShot(enemyDir3);
                 lastFiredDir = enemyDir;
                 return true;
             }

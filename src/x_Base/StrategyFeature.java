@@ -5,7 +5,8 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 
 public strictfp enum StrategyFeature {
-    SCOUT_DISTANCE_ATTACK("scout_distance_attack", false), GARDENER_PLANT_NEAR_ARCHON("gardener_plant_near_archon",
+    SCOUT_DISTANCE_ATTACK("scout_distance_attack", false), SCOUT_DODGE("scout_dodge", true), GARDENER_PLANT_NEAR_ARCHON(
+            "gardener_plant_near_archon",
             false), IMPROVED_COMBAT1("improved_combat1",
                     true), LUMBERJACK_FOCUS("lumberjack_focus", true), COMBAT_SNIPE_BASES("combat_snipe_bases",
                             true), GARDENER_FARM_TRIANGLE("gardener_farm_triangle",

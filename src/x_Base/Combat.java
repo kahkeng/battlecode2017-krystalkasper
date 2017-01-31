@@ -983,6 +983,15 @@ public strictfp class Combat {
         if (enemyDistance < AVOID_RANGE) {
             bot.fleeFromEnemy(worstEnemy.location);
         }
+
+        if (StrategyFeature.SCOUT_DODGE.enabled()) {
+            final MapLocation dodgeLoc = SprayCombat.getDodgeLocation(bot, worstEnemy.location, AVOID_RANGE);
+            if (dodgeLoc != null && !dodgeLoc.equals(bot.myLoc)) {
+                bot.tryMove(dodgeLoc);
+                return;
+            }
+        }
+
         final Direction enemyDir = bot.myLoc.directionTo(worstEnemy.location);
         final Direction rotateDir;
         final boolean rotated = true;

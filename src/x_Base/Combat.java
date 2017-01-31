@@ -1,6 +1,7 @@
 package x_Base;
 
 import battlecode.common.BulletInfo;
+import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
@@ -1311,10 +1312,20 @@ public strictfp class Combat {
         // Attack enemy that we might not be able to see
         final BulletInfo[] bullets = bot.rc.senseNearbyBullets();
         // Look at the furthest few bullets for any coming straight for us
+        // Only consider those coming from direction of last enemy broadcast
+        final MapLocation lastEnemy = Messaging.getLastEnemyLocation(bot);
+        final Direction okDir = lastEnemy == null ? null : lastEnemy.directionTo(bot.myLoc);
         Direction chosenDir = null;
         int count = 0;
-        for (int i = bullets.length - 1; i >= 0 && i >= bullets.length - 20; i--) {
+        for (int i = bullets.length - 1; i >= 0 && i >= bullets.length - 30; i--) {
+            if (Clock.getBytecodesLeft() < 1000) {
+                break;
+            }
             final BulletInfo bullet = bullets[i];
+            final float radsBetween = okDir == null ? 0 : Math.abs(bullet.dir.radiansBetween(okDir));
+            if (radsBetween > Math.PI / 2) {
+                continue;
+            }
             final float bulletDistance = bot.myLoc.distanceTo(bullet.location);
             if (bulletDistance > bot.myType.sensorRadius - 1.0f && bot.willCollideWithMe(bullet)) {
                 final Direction shootDir = bot.myLoc.directionTo(bullet.location);

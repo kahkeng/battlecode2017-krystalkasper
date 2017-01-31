@@ -1309,11 +1309,14 @@ public strictfp class Combat {
         if (!bot.rc.canFireSingleShot()) {
             return;
         }
+        // Only consider those coming from direction of last enemy broadcast
+        final MapLocation lastEnemy = Messaging.getLastEnemyLocation(bot);
+        if (lastEnemy != null && bot.myLoc.distanceTo(lastEnemy) > 14) {
+            return;
+        }
         // Attack enemy that we might not be able to see
         final BulletInfo[] bullets = bot.rc.senseNearbyBullets();
         // Look at the furthest few bullets for any coming straight for us
-        // Only consider those coming from direction of last enemy broadcast
-        final MapLocation lastEnemy = Messaging.getLastEnemyLocation(bot);
         final Direction okDir = lastEnemy == null ? null : lastEnemy.directionTo(bot.myLoc);
         Direction chosenDir = null;
         int count = 0;

@@ -15,6 +15,8 @@ public strictfp class Combat {
     public static final float DISTANCE_ATTACK_RANGE = 5.0f;
     public static final float SURROUND_RANGE = 1.0f;
     public static final float ENEMY_REACTION_RANGE = 30.0f;
+    public static final float ENEMY_CHASE_RANGE = 10.0f;
+    public static final int ENEMY_CHASE_EXPIRY = 20;
     public static final float HARRASS_RANGE = 3.0f; // range for harassing
     public static final float AVOID_RANGE = 6.0f; // range for avoiding
     public static final float EPS = 0.0001f;
@@ -1247,6 +1249,21 @@ public strictfp class Combat {
                 bot.randomlyJitter();
             }
             return true;
+        }
+        if (StrategyFeature.COMBAT_CHASE_ENEMY.enabled()) {
+            // If no fresh enemies, go beyond last enemy location for a few more rounds
+            final int round = Messaging.getLastEnemyRound(bot);
+            final MapLocation loc = Messaging.getLastEnemyLocation(bot);
+            final int clock = bot.rc.getRoundNum();
+            if (loc != null && round > clock - ENEMY_CHASE_EXPIRY) {
+                final MapLocation reporterLoc = Messaging.getLastEnemyReporterLocation(bot);
+                final MapLocation chaseLoc = loc.add(reporterLoc.directionTo(loc), ENEMY_CHASE_RANGE);
+                Debug.debug_line(bot, reporterLoc, chaseLoc, 255, 0, 0);
+                bot.nav.setDestination(chaseLoc);
+                if (!bot.tryMove(bot.nav.getNextLocation())) {
+                    bot.randomlyJitter();
+                }
+            }
         }
         return false;
     }

@@ -24,7 +24,7 @@ public strictfp class Messaging {
     public static final int FIELDS_HARASSER = 1;
     public static final int FIELDS_SCOUT = 1;
     public static final int FIELDS_PRIORITY_ENEMY_ROBOTS = 3;
-    public static final int FIELDS_ENEMY_ROBOTS = 5;
+    public static final int FIELDS_ENEMY_ROBOTS = 7;
     public static final int FIELDS_ENEMY_GARDENERS = 3;
     public static final int FIELDS_NEUTRAL_TREES = 3;
     public static final int FIELDS_MY_TREES = 4;
@@ -316,6 +316,8 @@ public strictfp class Messaging {
             bot.rc.broadcastFloat(channel + 3, enemyRobot.health);
             // System.out.println("tx ord " + enemyRobot.type.ordinal() + " " + enemyRobot.type);
             bot.rc.broadcastInt(channel + 4, enemyRobot.type.ordinal());
+            bot.rc.broadcastFloat(channel + 5, bot.myLoc.x);
+            bot.rc.broadcastFloat(channel + 6, bot.myLoc.y);
         }
     }
 
@@ -383,6 +385,25 @@ public strictfp class Messaging {
         }
         return new MapLocation(bot.rc.readBroadcastFloat(channel + 1),
                 bot.rc.readBroadcastFloat(channel + 2));
+    }
+
+    public static final int getLastEnemyRound(final BotBase bot) throws GameActionException {
+        int channel = OFFSET_ENEMY_ROBOTS_START;
+        final int heartbeat = bot.rc.readBroadcast(channel);
+        if (heartbeat == 0) {
+            return -1;
+        }
+        return getRoundFromHeartbeat(heartbeat);
+    }
+
+    public static final MapLocation getLastEnemyReporterLocation(final BotBase bot) throws GameActionException {
+        int channel = OFFSET_ENEMY_ROBOTS_START;
+        final int heartbeat = bot.rc.readBroadcast(channel);
+        if (heartbeat == 0) {
+            return null;
+        }
+        return new MapLocation(bot.rc.readBroadcastFloat(channel + 5),
+                bot.rc.readBroadcastFloat(channel + 6));
     }
 
     public static final void broadcastEnemyGardener(final BotBase bot, final RobotInfo enemyRobot)

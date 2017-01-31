@@ -21,7 +21,9 @@ public strictfp enum StrategyFeature {
                                                                                             "combat_spray_tank",
                                                                                             true), COMBAT_IGNORE_ENEMY_TREES(
                                                                                                     "combat_ignore_enemy_trees",
-                                                                                                    true);
+                                                                                                    true), COMBAT_CHASE_ENEMY(
+                                                                                                            "combat_chase_enemy",
+                                                                                                            true);
 
     public final String codename;
     private boolean enabled, emitted;

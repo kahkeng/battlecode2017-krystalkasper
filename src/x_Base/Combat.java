@@ -15,8 +15,8 @@ public strictfp class Combat {
     public static final float DISTANCE_ATTACK_RANGE = 5.0f;
     public static final float SURROUND_RANGE = 1.0f;
     public static final float ENEMY_REACTION_RANGE = 30.0f;
-    public static final float ENEMY_CHASE_RANGE = 10.0f;
-    public static final int ENEMY_CHASE_EXPIRY = 20;
+    public static final float ENEMY_CHASE_RANGE = 20.0f;
+    public static final int ENEMY_CHASE_EXPIRY = 40;
     public static final float HARRASS_RANGE = 3.0f; // range for harassing
     public static final float AVOID_RANGE = 6.0f; // range for avoiding
     public static final float EPS = 0.0001f;

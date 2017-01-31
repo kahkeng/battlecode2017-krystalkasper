@@ -34,9 +34,6 @@ public strictfp class BotSoldier extends BotBase {
                 if (StrategyFeature.COMBAT_SPRAY1.enabled()) {
                     if (!SprayCombat.sprayEnemy1(this)) {
                         if (!Combat.attackPriorityEnemies(this)) {
-                            if (StrategyFeature.COMBAT_UNSEEN_DEFENSE.enabled()) {
-                                Combat.unseenDefense(this);
-                            }
                             if (myType != RobotType.TANK || !StrategyFeature.COMBAT_SNIPE_BASES.enabled()) {
                                 // Else head towards closest known broadcasted enemies
                                 if (!Combat.headTowardsBroadcastedEnemy(this, 100.0f)) {
@@ -52,6 +49,9 @@ public strictfp class BotSoldier extends BotBase {
                         if (rc.hasMoved() && !rc.hasAttacked()) {
                             SprayCombat.sprayEnemy1(this);
                         }
+                    }
+                    if (StrategyFeature.COMBAT_UNSEEN_DEFENSE.enabled()) {
+                        Combat.unseenDefense(this);
                     }
                 } else if (StrategyFeature.IMPROVED_COMBAT1.enabled()) {
                     if (!Combat.seekAndAttackAndSurroundEnemy5(this)) {

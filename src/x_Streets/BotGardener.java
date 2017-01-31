@@ -101,31 +101,40 @@ public strictfp class BotGardener extends BotBase {
                     }
                     enemyLoc = worstEnemy.location;
                 } else {
+                    MapLocation nearestLoc = null;
+                    float nearestDist = 0;
                     final int numPriorityEnemies = Messaging.getPriorityEnemyRobots(broadcastedPriorityEnemies, this);
-                    if (numPriorityEnemies > 0) {
-                        enemyLoc = broadcastedPriorityEnemies[0];
-                        shouldFlee = true;
-                    } else {
-                        final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
-                        if (numEnemies > 0) {
-                            for (int i = 0; i < numEnemies; i++) {
-                                final RobotInfo enemy = broadcastedEnemies[i];
-                                if (myLoc.distanceTo(enemy.location) < FLEE_DISTANCE * 2) {
-                                    enemyLoc = enemy.location;
-                                    shouldFlee = true; // can't tell if dangerous enemy but just in case
-                                    break;
-                                }
-                            }
+                    for (int i = 0; i < numPriorityEnemies; i++) {
+                        final MapLocation enemy = broadcastedPriorityEnemies[i];
+                        final float dist = myLoc.distanceTo(enemy);
+                        if (nearestLoc == null || dist < nearestDist) {
+                            nearestLoc = enemy;
+                            nearestDist = dist;
+                        }
+                    }
+                    final int numEnemies = Messaging.getEnemyRobots(broadcastedEnemies, this);
+                    for (int i = 0; i < numEnemies; i++) {
+                        final RobotInfo enemy = broadcastedEnemies[i];
+                        final float dist = myLoc.distanceTo(enemy.location);
+                        if (nearestLoc == null || dist < nearestDist) {
+                            nearestLoc = enemy.location; // can't tell if dangerous enemy but just in case
+                            nearestDist = dist;
+                        }
+                    }
+                    if (nearestLoc != null) {
+                        enemyLoc = nearestLoc;
+                        if (myLoc.distanceTo(enemyLoc) < FLEE_DISTANCE * 2) {
+                            shouldFlee = true;
                         }
                     }
                 }
                 final int clock = rc.getRoundNum();
-                if (enemyLoc != null) {
-                    if (shouldFlee && enemyLoc.distanceTo(myLoc) < FLEE_DISTANCE * 2) {
-                        Debug.debug_line(this, myLoc, enemyLoc, 255, 0, 0);
-                        fleeFromEnemy(enemyLoc);
-                        lastFleeRound = clock;
-                    }
+                // enemyLoc is non-null if there is a worstEnemy or the nearest broadcasted one
+                // if shouldFlee is true, the enemyLoc should already be within flee distance
+                if (enemyLoc != null && shouldFlee) {
+                    Debug.debug_line(this, myLoc, enemyLoc, 255, 0, 0);
+                    fleeFromEnemy(enemyLoc);
+                    lastFleeRound = clock;
                 }
                 if (enemyLoc != null || lastFleeRound >= clock - FLEE_EXPIRY_ROUNDS) {
                     buildRobotsInWar(worstEnemy, enemyLoc);
@@ -203,7 +212,8 @@ public strictfp class BotGardener extends BotBase {
             if (numNearbyCombatUnits() < 3) {
                 buildSoldiers(myLoc.directionTo(enemyLoc));
             }
-        } else if (myLoc.distanceTo(enemyLoc) <= WAR_THRESHOLD_DISTANCE) {
+        } else if (enemyLoc == null || myLoc.distanceTo(enemyLoc) <= WAR_THRESHOLD_DISTANCE) {
+            // Enemy loc is null if we fleed recently. Otherwise, it is just the nearest broadcasted enemy
             // Prefer tanks if we can build them
             buildTanks(formation.baseDir);
             if (rc.getRobotCount() < rc.getTreeCount() * TREE_TO_ROBOT_RATIO) {
